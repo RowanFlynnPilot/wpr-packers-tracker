@@ -42,6 +42,13 @@ brand on it before Week 1.
 | **Email digest** | Your logo baked into the twice-daily newsletter image |
 | **Where to watch** | A featured bar/restaurant listing for game day (open) |
 
+## See it with your name on it
+
+Append `?demo` to the tracker URL and every open placement fills with a live preview:
+`https://rowanflynnpilot.github.io/wpr-packers-tracker/?demo` — real scores, your slot,
+today. The full deck is `sponsor-deck.pptx` (this folder), and `media/` holds placement
+screenshots for proposals.
+
 ## Grow with us — more Wisconsin surfaces
 
 The Brewers Tracker proved the format; the Packers Tracker extends it to the state's

@@ -82,9 +82,12 @@ export default function App() {
         setBundle(b)
         setUpdatedAt(Date.now())
         flag('standings', false)
+        // Schedules get their own failure flag — a race-chart problem shouldn't read as a
+        // standings problem (and vice versa its skeleton should resolve to an error state).
         return fetchDivisionSchedules(b.season)
+          .then((s) => { setSchedules(s); flag('schedules', false) })
+          .catch(() => flag('schedules', true))
       })
-      .then((s) => { setSchedules(s); flag('schedules', false) })
       .catch(() => flag('standings', true))
     fetchSeasonGames()
       .then(({ games }) => setOpener(games.find((g) => g.seasonType === 2 && g.state === 'pre') || null))

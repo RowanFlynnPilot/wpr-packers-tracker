@@ -104,7 +104,8 @@ export const SPONSOR_INQUIRY = 'sales@wausaupilotandreview.com'
 //     features: ['12 HDTVs', 'Sound on for every game', 'Full bar & patio'],
 //     specials: ['$3 Wisconsin taps', 'Half-price wings during Packers games'],
 //   }
-export const WATCH_PARTY = null
+// (`let`, not `const`: sales demo mode below fills it with a placeholder venue.)
+export let WATCH_PARTY = null
 
 // Shown in the footer when a gaming brand is the title sponsor. Editable; set to '' to hide.
 export const SPONSOR_DISCLAIMER = ''
@@ -116,4 +117,32 @@ export const SPONSOR_DISCLAIMER = ''
 export const ANALYTICS = {
   domain: 'rowanflynnpilot.github.io',
   src: 'https://plausible.io/js/script.js',
+}
+
+// ---------------------------------------------------------------------------
+// SALES DEMO MODE — append ?demo to any page URL (the tracker or a mini) and every OPEN slot
+// fills with a "Your brand here" placeholder, so WPR sales can show a prospect exactly what
+// their sponsorship looks like on the live page: real scores, their name on the marquee.
+// Sold slots are never overridden, ordinary readers never see it (no ?demo, no placeholders),
+// and nothing here runs outside the browser.
+if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('demo')) {
+  const demo = {
+    name: 'Your Brand Here',
+    logo: null,
+    url: null,
+    tagline: `This placement is open for the ${SEASON} season — ${SPONSOR_INQUIRY}`,
+  }
+  SPONSORS.header = SPONSORS.header || demo
+  SPONSORS.race = SPONSORS.race || demo
+  SPONSORS.leaders = SPONSORS.leaders || demo
+  SPONSORS.forecast = SPONSORS.forecast || { name: 'Your Brand Here' }
+  WATCH_PARTY = WATCH_PARTY || {
+    name: 'Your Bar or Restaurant',
+    tagline: "Wausau's home for Packers football — this listing is available",
+    image: '',
+    url: null,
+    address: `Ask about this placement: ${SPONSOR_INQUIRY}`,
+    features: ['Your HDTVs', 'Your patio', 'Your game-day atmosphere'],
+    specials: ['Your Sunday specials, listed right here, every game week'],
+  }
 }

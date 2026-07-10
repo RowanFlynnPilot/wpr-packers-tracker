@@ -149,6 +149,23 @@ WPR news category, and `USE_TEAM_LOGO`. To repoint at a different NFL team, chan
 `TEAM_ID`, `TEAM_ABBR`, the `DIVISION*` maps, `FRANCHISE_BEST`, and the Lambeau
 coordinates in `src/weather.js`.
 
+## Sales demo mode
+
+Append `?demo` to any page URL (the tracker or any mini) and every **open** sponsor slot
+fills with a "Your Brand Here" placeholder — the fastest way to show a prospect exactly
+what their sponsorship looks like on the live page, real scores included. Sold slots are
+never overridden, and readers without the parameter never see it.
+
+Demo link: `https://rowanflynnpilot.github.io/wpr-packers-tracker/?demo`
+
+## Sales kit
+
+- `docs/sponsor-deck.pptx` — the sponsorship deck. Regenerate after inventory/branding
+  changes with `node scripts/sponsor-deck.cjs` (needs `npm i -g pptxgenjs react react-dom
+  react-icons sharp`).
+- `docs/SPONSOR_PITCH.md` — the email-able one-pager.
+- `docs/media/` — placement screenshots (real page, live data, demo mode) used by both.
+
 ## Trademark note
 
 The Packers logo and player headshots are referenced from ESPN's public CDN, not redrawn.

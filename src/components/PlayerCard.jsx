@@ -17,8 +17,9 @@ export function openPlayerCard(id) {
 const label = { fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6b6b6b', fontWeight: 700 }
 
 // The log's columns are ordered primary-category-first (a back's carries before his catches),
-// so the first few non-noise columns ARE the story of the player's game.
-const NOISE = new Set(['LNG', 'AVG'])
+// so the first few non-noise columns ARE the story of the player's game. Rate/derived columns
+// are noise here — a card line should spend its four slots on counting stats (yards, TDs).
+const NOISE = new Set(['LNG', 'AVG', 'CMP%', 'QBR', 'RTG'])
 function statLine(stats) {
   return stats
     .filter((s) => s.value != null && s.value !== '' && !NOISE.has(s.label))

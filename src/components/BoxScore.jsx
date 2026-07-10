@@ -77,7 +77,7 @@ function TeamCompare({ summary }) {
         <span style={label}>{other.team.abbreviation}</span>
       </div>
       {rows.map((r, i) => (
-        <div key={r.lab} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, padding: '6px 0', borderTop: i ? `1px solid ${theme.rule}` : `1px solid ${theme.rule}` }}>
+        <div key={r.lab} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, padding: '6px 0', borderTop: `1px solid ${theme.rule}` }}>
           <span style={{ fontFamily: theme.sans, fontSize: 13, fontWeight: 700, color: theme.ink, width: 84 }}>{r.a}</span>
           <span style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: theme.muted, textAlign: 'center', flex: 1 }}>{r.lab}</span>
           <span style={{ fontFamily: theme.sans, fontSize: 13, color: theme.ink, width: 84, textAlign: 'right' }}>{r.b}</span>

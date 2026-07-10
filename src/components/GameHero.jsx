@@ -1,12 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { theme } from '../theme.js'
-import { TEAM_ID, SPONSORS, SITE_URL, TEAM_ABBR } from '../config.js'
+import { TEAM_ID, SPONSORS, SITE_URL, headshot } from '../config.js'
 import { fetchFeaturedGame, fetchGameSummary, fetchLiveSummary, liveExtras, fetchStandingsBundle, fetchStatsSeason, fetchTeamSchedule } from '../api.js'
 import { finals, teamGameLeaders } from '../games.js'
 import { fetchKickoffForecast } from '../weather.js'
 import { track } from '../analytics.js'
 import { useIsNarrow } from '../useIsNarrow.js'
-import { headshot } from '../config.js'
 import Sponsor from './Sponsor.jsx'
 import TeamLogo from './TeamLogo.jsx'
 
