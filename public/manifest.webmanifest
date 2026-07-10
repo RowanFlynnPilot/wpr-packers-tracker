@@ -1,0 +1,14 @@
+{
+  "name": "Packers, by the numbers — Wausau Pilot & Review",
+  "short_name": "Packers",
+  "description": "Live Green Bay Packers stats from Wausau Pilot & Review — standings, the NFC North race, the schedule, and team leaders.",
+  "start_url": "/wpr-packers-tracker/",
+  "scope": "/wpr-packers-tracker/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#203731",
+  "icons": [
+    { "src": "/wpr-packers-tracker/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

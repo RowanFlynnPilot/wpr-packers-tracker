@@ -1,0 +1,64 @@
+name: Deploy to GitHub Pages
+
+# Build + publish. The widget itself has NO scraper and NO data cron — it fetches ESPN's public
+# NFL API directly in the browser. The ONE scheduled job below exists only to regenerate the
+# EMAIL image (public digest.png): email can't run the live widget, so it's snapshotted to a PNG
+# twice a day. This bakes an image, not a data cache — see scripts/render-digest.mjs.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Refresh the email image twice daily, shortly before the ~8 AM and ~5 PM Central sends.
+    # Cron is UTC and does not follow DST; these land ~6:30 AM / ~3:30 PM Central (CDT).
+    - cron: '30 11 * * *'
+    - cron: '30 20 * * *'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # Render the digest widget to dist/digest.png for the email newsletter (see header note).
+      - run: npx playwright install --with-deps chromium
+      - name: Render digest email image
+        run: |
+          npm run preview -- --port 4173 --host 127.0.0.1 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:4173/wpr-packers-tracker/mini-digest.html > /dev/null && break
+            sleep 1
+          done
+          node scripts/render-digest.mjs http://127.0.0.1:4173/wpr-packers-tracker/mini-digest.html dist/digest.png
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # NOTE: deploy-pages hard-caps its queue wait at 10 minutes (larger `timeout` values are
+      # clamped with a warning). If the Pages queue stalls, re-run the deploy job until GitHub's
+      # queue clears — the twice-daily schedule also self-heals it on the next tick.
+      - id: deployment
+        uses: actions/deploy-pages@v4
