@@ -18,7 +18,9 @@ export default function NextAtLambeau() {
       if (!alive) return
       const next = games.find((g) => g.state === 'pre' && g.home && g.seasonType !== 1)
       setGame(next || null)
-      if (next) fetchKickoffForecast(next.date).then((f) => { if (alive) setForecast(f) }).catch(() => {})
+      // Forecast only when the kickoff time is real — the line above renders "TBD" for flexed
+      // games and a placeholder hour shouldn't get a confident forecast.
+      if (next?.timeValid) fetchKickoffForecast(next.date).then((f) => { if (alive) setForecast(f) }).catch(() => {})
     }).catch(() => {})
     return () => { alive = false }
   }, [])

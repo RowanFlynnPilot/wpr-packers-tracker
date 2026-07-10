@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID, SPONSORS, SITE_URL, headshot } from '../config.js'
 import { fetchFeaturedGame, fetchGameSummary, fetchLiveSummary, liveExtras, fetchStandingsBundle, fetchStatsSeason, fetchTeamSchedule } from '../api.js'
-import { finals, teamGameLeaders } from '../games.js'
+import { finals, teamGameLeaders, periodLabel } from '../games.js'
 import { fetchKickoffForecast } from '../weather.js'
 import { track } from '../analytics.js'
 import { useIsNarrow } from '../useIsNarrow.js'
@@ -124,11 +124,15 @@ export default function GameHero() {
     return () => { alive = false }
   }, [final, gameId])
 
+  // While live, the summary's score is fresher than the schedule feed's (see liveExtras).
+  const meScore = live && extras?.meScore != null ? extras.meScore : game?.meScore
+  const oppScore = live && extras?.oppScore != null ? extras.oppScore : game?.oppScore
+
   // Pop the score once whenever it changes during play (never on first paint) — same
   // micro-interaction as the minis, shared .score-pop keyframes.
   useEffect(() => {
     if (!game || game.state === 'pre') { prevScore.current = null; return }
-    const key = `${game.meScore}-${game.oppScore}`
+    const key = `${meScore}-${oppScore}`
     if (prevScore.current != null && prevScore.current !== key) {
       setPop(true)
       const t = setTimeout(() => setPop(false), 600)
@@ -136,7 +140,7 @@ export default function GameHero() {
       return () => clearTimeout(t)
     }
     prevScore.current = key
-  }, [game])
+  }, [game, meScore, oppScore])
 
   // Fire an alert once when the featured game flips to live (only if opted in + permitted).
   // wasLive starts null so a page opened mid-game sets the baseline silently — only an
@@ -150,11 +154,12 @@ export default function GameHero() {
   }, [live, alertsOn, canAlert, game])
 
   // Kickoff forecast for upcoming HOME games (Open-Meteo covers Lambeau; road cities are out of
-  // scope). Fail-soft — the line simply doesn't render.
+  // scope). Only when the kickoff time is real — a flexed game's placeholder hour would get a
+  // confident forecast while the dateline says "TBD". Fail-soft — the line simply doesn't render.
   const state = game?.state
   useEffect(() => {
     setForecast(null)
-    if (!game || state !== 'pre' || !game.home) return
+    if (!game || state !== 'pre' || !game.home || !game.timeValid) return
     let alive = true
     fetchKickoffForecast(game.date).then((f) => { if (alive) setForecast(f) }).catch(() => {})
     return () => { alive = false }
@@ -218,7 +223,7 @@ export default function GameHero() {
   const share = () => {
     const url = window.self === window.top ? window.location.href : (document.referrer || SITE_URL)
     const text = live
-      ? `Packers ${game.meScore}–${game.oppScore} ${game.home ? 'vs' : 'at'} the ${oppName} — live now`
+      ? `Packers ${meScore}–${oppScore} ${game.home ? 'vs' : 'at'} the ${oppName} — live now`
       : final
       ? `Final: Packers ${won ? 'beat' : 'fall to'} the ${oppName}, ${won ? `${game.meScore}–${game.oppScore}` : `${game.oppScore}–${game.meScore}`}`
       : `Packers ${game.home ? 'vs' : 'at'} the ${oppName} — ${when}`
@@ -275,9 +280,9 @@ export default function GameHero() {
         <TeamBlock id={TEAM_ID} name="Packers" />
         {showScore ? (
           <div aria-live="polite" className={pop ? 'score-pop' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 14, fontFamily: theme.serif, fontSize: scoreSize, lineHeight: 1 }}>
-            <span style={{ color: won ? theme.green : theme.ink, fontWeight: won ? 700 : 400 }}>{game.meScore}</span>
+            <span style={{ color: won ? theme.green : theme.ink, fontWeight: won ? 700 : 400 }}>{meScore}</span>
             <span style={{ fontSize: scoreSize * 0.5, color: theme.muted }}>–</span>
-            <span style={{ color: theme.ink }}>{game.oppScore}</span>
+            <span style={{ color: theme.ink }}>{oppScore}</span>
           </div>
         ) : (
           <div style={{ fontFamily: theme.sans, fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', color: theme.muted }}>{game.home ? 'vs' : 'at'}</div>
@@ -333,7 +338,7 @@ export default function GameHero() {
               <div style={{ fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.muted, marginBottom: 4 }}>Latest plays</div>
               {extras.plays.map((p, i) => (
                 <div key={i} style={{ fontFamily: theme.sans, fontSize: 12, color: p.scoring ? theme.ink : theme.muted, lineHeight: 1.4, padding: '4px 0', borderTop: i ? `1px solid ${theme.rule}` : 'none' }}>
-                  <span style={{ color: theme.goldText, fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Q{p.period} {p.clock}</span>{' '}
+                  <span style={{ color: theme.goldText, fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>{periodLabel(p.period)} {p.clock}</span>{' '}
                   {p.text.length > 96 ? p.text.slice(0, 95).replace(/\s+\S*$/, '') + '…' : p.text}
                 </div>
               ))}

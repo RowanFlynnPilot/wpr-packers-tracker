@@ -21,6 +21,7 @@ export default function FilmRoom() {
   const [error, setError] = useState(false)
   const [selected, setSelected] = useState('')
   const [summary, setSummary] = useState(null)
+  const [summaryError, setSummaryError] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -39,11 +40,14 @@ export default function FilmRoom() {
     return () => { alive = false }
   }, [])
 
+  // A failed summary resolves to an error state, never an eternal skeleton — picking any game
+  // (including re-picking this one via the dropdown) retries it.
   useEffect(() => {
     setSummary(null)
+    setSummaryError(false)
     if (!selected) return
     let alive = true
-    fetchGameSummary(selected).then((s) => { if (alive) setSummary(s) }).catch(() => {})
+    fetchGameSummary(selected).then((s) => { if (alive) setSummary(s) }).catch(() => { if (alive) setSummaryError(true) })
     return () => { alive = false }
   }, [selected])
 
@@ -85,7 +89,7 @@ export default function FilmRoom() {
           )}
         </div>
 
-        {!summary ? <Loading block /> : (
+        {summaryError ? <ErrorState /> : !summary ? <Loading block /> : (
           <>
             <Suspense fallback={<Loading block />}>
               <GameFlow flow={flow} oppName={oppName} />

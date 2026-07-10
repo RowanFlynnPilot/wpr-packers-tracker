@@ -1,5 +1,6 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts'
 import { theme } from '../theme.js'
+import { periodLabel } from '../games.js'
 
 // Win-probability chart for one game: the Packers' chance of winning after every play, with the
 // biggest swing called out under the chart. Pure presentation — the film room hands it the
@@ -35,7 +36,7 @@ export default function GameFlow({ flow, oppName }) {
       {biggest?.text && (
         <div style={{ marginTop: 14, border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 6, background: theme.wash, padding: '11px 14px' }}>
           <div style={{ fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>
-            The turning point{biggest.period ? ` · Q${biggest.period} ${biggest.clock || ''}` : ''}
+            The turning point{biggest.period ? ` · ${periodLabel(biggest.period)} ${biggest.clock || ''}` : ''}
           </div>
           <div style={{ fontFamily: theme.serif, fontSize: 15, color: theme.ink, lineHeight: 1.45, marginTop: 4 }}>
             {biggest.text} <span style={{ color: theme.muted, fontFamily: theme.sans, fontSize: 12 }}>(+{Math.round(biggest.delta)}% vs the {oppName})</span>

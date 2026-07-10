@@ -31,7 +31,7 @@ function rankNote(league, id) {
 // "Player to watch" spotlight above the tables: the passing leader and the tackles leader.
 function Spotlight({ qb, def }) {
   const Item = ({ p, role }) => !p?.name ? null : (
-    <div role="button" tabIndex={0} onClick={() => openPlayerCard(p.id)} onKeyDown={(e) => e.key === 'Enter' && openPlayerCard(p.id)}
+    <div role="button" tabIndex={0} onClick={() => openPlayerCard(p.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayerCard(p.id) } }}
       style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 240px', cursor: 'pointer' }}>
       <img src={headshot(p.id)} alt="" width={54} height={54} style={{ borderRadius: '50%', background: theme.wash, objectFit: 'cover', flexShrink: 0 }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
       <div style={{ minWidth: 0 }}>
@@ -59,7 +59,7 @@ function LeaderTable({ title, rows, league }) {
         const note = rankNote(league, r.id)
         return (
           <div key={r.id} className="hover-row" onClick={() => openPlayerCard(r.id)} role="button" tabIndex={0}
-            onKeyDown={(e) => e.key === 'Enter' && openPlayerCard(r.id)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayerCard(r.id) } }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 6px', borderTop: i ? `1px solid ${theme.rule}` : 'none', cursor: 'pointer' }}>
             <img src={headshot(r.id)} alt="" width={30} height={30} style={{ borderRadius: '50%', background: theme.wash, objectFit: 'cover', flexShrink: 0 }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
             <div style={{ minWidth: 0, flex: 1 }}>
@@ -112,7 +112,12 @@ export default function Leaders({ side }) {
   return (
     <div>
       <Spotlight
-        qb={offense ? top('passingLeader', 1)[0] || top('passingYards', 1)[0] : null}
+        qb={offense
+          ? top('passingLeader', 1)[0]
+            // The passingYards fallback's display is a bare number — give it its unit, same
+            // treatment as the tackles line below.
+            || (() => { const t = top('passingYards', 1)[0]; return t && { ...t, display: `${t.display} pass yds` } })()
+          : null}
         def={offense ? null : (() => { const t = top('totalTackles', 1)[0]; return t && { ...t, display: `${t.display} tackles` } })()}
       />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 32 }}>

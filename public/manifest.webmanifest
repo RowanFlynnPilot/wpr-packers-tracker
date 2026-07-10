@@ -9,6 +9,8 @@
   "background_color": "#ffffff",
   "theme_color": "#203731",
   "icons": [
-    { "src": "/wpr-packers-tracker/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "/wpr-packers-tracker/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/wpr-packers-tracker/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" },
+    { "src": "/wpr-packers-tracker/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
   ]
 }

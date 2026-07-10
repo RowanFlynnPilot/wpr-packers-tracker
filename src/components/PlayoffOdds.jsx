@@ -13,7 +13,8 @@ const SIMS = 4000
 // wild cards make the seven-team field. Ties break by a per-sim random jitter. This is a HOUSE
 // MODEL for editorial flavor, not Vegas — the label under the dials says so.
 function simulate(teams) {
-  let post = 0, division = 0, winSum = 0
+  let post = 0, division = 0
+  const myFinals = new Array(SIMS) // per-sim win totals → a real median, not a mean in disguise
   const n = teams.length
   const talent = teams.map((t) => (t.wins + t.ties / 2 + 2) / (t.wins + t.losses + t.ties + 4))
   const remaining = teams.map((t) => Math.max(0, GAMES_IN_SEASON - t.wins - t.losses - t.ties))
@@ -33,7 +34,7 @@ function simulate(teams) {
       const add = Math.min(r, Math.max(0, Math.round(mu + sd * normal())))
       finals[i] = teams[i].wins + teams[i].ties / 2 + add + Math.random() * 0.5 // jitter breaks ties randomly
     }
-    winSum += finals[meIdx]
+    myFinals[s] = finals[meIdx]
     const winners = new Set()
     divisions.forEach((div) => {
       let best = -1
@@ -44,10 +45,11 @@ function simulate(teams) {
     if (winners.has(meIdx)) { post++; division++ }
     else if (wc.includes(meIdx)) post++
   }
+  myFinals.sort((a, b) => a - b)
   return {
     postseason: Math.round((post / SIMS) * 100),
     division: Math.round((division / SIMS) * 100),
-    medianWins: Math.round(winSum / SIMS),
+    medianWins: Math.round(myFinals[SIMS >> 1]),
   }
 }
 

@@ -44,7 +44,7 @@ export default function Schedule() {
     const live = g.state === 'in'
     const openable = final || live
     const label = `${g.seasonType === 1 ? 'Pre ' : g.seasonType === 3 ? '' : 'Wk '}${g.seasonType === 3 ? (g.note || 'Playoff') : g.week ?? ''}`
-    const open = () => openable && setOpenGame({ id: g.id, label: fmtDay(g.date) })
+    const open = () => openable && setOpenGame({ id: g.id, label: `${g.home ? 'vs' : '@'} ${g.oppName} · ${fmtDay(g.date)}` })
     return (
       <div
         className={`game-card${live ? ' is-live' : ''}${openable ? ' is-open' : ''}`}
@@ -67,7 +67,7 @@ export default function Schedule() {
         {final || live ? (
           <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 10, marginLeft: 'auto' }}>
             {live && <span style={{ fontFamily: theme.sans, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: theme.goldText }}>LIVE · {g.detail}</span>}
-            <span style={{ fontFamily: theme.serif, fontSize: 19, color: g.won ? theme.green : final ? theme.red : theme.ink }}>
+            <span style={{ fontFamily: theme.serif, fontSize: 19, color: g.tied ? theme.muted : g.won ? theme.green : final ? theme.red : theme.ink }}>
               {final && <span style={{ fontWeight: 700 }}>{g.tied ? 'T' : g.won ? 'W' : 'L'} </span>}
               <span style={{ color: g.won ? theme.green : theme.ink }}>{g.meScore}–{g.oppScore}</span>
             </span>

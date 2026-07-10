@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { theme } from '../theme.js'
 import { headshot } from '../config.js'
-import { fetchRoster, fetchGamelog } from '../api.js'
+import { fetchRoster, fetchAthlete, fetchGamelog } from '../api.js'
 import { track } from '../analytics.js'
+import { useModalFocus } from '../useModalFocus.js'
 import { Loading } from './Status.jsx'
 
 // Tap-any-player modal. One host mounts in App; every roster surface (leader tables,
@@ -32,6 +33,8 @@ export default function PlayerCardHost() {
   const [id, setId] = useState(null)
   const [bio, setBio] = useState(null)
   const [log, setLog] = useState(null)
+  const dialogRef = useRef(null)
+  useModalFocus(dialogRef, !!id)
 
   useEffect(() => {
     listener = (pid) => { setId(pid); track('Player Card') }
@@ -43,7 +46,12 @@ export default function PlayerCardHost() {
     setLog(null)
     if (!id) return
     let alive = true
-    fetchRoster().then(({ byId }) => { if (alive) setBio(byId[id] || {}) }).catch(() => { if (alive) setId(null) })
+    // Roster first; a player who has left the club (the norm on offseason leader boards)
+    // resolves through the pooled athlete read instead of opening an empty "Player" card.
+    fetchRoster()
+      .then(({ byId }) => byId[id] || fetchAthlete(id))
+      .then((p) => { if (alive) setBio(p) })
+      .catch(() => { if (alive) setId(null) })
     fetchGamelog(id).then((g) => { if (alive) setLog(g) }).catch(() => { if (alive) setLog({ rows: [] }) })
     return () => { alive = false }
   }, [id])
@@ -61,7 +69,7 @@ export default function PlayerCardHost() {
   const rows = (log?.rows || []).slice(0, 5)
 
   return (
-    <div onClick={() => setId(null)} role="dialog" aria-modal="true" aria-label="Player card"
+    <div ref={dialogRef} onClick={() => setId(null)} role="dialog" aria-modal="true" aria-label="Player card"
       style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(32,55,49,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, borderTop: `4px solid ${theme.gold}`, maxWidth: 440, width: '100%', maxHeight: '86vh', overflowY: 'auto', padding: '20px 22px', fontFamily: theme.sans, position: 'relative' }}>
         <button onClick={() => setId(null)} aria-label="Close" style={{ position: 'absolute', top: 10, right: 12, cursor: 'pointer', background: 'transparent', border: 'none', fontSize: 22, color: theme.muted, lineHeight: 1 }}>×</button>

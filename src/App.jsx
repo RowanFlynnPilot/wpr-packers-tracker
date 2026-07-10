@@ -6,6 +6,7 @@ import { lastFinalGame } from './games.js'
 import { initAnalytics, track } from './analytics.js'
 import { setupAutoResize } from './autosize.js'
 import Masthead from './components/Masthead.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 import TabBar from './components/TabBar.jsx'
 import BookmarkButton from './components/BookmarkButton.jsx'
 import PackersBanner from './components/PackersBanner.jsx'
@@ -88,7 +89,9 @@ export default function App() {
           .then((s) => { setSchedules(s); flag('schedules', false) })
           .catch(() => flag('schedules', true))
       })
-      .catch(() => flag('standings', true))
+      // A standings failure also blocks the schedules fetch (it needs the season), so both
+      // flags flip — otherwise the race chart skeletons forever instead of showing its error.
+      .catch(() => { flag('standings', true); flag('schedules', true) })
     fetchSeasonGames()
       .then(({ games }) => setOpener(games.find((g) => g.seasonType === 2 && g.state === 'pre') || null))
       .catch(() => {})
@@ -114,6 +117,7 @@ export default function App() {
       <Masthead />
       <PackersBanner />
       <div style={{ maxWidth: 880, margin: '0 auto', padding: '0 20px' }}>
+        <ErrorBoundary>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '12px 0 0' }}>
           <BookmarkButton />
           <UpdatedStamp at={updatedAt} />
@@ -121,7 +125,7 @@ export default function App() {
         <TabBar tabs={TABS} active={tab} onChange={changeTab} />
 
         {tab === 'season' && (
-          <>
+          <div role="tabpanel" id="panel-season" aria-labelledby="tab-season">
             <GameHero />
             <Matchup />
             <Section kicker="Season pulse" title="Where things stand"><Pulse bundle={bundle} lastGame={lastGame} opener={opener} error={errors.standings} /></Section>
@@ -131,11 +135,11 @@ export default function App() {
             </Section>
             <PlayoffOdds />
             <RoadAhead />
-          </>
+          </div>
         )}
 
         {tab === 'schedule' && (
-          <>
+          <div role="tabpanel" id="panel-schedule" aria-labelledby="tab-schedule">
             <Section kicker="The season" title="The schedule"><Schedule /></Section>
             <NextAtLambeau />
             <InjuryReport />
@@ -143,20 +147,21 @@ export default function App() {
             <SponsorBand />
             {WATCH_PARTY && <Section kicker="Where to watch" title="Catch the games this week"><WhereToWatch venue={WATCH_PARTY} /></Section>}
             <ThisDay />
-          </>
+          </div>
         )}
 
         {tab === 'leaders' && (
-          <>
+          <div role="tabpanel" id="panel-leaders" aria-labelledby="tab-leaders">
             <Section kicker="Moving the ball" title="Offensive leaders" sponsor={SPONSORS.leaders} slot="leaders"><Leaders side="offense" /></Section>
             <Section kicker="Getting stops" title="Defensive leaders"><Leaders side="defense" /></Section>
             <TeamProfile />
-          </>
+          </div>
         )}
 
-        {tab === 'film' && <FilmRoom />}
+        {tab === 'film' && <div role="tabpanel" id="panel-film" aria-labelledby="tab-film"><FilmRoom /></div>}
 
         <PlayerCardHost />
+        </ErrorBoundary>
         <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '22px 0 44px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6 }}>
           Data via ESPN's public NFL feeds · refreshes live. Not affiliated with or endorsed by the NFL, the Green Bay Packers, or ESPN.<br />
           {SPONSOR_DISCLAIMER && <>{SPONSOR_DISCLAIMER}<br /></>}

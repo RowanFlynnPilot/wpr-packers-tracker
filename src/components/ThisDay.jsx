@@ -19,10 +19,17 @@ export default function ThisDay() {
   const [items, setItems] = useState(null)
   const [error, setError] = useState(false)
 
+  // NFL games only happen August–February; from March through July the ~27-season fan-out is
+  // guaranteed to come back empty, so skip the whole section (no requests, no heading flash).
+  const offMonth = new Date().getMonth() + 1
+  const darkSeason = offMonth >= 3 && offMonth <= 7
+
   // Arm the fetch when the section approaches the viewport. Attach the observer only after a beat,
   // so the still-loading (short) page doesn't report the section as visible at the very top.
   useEffect(() => {
-    if (armed || !ref.current) return
+    if (darkSeason || armed || !ref.current) return
+    // No IntersectionObserver (rare webviews/readers) → load immediately rather than never.
+    if (typeof IntersectionObserver === 'undefined') { setArmed(true); return }
     const el = ref.current
     let io
     const t = setTimeout(() => {
@@ -32,7 +39,7 @@ export default function ThisDay() {
       io.observe(el)
     }, 1200)
     return () => { clearTimeout(t); if (io) io.disconnect() }
-  }, [armed])
+  }, [armed, darkSeason])
 
   useEffect(() => {
     if (!armed) return
@@ -42,7 +49,7 @@ export default function ThisDay() {
       .catch(() => setError(true))
   }, [armed])
 
-  if (error) return null
+  if (darkSeason || error) return null
   if (!items) {
     return <Section kicker="From the vault" title="This day in Packers history"><div ref={ref}><Loading lines={2} /></div></Section>
   }

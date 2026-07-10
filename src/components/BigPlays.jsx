@@ -1,4 +1,5 @@
 import { theme } from '../theme.js'
+import { periodLabel } from '../games.js'
 
 // "The chunk plays" — the Packers' 20+ yard gains in a game, biggest first. Pure presentation
 // over games.js bigPlays().
@@ -18,7 +19,7 @@ export default function BigPlays({ plays }) {
               <div style={{ width: `${(p.yards / max) * 100}%`, height: '100%', borderRadius: 3, background: p.scoring ? theme.gold : theme.green }} />
             </div>
             <span style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted, lineHeight: 1.35 }}>
-              <span style={{ color: theme.goldText, fontWeight: 700, fontSize: 10 }}>Q{p.period} {p.clock}</span>{' '}
+              <span style={{ color: theme.goldText, fontWeight: 700, fontSize: 10 }}>{periodLabel(p.period)} {p.clock}</span>{' '}
               {p.text}{p.scoring ? ' · TD' : ''}
             </span>
           </div>

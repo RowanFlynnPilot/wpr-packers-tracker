@@ -1,6 +1,9 @@
 // Derivations over normalized games and summaries. Pure functions — no fetching.
 import { TEAM_ID, DIVISION, GAMES_IN_SEASON } from './config.js'
 
+// Period → display label: quarters read "Q1"–"Q4", the fifth period is overtime.
+export const periodLabel = (n) => (n == null ? '' : n <= 4 ? `Q${n}` : n === 5 ? 'OT' : `${n - 4}OT`)
+
 // NFL games-back convention: ties count half. effW/effL turn a W-L-T record into the pair the
 // games-back formula expects.
 const effW = (t) => t.w + t.t / 2

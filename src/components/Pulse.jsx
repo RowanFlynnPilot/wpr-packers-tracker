@@ -1,18 +1,24 @@
 import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
-import { TEAM_ID, FRANCHISE_BEST, SEASON, DIVISION_NAME, CONFERENCE } from '../config.js'
+import { TEAM_ID, FRANCHISE_BEST, SEASON, DIVISION_NAME, CONFERENCE, GAMES_IN_SEASON } from '../config.js'
 import { paceWins } from '../games.js'
 import { useIsNarrow } from '../useIsNarrow.js'
 import { Loading, ErrorState } from './Status.jsx'
 
 const DASH = '–'
+const ord = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]) }
 
 // Marquee numbers tick up on their first paint (once per session — refreshes and tab returns
 // render static). Every digit group in the string animates 0 → value with an ease-out curve;
+// an ordinal suffix is re-derived per frame so a tile passing "3rd" never flashes "1rd".
 // prefers-reduced-motion renders the final value immediately.
 let pulseAnimated = false
+const tick = (text, e) => text.replace(/(\d+)(st|nd|rd|th)?/g, (m, num, suf) => {
+  const v = Math.round(Number(num) * e)
+  return suf ? ord(v) : String(v)
+})
 function CountUp({ text, animate }) {
-  const [display, setDisplay] = useState(() => (animate ? text.replace(/\d+/g, '0') : text))
+  const [display, setDisplay] = useState(() => (animate ? tick(text, 0) : text))
   useEffect(() => {
     if (!animate) { setDisplay(text); return }
     const t0 = performance.now()
@@ -20,7 +26,7 @@ function CountUp({ text, animate }) {
     const step = (t) => {
       const p = Math.min(1, (t - t0) / 700)
       const e = 1 - Math.pow(1 - p, 3)
-      setDisplay(text.replace(/\d+/g, (m) => String(Math.round(Number(m) * e))))
+      setDisplay(tick(text, e))
       if (p < 1) raf = requestAnimationFrame(step)
     }
     raf = requestAnimationFrame(step)
@@ -28,7 +34,6 @@ function CountUp({ text, animate }) {
   }, [text, animate])
   return display
 }
-const ord = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]) }
 const effW = (t) => t.wins + t.ties / 2
 const effL = (t) => t.losses + t.ties / 2
 const gb = (leader, team) => ((effW(leader) - effW(team)) + (effL(team) - effL(leader))) / 2
@@ -137,6 +142,8 @@ export default function Pulse({ bundle, lastGame, opener, error }) {
         const scaleMax = Math.max(17, pace + 1, best.wins + 1)
         const pct = (v) => `${(v / scaleMax) * 100}%`
         const chasing = pace >= best.wins
+        // A losing pace reads matter-of-fact, not celebratory — green bold is earned at .500+.
+        const winning = pace >= Math.ceil(GAMES_IN_SEASON / 2)
         return (
           <div style={{ marginTop: 18, maxWidth: 620 }}>
             <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.muted, marginBottom: 7 }}>
@@ -147,7 +154,7 @@ export default function Pulse({ bundle, lastGame, opener, error }) {
               <div style={{ position: 'absolute', left: pct(best.wins), top: -4, width: 2, height: 18, background: theme.ink }} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: theme.sans, fontSize: 11.5, marginTop: 5 }}>
-              <span style={{ color: theme.green, fontWeight: 700 }}>On pace for {pace} wins{chasing ? ' — franchise-record territory' : ''}</span>
+              <span style={{ color: winning ? theme.green : theme.muted, fontWeight: winning ? 700 : 400 }}>On pace for {pace} wins{chasing ? ' — franchise-record territory' : ''}</span>
               <span style={{ color: theme.muted }}>Best: {best.wins} ({best.year})</span>
             </div>
           </div>

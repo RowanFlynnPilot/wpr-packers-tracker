@@ -34,10 +34,17 @@ export async function fetchKickoffForecast(gameDateISO) {
   const { hourly } = await res.json()
   const i = hourly.time.indexOf(hour)
   if (i === -1) return null
+  const temp = hourly.temperature_2m[i]
+  const precip = hourly.precipitation_probability[i]
+  const wind = hourly.wind_speed_10m[i]
+  const code = hourly.weather_code[i]
+  // Hours at the edge of the 16-day window can come back null — no forecast beats a confident
+  // "0°F · % precip".
+  if (temp == null || precip == null || wind == null || code == null) return null
   return {
-    tempF: Math.round(hourly.temperature_2m[i]),
-    precipPct: hourly.precipitation_probability[i],
-    windMph: Math.round(hourly.wind_speed_10m[i]),
-    label: label(hourly.weather_code[i]),
+    tempF: Math.round(temp),
+    precipPct: precip,
+    windMph: Math.round(wind),
+    label: label(code),
   }
 }
