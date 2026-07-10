@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { theme } from '../theme.js'
 import { WPR_NEWS } from '../config.js'
 import { fetchPackersCoverage } from '../wpr.js'
-import { track } from '../analytics.js'
+import { trackBeacon } from '../analytics.js'
 import { Loading } from './Status.jsx'
 import { useIsNarrow } from '../useIsNarrow.js'
 import Section from './Section.jsx'
@@ -21,6 +21,8 @@ export default function Coverage() {
 
   useEffect(() => {
     if (armed || !ref.current) return
+    // No IntersectionObserver (rare webviews/readers) → load immediately rather than never.
+    if (typeof IntersectionObserver === 'undefined') { setArmed(true); return }
     const el = ref.current
     let io
     const t = setTimeout(() => {
@@ -60,7 +62,7 @@ export default function Coverage() {
             href={p.link}
             target="_top"
             className="card-hover"
-            onClick={() => track('Coverage Click', { title: p.title })}
+            onClick={() => trackBeacon('Coverage Click', { title: p.title })}
             style={{ display: 'flex', flexDirection: 'column', textDecoration: 'none', border: `1px solid ${theme.rule}`, borderRadius: 8, overflow: 'hidden', background: '#fff' }}
           >
             {p.image && (
@@ -79,7 +81,7 @@ export default function Coverage() {
       </div>
       {WPR_NEWS?.archive && (
         <div style={{ marginTop: 16 }}>
-          <a href={WPR_NEWS.archive} target="_top" className="link-hover" onClick={() => track('Coverage Click', { title: 'archive' })}
+          <a href={WPR_NEWS.archive} target="_top" className="link-hover" onClick={() => trackBeacon('Coverage Click', { title: 'archive' })}
             style={{ fontFamily: theme.sans, fontSize: 12, fontWeight: 700, color: theme.green, textDecoration: 'none' }}>
             More Packers coverage at Wausau Pilot &amp; Review {'→'}
           </a>

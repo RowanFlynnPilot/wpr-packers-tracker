@@ -19,12 +19,26 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: write # keep-alive job below
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
+  # GitHub auto-disables `schedule` triggers on public repos after 60 days without repo
+  # activity — which would silently kill the twice-daily digest refresh mid-offseason.
+  # Re-enabling the workflow via the API resets that timer, so each scheduled run keeps
+  # the schedule alive indefinitely.
+  keepalive:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reset GitHub's 60-day schedule auto-disable timer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT repos/${{ github.repository }}/actions/workflows/deploy.yml/enable
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -35,8 +49,23 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      # The service worker's cache name carries the deploy SHA, so each release activates a
+      # fresh cache and the activate handler evicts the old one (otherwise hashed assets
+      # accumulate in one cache forever).
+      - name: Stamp the service-worker cache name with this deploy
+        run: sed -i "s/__BUILD__/${GITHUB_SHA::12}/" dist/sw.js
       # Render the digest widget to dist/digest.png for the email newsletter (see header note).
+      - name: Cache Playwright Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --with-deps chromium
+      # The render gets three tries; if ESPN is having a moment, the deploy ships the
+      # currently-published digest.png rather than blocking the whole release (and the
+      # twice-daily schedule refreshes the image on its next tick). Never swap this for
+      # continue-on-error: that would publish a dist with NO digest.png and 404 the
+      # newsletter image.
       - name: Render digest email image
         run: |
           npm run preview -- --port 4173 --host 127.0.0.1 &
@@ -44,7 +73,13 @@ jobs:
             curl -sf http://127.0.0.1:4173/wpr-packers-tracker/mini-digest.html > /dev/null && break
             sleep 1
           done
-          node scripts/render-digest.mjs http://127.0.0.1:4173/wpr-packers-tracker/mini-digest.html dist/digest.png
+          render() { node scripts/render-digest.mjs http://127.0.0.1:4173/wpr-packers-tracker/mini-digest.html dist/digest.png; }
+          render || { echo "Render failed — retrying in 10s"; sleep 10; render; } \
+                 || { echo "Render failed — retrying in 30s"; sleep 30; render; } \
+                 || {
+            echo "::warning::Digest render failed 3x — shipping the last published digest.png instead"
+            curl -sf -o dist/digest.png https://rowanflynnpilot.github.io/wpr-packers-tracker/digest.png
+          }
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

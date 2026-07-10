@@ -235,9 +235,14 @@ export function fetchLiveSummary(eventId) {
   return getJSON(`${SITE}/summary?event=${eventId}`)
 }
 
-// The pieces of a summary the LIVE hero/mini need, distilled: the Packers' win probability,
-// the current situation (down & distance), and the last few plays.
+// The pieces of a summary the LIVE hero/mini need, distilled: the score, the Packers' win
+// probability, the current situation (down & distance), and the last few plays. The score
+// comes from here too so the live surfaces tick on the summary's fast cadence — the schedule
+// feed behind fetchFeaturedGame sits in a 60s memo and would lag the win-prob bar beside it.
 export function liveExtras(summary, packersHome) {
+  const comps = summary.header?.competitions?.[0]?.competitors || []
+  const homeC = comps.find((c) => c.homeAway === 'home')
+  const awayC = comps.find((c) => c.homeAway === 'away')
   const wp = summary.winprobability || []
   const lastWp = wp[wp.length - 1]
   const homePct = lastWp ? lastWp.homeWinPercentage * 100 : null
@@ -246,6 +251,8 @@ export function liveExtras(summary, packersHome) {
     .flatMap((d) => d.plays || [])
   const last = allPlays[allPlays.length - 1]
   return {
+    meScore: scoreOf((packersHome ? homeC : awayC)?.score),
+    oppScore: scoreOf((packersHome ? awayC : homeC)?.score),
     mePct: homePct == null ? null : Math.round(packersHome ? homePct : 100 - homePct),
     situation: last?.end?.downDistanceText || last?.end?.possessionText || null,
     plays: allPlays.slice(-3).reverse().map((p) => ({
@@ -289,6 +296,28 @@ export function fetchRoster() {
 const athleteIdFromRef = (ref) => {
   const m = /athletes\/(\d+)/.exec(ref || '')
   return m ? Number(m[1]) : null
+}
+
+// One athlete's bio from the core feed — the player-card fallback for players no longer on
+// the roster (the offseason leader boards are full of them). Same shape as a roster entry;
+// fields the core feed doesn't carry stay blank and the card omits them.
+export function fetchAthlete(athleteId) {
+  return cached(`athlete:${athleteId}`, 600000, async () => {
+    const season = await fetchStatsSeason()
+    const a = await getJSON(`${CORE}/seasons/${season}/athletes/${athleteId}`)
+    return {
+      id: athleteId,
+      name: a.displayName,
+      jersey: a.jersey || '',
+      pos: a.position?.abbreviation || '',
+      age: a.age || null,
+      exp: a.experience?.years ?? null,
+      college: '',
+      height: a.displayHeight || '',
+      weight: a.displayWeight || '',
+      injuries: [],
+    }
+  })
 }
 
 // Team statistical leaders for the stats season → { category: [{ id, value, display }] }.

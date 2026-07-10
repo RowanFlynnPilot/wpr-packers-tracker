@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID, DIVISION, DIVISION_NAME, SPONSORS, SEASON } from '../config.js'
 import { fetchStandingsBundle } from '../api.js'
-import { track } from '../analytics.js'
+import { trackBeacon } from '../analytics.js'
 import { destination } from '../embed.js'
 import TeamLogo from './TeamLogo.jsx'
 
@@ -46,7 +46,7 @@ export default function MiniStandings() {
       <span style={{ fontSize: 11, fontWeight: 700, color: theme.green, whiteSpace: 'nowrap' }}>Full tracker {'→'}</span>
     </div>
   )
-  const linkProps = { href: destination(), target: '_top', onClick: () => track('Mini Click', { widget: 'standings' }) }
+  const linkProps = { href: destination(), target: '_top', onClick: () => trackBeacon('Mini Click', { widget: 'standings' }) }
 
   if (!bundle) {
     return (

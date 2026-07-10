@@ -166,6 +166,25 @@ Demo link: `https://rowanflynnpilot.github.io/wpr-packers-tracker/?demo`
 - `docs/SPONSOR_PITCH.md` — the email-able one-pager.
 - `docs/media/` — placement screenshots (real page, live data, demo mode) used by both.
 
+## Launch checklist (before Week 1)
+
+Code-side items ship with the repo; these need a human:
+
+1. **Plausible**: add `rowanflynnpilot.github.io` as a site in the WPR Plausible account —
+   until then every event is silently dropped and there is no reach number for sales.
+   Then add the goals: `Sponsor Click`, `Mini Click`, `Tab`, `Share`, `Box Score`,
+   `Player Card`, `Coverage Click`, `Bookmark`, `Widget Error`.
+2. **Custom domain (recommended)**: point `packers.wausaupilotandreview.com` at Pages
+   before the sales push — the deck, pitch, OG tags, and Plausible domain all bake the
+   URL in, so moving later is costly. The github.io URL redirects automatically once set.
+3. **Keep-alive is automatic** (the deploy workflow resets GitHub's 60-day schedule
+   auto-disable timer on every scheduled run) — but if the workflow is ever paused
+   manually, remember the twice-daily digest refresh dies with it.
+4. **Team-logo clearance**: confirm the WPR/league posture in writing before the title
+   slot sells (`USE_TEAM_LOGO = false` is the colors-only fallback).
+5. **Embed + newsletter**: paste the iframe snippets below into the WP page and the
+   `digest.png` image block into the newsletter template.
+
 ## Trademark note
 
 The Packers logo and player headshots are referenced from ESPN's public CDN, not redrawn.

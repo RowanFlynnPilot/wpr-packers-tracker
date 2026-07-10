@@ -4,7 +4,7 @@ import { TEAM_ID, TEAM_ABBR, TEAM_ACCENT, SPONSORS, headshot } from '../config.j
 import { fetchFeaturedGame, fetchLiveSummary, fetchGameSummary, liveExtras, fetchStandingsBundle } from '../api.js'
 import { teamGameLeaders } from '../games.js'
 import { fetchKickoffForecast } from '../weather.js'
-import { track } from '../analytics.js'
+import { trackBeacon } from '../analytics.js'
 import { destination } from '../embed.js'
 import TeamLogo from './TeamLogo.jsx'
 
@@ -60,10 +60,14 @@ export default function MiniGame() {
     return () => clearInterval(id)
   }, [])
 
+  // While live, the summary's score is fresher than the schedule feed's (see liveExtras).
+  const meScore = live && extras?.meScore != null ? extras.meScore : game?.meScore
+  const oppScore = live && extras?.oppScore != null ? extras.oppScore : game?.oppScore
+
   // Pop the score once whenever it changes during play (never on first paint).
   useEffect(() => {
     if (!game || state === 'pre') { prevScore.current = null; return }
-    const key = `${game.meScore}-${game.oppScore}`
+    const key = `${meScore}-${oppScore}`
     if (prevScore.current != null && prevScore.current !== key) {
       setPop(true)
       const t = setTimeout(() => setPop(false), 600)
@@ -71,7 +75,7 @@ export default function MiniGame() {
       return () => clearTimeout(t)
     }
     prevScore.current = key
-  }, [game, state])
+  }, [game, state, meScore, oppScore])
 
   // Upcoming-game extras (records + home-game forecast) and, after a final, the Packers' top
   // performer from the summary leaders. All fail-soft.
@@ -90,9 +94,12 @@ export default function MiniGame() {
           me: fmt(b.league.find((r) => r.id === TEAM_ID)),
           opp: fmt(b.league.find((r) => r.id === game.oppId)),
           stale,
+          season: b.season,
         })
       }).catch(() => {})
-      if (game.home) fetchKickoffForecast(game.date).then((f) => { if (alive) setForecast(f) }).catch(() => {})
+      // Forecast only when the kickoff time is real — a flexed game's placeholder hour would
+      // get a confident forecast while the kicker beside it says "TBD".
+      if (game.home && game.timeValid) fetchKickoffForecast(game.date).then((f) => { if (alive) setForecast(f) }).catch(() => {})
     }
     if (state === 'post') {
       fetchGameSummary(gameId).then((s) => {
@@ -144,7 +151,7 @@ export default function MiniGame() {
   const linkProps = {
     href: destination(),
     target: '_top',
-    onClick: () => track('Mini Click', { widget: 'scoreboard', state: state || 'none' }),
+    onClick: () => trackBeacon('Mini Click', { widget: 'scoreboard', state: state || 'none' }),
   }
 
   // No data (yet, or at all): a branded doorway rather than an empty box.
@@ -189,7 +196,7 @@ export default function MiniGame() {
     <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 3, width: 92 }}>
       <TeamLogo id={id} size={30} />
       <span style={{ fontFamily: theme.serif, fontSize: 13, color: bold ? theme.green : theme.ink, fontWeight: bold ? 700 : 400, lineHeight: 1.1 }}>{name}</span>
-      {rec && <span style={{ fontSize: 9.5, color: theme.muted }}>{rec}{records?.stale ? ' in ’25' : ''}</span>}
+      {rec && <span style={{ fontSize: 9.5, color: theme.muted }}>{rec}{records?.stale ? ` in ’${String(records.season).slice(-2)}` : ''}</span>}
     </span>
   )
 
@@ -216,9 +223,9 @@ export default function MiniGame() {
           <TeamCol id={TEAM_ID} name="Packers" rec={records?.me} bold={won} />
           {live || final ? (
             <span className={pop ? 'score-pop' : undefined} style={{ display: 'inline-block', fontFamily: theme.serif, fontSize: 26, color: theme.ink, whiteSpace: 'nowrap' }}>
-              <span style={{ fontWeight: won ? 700 : 400, color: won ? theme.green : theme.ink }}>{game.meScore}</span>
+              <span style={{ fontWeight: won ? 700 : 400, color: won ? theme.green : theme.ink }}>{meScore}</span>
               <span style={{ fontSize: 16, color: theme.muted }}> – </span>
-              {game.oppScore}
+              {oppScore}
             </span>
           ) : (
             <span style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.muted }}>{game.home ? 'vs' : 'at'}</span>

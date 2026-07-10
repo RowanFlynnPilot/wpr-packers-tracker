@@ -1,6 +1,8 @@
 // Service worker for the Packers tracker PWA. Stale-while-revalidate for our own app assets
 // (instant repeat loads + offline shell). ESPN API requests are NOT cached — they must stay live.
-const CACHE = 'packers-tracker-v1'
+// __BUILD__ is stamped with the deploy SHA in CI, so each release activates under a new cache
+// name and the activate handler below evicts the previous release's assets.
+const CACHE = 'packers-tracker-__BUILD__'
 
 self.addEventListener('install', () => self.skipWaiting())
 

@@ -3,7 +3,7 @@ import { theme } from '../theme.js'
 import { TEAM_ID, DIVISION, DIVISION_NAME, SPONSORS, SEASON, headshot } from '../config.js'
 import { fetchSeasonGames, fetchStandingsBundle, fetchGameSummary } from '../api.js'
 import { teamGameLeaders } from '../games.js'
-import { track } from '../analytics.js'
+import { trackBeacon } from '../analytics.js'
 import { destination } from '../embed.js'
 import TeamLogo from './TeamLogo.jsx'
 
@@ -79,7 +79,9 @@ export default function MiniDigest() {
   const heading = (text) => (
     <div style={{ fontSize: 9, letterSpacing: '0.14em', fontWeight: 700, color: theme.goldText, textTransform: 'uppercase', marginBottom: 6 }}>{text}</div>
   )
-  const footer = (
+  // In image mode with no title sponsor there is nothing to show — skip the footer entirely
+  // rather than baking a bare rule over a blank band into every newsletter send.
+  const footer = (imageMode && !SPONSORS.header) ? null : (
     <div style={{ borderTop: `1px solid ${theme.rule}`, margin: '0 12px', padding: '7px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
       {SPONSORS.header ? (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
@@ -92,7 +94,7 @@ export default function MiniDigest() {
       {!imageMode && <span style={{ fontSize: 11, fontWeight: 700, color: theme.green, whiteSpace: 'nowrap' }}>Full tracker {'→'}</span>}
     </div>
   )
-  const linkProps = { href: destination(), target: '_top', onClick: () => track('Mini Click', { widget: 'digest' }) }
+  const linkProps = { href: destination(), target: '_top', onClick: () => trackBeacon('Mini Click', { widget: 'digest' }) }
   const section = { padding: '11px 14px', borderTop: `1px solid ${theme.rule}` }
 
   // Nothing yet: a branded doorway rather than an empty box.

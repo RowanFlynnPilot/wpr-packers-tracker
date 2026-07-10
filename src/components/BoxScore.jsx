@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID } from '../config.js'
 import { fetchGameSummary } from '../api.js'
 import { track } from '../analytics.js'
+import { useModalFocus } from '../useModalFocus.js'
 import { Loading } from './Status.jsx'
 
 // Box-score modal for a completed (or live) game, from one cached summary read: the quarter
@@ -28,7 +29,7 @@ function Linescore({ summary }) {
   const comps = summary?.header?.competitions?.[0]?.competitors || []
   const homeC = comps.find((c) => c.homeAway === 'home')
   const awayC = comps.find((c) => c.homeAway === 'away')
-  if (!homeC?.linescores?.length) return null
+  if (!homeC?.linescores?.length || !awayC?.linescores?.length) return null
   const periods = Math.max(homeC.linescores.length, awayC.linescores.length)
   const cell = { padding: '3px 8px', fontFamily: theme.sans, fontSize: 12.5, textAlign: 'center', color: theme.ink }
   const head = { ...cell, fontSize: 10, color: theme.muted, fontWeight: 700 }
@@ -99,35 +100,45 @@ function PlayerGroup({ group }) {
   return (
     <div style={{ marginTop: 12 }}>
       <div style={{ ...label, marginBottom: 4 }}>{group.text || group.name}</div>
-      <table>
-        <thead>
-          <tr>
-            <th style={{ ...th, textAlign: 'left' }}>Player</th>
-            {labels.slice(0, keep).map((l) => <th key={l} style={th}>{l}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {athletes.map((a) => (
-            <tr key={a.athlete?.id || a.athlete?.displayName}>
-              <td style={{ ...td, textAlign: 'left', fontFamily: theme.serif, fontSize: 13 }}>{a.athlete?.shortName || a.athlete?.displayName}</td>
-              {a.stats.slice(0, keep).map((v, i) => <td key={i} style={td}>{v}</td>)}
+      {/* The table scrolls inside its own wrapper on narrow phones — otherwise the whole
+          modal pans sideways and drags the linescore with it. */}
+      <div style={{ overflowX: 'auto' }}>
+        <table>
+          <thead>
+            <tr>
+              <th style={{ ...th, textAlign: 'left' }}>Player</th>
+              {labels.slice(0, keep).map((l) => <th key={l} style={th}>{l}</th>)}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {athletes.map((a) => (
+              <tr key={a.athlete?.id || a.athlete?.displayName}>
+                <td style={{ ...td, textAlign: 'left', fontFamily: theme.serif, fontSize: 13 }}>{a.athlete?.shortName || a.athlete?.displayName}</td>
+                {a.stats.slice(0, keep).map((v, i) => <td key={i} style={td}>{v}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
 
 export default function BoxScore({ eventId, dateLabel, onClose }) {
   const [summary, setSummary] = useState(null)
+  const dialogRef = useRef(null)
+  useModalFocus(dialogRef)
 
+  // Keyed on eventId ONLY: `onClose` is an inline closure in the caller, so including it would
+  // re-run this effect (and re-fire the Box Score analytics event) on every refresh tick of the
+  // page behind the modal — inflating the engagement numbers sponsors are shown.
   useEffect(() => {
     track('Box Score')
     let alive = true
     fetchGameSummary(eventId).then((s) => { if (alive) setSummary(s) }).catch(() => { if (alive) onClose() })
     return () => { alive = false }
-  }, [eventId, onClose])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- eventId pins the fetch + the one tracking event
+  }, [eventId])
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose() }
@@ -139,7 +150,7 @@ export default function BoxScore({ eventId, dateLabel, onClose }) {
   const groups = (packersSide?.statistics || []).filter((g) => ['passing', 'rushing', 'receiving'].includes(g.name))
 
   return (
-    <div onClick={onClose} role="dialog" aria-modal="true" aria-label="Box score"
+    <div ref={dialogRef} onClick={onClose} role="dialog" aria-modal="true" aria-label="Box score"
       style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(32,55,49,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, borderTop: `4px solid ${theme.gold}`, maxWidth: 480, width: '100%', maxHeight: '86vh', overflowY: 'auto', padding: '20px 22px', fontFamily: theme.sans, position: 'relative' }}>
         <button onClick={onClose} aria-label="Close" style={{ position: 'absolute', top: 10, right: 12, cursor: 'pointer', background: 'transparent', border: 'none', fontSize: 22, color: theme.muted, lineHeight: 1 }}>×</button>
