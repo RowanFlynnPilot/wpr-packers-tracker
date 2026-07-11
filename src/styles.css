@@ -61,8 +61,10 @@ img { border: 0; }
   .score-pop { animation: none; }
 }
 
-/* Schedule game rows */
-.game-card { border: 1px solid #e3ddd0; border-radius: 6px; padding: 12px; background: #fff; }
+/* Schedule game rows. Every row gets a quiet hover (the list feels alive); rows that open a
+   box score (.is-open) get the stronger lift + gold border below. */
+.game-card { border: 1px solid #e3ddd0; border-radius: 6px; padding: 12px; background: #fff; transition: border-color 0.15s ease, background 0.15s ease; }
+.game-card:hover { border-color: #ffb612; background: #faf8f3; }
 .game-card.is-live { background: #fff8e6; }
 .game-card.is-open {
   cursor: pointer;

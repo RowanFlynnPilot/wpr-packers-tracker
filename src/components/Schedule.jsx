@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
+import { DIVISION, TEAM_ID, TICKETS_OVERRIDE_URL } from '../config.js'
 import { fetchSeasonGames } from '../api.js'
 import { scheduleNotes } from '../games.js'
+import { track } from '../analytics.js'
 import { Loading, ErrorState } from './Status.jsx'
 import TeamLogo from './TeamLogo.jsx'
 import BoxScore from './BoxScore.jsx'
-import CalendarButton from './CalendarButton.jsx'
 
 const fmtDay = (iso) => new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 const fmtTime = (iso) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
@@ -33,11 +34,14 @@ export default function Schedule() {
 
   const groups = [
     { key: 1, label: 'Preseason', games: data.games.filter((g) => g.seasonType === 1) },
-    { key: 2, label: null, games: data.games.filter((g) => g.seasonType === 2) },
+    { key: 2, label: 'Regular season', games: data.games.filter((g) => g.seasonType === 2) },
     { key: 3, label: 'Playoffs', games: data.games.filter((g) => g.seasonType === 3) },
   ].filter((grp) => grp.games.length)
 
   const notes = scheduleNotes(data.games.filter((g) => g.seasonType === 2))
+  // The next kickoff on the calendar gets a NEXT pill so a reader scanning the list can find
+  // their place without reading dates.
+  const nextId = data.games.find((g) => g.state === 'pre')?.id ?? null
 
   const Row = ({ g }) => {
     const final = g.state === 'post'
@@ -45,6 +49,8 @@ export default function Schedule() {
     const openable = final || live
     const label = `${g.seasonType === 1 ? 'Pre ' : g.seasonType === 3 ? '' : 'Wk '}${g.seasonType === 3 ? (g.note || 'Playoff') : g.week ?? ''}`
     const open = () => openable && setOpenGame({ id: g.id, label: `${g.home ? 'vs' : '@'} ${g.oppName} · ${fmtDay(g.date)}` })
+    const rival = g.seasonType !== 1 && g.oppId !== TEAM_ID && DIVISION[g.oppId]
+    const ticketHref = g.state === 'pre' && g.home && (TICKETS_OVERRIDE_URL || g.tickets?.href)
     return (
       <div
         className={`game-card${live ? ' is-live' : ''}${openable ? ' is-open' : ''}`}
@@ -52,17 +58,26 @@ export default function Schedule() {
         onKeyDown={(e) => { if (openable && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); open() } }}
         role={openable ? 'button' : undefined}
         tabIndex={openable ? 0 : undefined}
-        style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}
+        // Home dates carry a green left edge — the Lambeau rhythm of the season at a glance.
+        style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', borderLeft: g.home ? `3px solid ${theme.green}` : undefined }}
       >
         <span style={{ fontFamily: theme.sans, fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: live ? theme.goldText : theme.muted, width: 74, flexShrink: 0 }}>
           {label}
           <span style={{ display: 'block', fontWeight: 400, marginTop: 2 }}>{fmtDay(g.date)}</span>
+          {g.id === nextId && (
+            <span style={{ display: 'inline-block', background: theme.gold, color: theme.green, borderRadius: 8, padding: '1px 7px', fontSize: 8.5, letterSpacing: '0.1em', marginTop: 3 }}>Next</span>
+          )}
         </span>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flex: '1 1 150px', minWidth: 0 }}>
           <TeamLogo id={g.oppId} size={22} />
           <span style={{ fontFamily: theme.serif, fontSize: 17, color: theme.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {g.home ? 'vs' : '@'} {g.oppName}
           </span>
+          {rival && (
+            <span style={{ fontFamily: theme.sans, fontSize: 8.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: theme.green, border: `1px solid ${theme.green}`, borderRadius: 3, padding: '1px 5px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              NFC North
+            </span>
+          )}
         </span>
         {final || live ? (
           <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 10, marginLeft: 'auto' }}>
@@ -77,6 +92,13 @@ export default function Schedule() {
           <span style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted, marginLeft: 'auto', textAlign: 'right' }}>
             {g.timeValid ? fmtTime(g.date) : 'Time TBD'}{g.tv ? ` · ${g.tv}` : ''}
             <span style={{ display: 'block', fontSize: 11, marginTop: 1 }}>{g.home ? 'Lambeau Field' : g.venue}</span>
+            {ticketHref && (
+              <a href={ticketHref} target="_blank" rel="sponsored noopener noreferrer" className="link-hover"
+                onClick={(e) => { e.stopPropagation(); track('Tickets Click', { week: g.week ?? 0 }) }}
+                style={{ display: 'inline-block', marginTop: 3, fontFamily: theme.sans, fontSize: 11, fontWeight: 700, color: theme.green, textDecoration: 'none' }}>
+                Tickets{g.tickets?.price ? ` from $${Math.round(g.tickets.price)}` : ''} →
+              </a>
+            )}
           </span>
         )}
       </div>
@@ -92,12 +114,11 @@ export default function Schedule() {
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
-        <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 14.5, color: theme.muted }}>
+      {notes.length > 0 && (
+        <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 14.5, color: theme.muted, marginBottom: 12 }}>
           {notes.join(' · ')}
         </div>
-        <CalendarButton />
-      </div>
+      )}
       {groups.map((grp) => (
         <div key={grp.key} style={{ marginBottom: 18 }}>
           {grp.label && (

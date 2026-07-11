@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
+import { TICKETS_OVERRIDE_URL } from '../config.js'
 import { fetchSeasonGames } from '../api.js'
 import { fetchKickoffForecast } from '../weather.js'
+import { track } from '../analytics.js'
 import Section from './Section.jsx'
 import TeamLogo from './TeamLogo.jsx'
 
@@ -47,6 +49,13 @@ export default function NextAtLambeau() {
             <div style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted, marginTop: 5 }}>
               Forecast: {forecast.tempF}°F, {forecast.label} · {forecast.precipPct}% precip · {forecast.windMph} mph wind
             </div>
+          )}
+          {(TICKETS_OVERRIDE_URL || game.tickets?.href) && (
+            <a href={TICKETS_OVERRIDE_URL || game.tickets.href} target="_blank" rel="sponsored noopener noreferrer" className="link-hover"
+              onClick={() => track('Tickets Click', { week: game.week ?? 0 })}
+              style={{ display: 'inline-block', marginTop: 7, fontFamily: theme.sans, fontSize: 12, fontWeight: 700, color: theme.green, textDecoration: 'none' }}>
+              Tickets{game.tickets?.price ? ` from $${Math.round(game.tickets.price)}` : ''} →
+            </a>
           )}
         </div>
       </div>

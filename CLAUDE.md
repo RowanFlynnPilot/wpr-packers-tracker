@@ -202,8 +202,10 @@ readers into WPR's coverage.
 (Shipped at v1: featured-game hero w/ countdown + live situation + win probability +
 linescore + top performers, matchup comparison, phase-aware pulse w/ kickoff countdown +
 pace bar, standings w/ form strips + vs-North, week-by-week race chart, playoff-odds sim,
-strength of schedule, full-season schedule w/ box scores + .ics export, next-at-Lambeau w/
-forecast, injury report, WPR newsroom feed, this-day-in-history, offense/defense leaders
+strength of schedule, full-season schedule w/ box scores + home-game ticket links (feed's
+Vivid Seats deep links; `TICKETS_OVERRIDE_URL` swaps in a WPR affiliate destination),
+next-at-Lambeau w/ forecast, injury report, WPR newsroom feed, this-day-in-history,
+offense/defense leaders
 w/ NFL rank chips, team profile, film room (win probability + scoring plays + chunk
 plays), player cards, three minis + the email digest PNG.)
 

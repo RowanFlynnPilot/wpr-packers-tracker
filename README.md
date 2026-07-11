@@ -173,7 +173,7 @@ Code-side items ship with the repo; these need a human:
 1. **Plausible**: add `rowanflynnpilot.github.io` as a site in the WPR Plausible account —
    until then every event is silently dropped and there is no reach number for sales.
    Then add the goals: `Sponsor Click`, `Mini Click`, `Tab`, `Share`, `Box Score`,
-   `Player Card`, `Coverage Click`, `Bookmark`, `Widget Error`.
+   `Player Card`, `Coverage Click`, `Bookmark`, `Widget Error`, `Tickets Click`.
 2. **Custom domain (recommended)**: point `packers.wausaupilotandreview.com` at Pages
    before the sales push — the deck, pitch, OG tags, and Plausible domain all bake the
    URL in, so moving later is costly. The github.io URL redirects automatically once set.

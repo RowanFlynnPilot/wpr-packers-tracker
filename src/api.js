@@ -65,6 +65,7 @@ export function normalizeEvent(e, teamId = TEAM_ID) {
   const st = comp.status?.type || {}
   const meScore = scoreOf(meC.score)
   const oppScore = scoreOf(oppC.score)
+  const tk = comp.tickets?.[0]
   return {
     id: e.id,
     date: e.date,
@@ -86,6 +87,9 @@ export function normalizeEvent(e, teamId = TEAM_ID) {
     city: comp.venue?.address?.city || '',
     tv: comp.broadcasts?.[0]?.media?.shortName || '',
     note: comp.notes?.[0]?.headline || '', // e.g. "NFC Divisional Round"
+    // Per-game resale link + live floor price (Vivid Seats via ESPN) — the schedule's
+    // home-game "Tickets from $X" affordance. Absent once a game kicks off.
+    tickets: tk?.links?.[0]?.href ? { href: tk.links[0].href, price: tk.startingPrice ?? null } : null,
   }
 }
 

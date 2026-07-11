@@ -92,6 +92,14 @@ export const SPONSORS = {
 // Where to send sponsorship inquiries (shown on empty slots — the upsell).
 export const SPONSOR_INQUIRY = 'sales@wausaupilotandreview.com'
 
+// Home-game ticket links. The ESPN schedule feed carries a per-game resale deep link (Vivid
+// Seats — ESPN's ticketing partner) with a live "from $X" price; that's the one source used.
+// The Packers don't run their own affiliate program, so if WPR joins a marketplace program
+// (Vivid Seats / SeatGeek / StubHub via Impact/CJ), set TICKETS_OVERRIDE_URL to the affiliate
+// destination and every ticket link points there instead. Clicks fire a `Tickets Click` event
+// either way, so the click-through volume is provable before any deal is signed.
+export const TICKETS_OVERRIDE_URL = null
+
 // "Where to watch" — a sponsorable listing for a local bar/restaurant showing the games.
 // Hidden until a venue is sold: WATCH_PARTY is null, so the whole section doesn't render.
 // To activate, set WATCH_PARTY to an object with this shape (the venue provides the photo):
