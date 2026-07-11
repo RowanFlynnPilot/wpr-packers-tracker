@@ -140,7 +140,7 @@ async function main() {
     ["Season pulse + standings", "edit"],
     ["Division race chart", "open"],
     ["Schedule + box scores", "edit"],
-    ["Where to watch · venue listing", "open"],
+    ["Game-day guide · venue listings", "open"],
     ["Leaders + film room", "open"],
   ];
   s.addShape("rect", { x: 0.62, y: 1.42, w: 2.95, h: 3.72, fill: { color: WASH }, line: { color: RULE, width: 1 } });
@@ -161,11 +161,11 @@ async function main() {
   ], { x: 0.62, y: 5.24, w: 3.2, h: 0.22, fontFace: SANS, margin: 0 });
   // Slot list, right.
   const slots = [
-    ["Title sponsorship — the flagship", "Banner lockup + hero credit + email digest logo + calendar credit", "OPEN"],
+    ["Title sponsorship — the flagship", "Banner lockup + hero credit + email digest logo", "OPEN"],
     ["Lambeau kickoff forecast", "“Presented by” credit on the hero's weather line", "OPEN"],
     ["Division race section", "Lockup beside the season-long NFC North race chart", "OPEN"],
     ["Leaders section", "Lockup beside the offense & defense leader boards", "OPEN"],
-    ["Where to watch", "A full venue listing: photo, amenities, game-day specials", "OPEN"],
+    ["Game-day guide", "Venue listings sold per listing: photos, amenity chips, game-day specials", "OPEN"],
   ];
   slots.forEach(([h, b, status], i) => {
     const y = 1.42 + i * 0.74;

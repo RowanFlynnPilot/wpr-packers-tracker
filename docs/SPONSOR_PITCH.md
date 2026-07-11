@@ -40,7 +40,7 @@ brand on it before Week 1.
 | **Section slots** | Division race + leaders presenter slots (open inventory) |
 | **Kickoff forecast** | "Presented by …" on the Lambeau weather line (open) |
 | **Email digest** | Your logo baked into the twice-daily newsletter image |
-| **Where to watch** | A featured bar/restaurant listing for game day (open) |
+| **Game-day guide** | "Where to watch" venue listings, sold per listing: photos, amenity chips (TVs, taps, patio), and your game-day specials, refreshed weekly (open) |
 
 ## See it with your name on it
 

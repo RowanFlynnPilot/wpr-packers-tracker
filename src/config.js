@@ -100,20 +100,23 @@ export const SPONSOR_INQUIRY = 'sales@wausaupilotandreview.com'
 // either way, so the click-through volume is provable before any deal is signed.
 export const TICKETS_OVERRIDE_URL = null
 
-// "Where to watch" — a sponsorable listing for a local bar/restaurant showing the games.
-// Hidden until a venue is sold: WATCH_PARTY is null, so the whole section doesn't render.
-// To activate, set WATCH_PARTY to an object with this shape (the venue provides the photo):
+// "Where to watch" — the game-day guide: bar/restaurant listings sold PER LISTING (each card
+// is its own sponsorship). Hidden until at least one venue is sold: an empty list renders no
+// section. Every field is venue-provided; each entry looks like:
 //   {
 //     name: 'The Tap House',                          // venue name
 //     tagline: "Wausau's home for Packers football",  // short pitch line
-//     image: 'https://…/venue.jpg',                   // venue-provided photo ('' shows a placeholder)
+//     images: ['https://…/bar.jpg', 'https://…/patio.jpg'],  // first is the hero shot, up to
+//                                                     // three more show as thumbnails ([''] or
+//                                                     // [] shows a placeholder block)
 //     url: 'https://…',                               // venue website / menu
-//     address: 'Downtown Wausau',
-//     features: ['12 HDTVs', 'Sound on for every game', 'Full bar & patio'],
-//     specials: ['$3 Wisconsin taps', 'Half-price wings during Packers games'],
+//     address: '312 Third St, Wausau',
+//     phone: '715-555-0140',
+//     features: ['20 HDTVs', '10+ Wisconsin taps', 'Heated patio'],      // amenity chips
+//     specials: ['$3 game-day taps', 'Half-price wings while the Packers play'],
 //   }
-// (`let`, not `const`: sales demo mode below fills it with a placeholder venue.)
-export let WATCH_PARTY = null
+// (`let`, not `const`: sales demo mode below fills it with placeholder listings.)
+export let WATCH_VENUES = []
 
 // Shown in the footer when a gaming brand is the title sponsor. Editable; set to '' to hide.
 export const SPONSOR_DISCLAIMER = ''
@@ -144,13 +147,28 @@ if (typeof window !== 'undefined' && new URLSearchParams(window.location.search)
   SPONSORS.race = SPONSORS.race || demo
   SPONSORS.leaders = SPONSORS.leaders || demo
   SPONSORS.forecast = SPONSORS.forecast || { name: 'Your Brand Here' }
-  WATCH_PARTY = WATCH_PARTY || {
-    name: 'Your Bar or Restaurant',
-    tagline: "Wausau's home for Packers football — this listing is available",
-    image: '',
-    url: null,
-    address: `Ask about this placement: ${SPONSOR_INQUIRY}`,
-    features: ['Your HDTVs', 'Your patio', 'Your game-day atmosphere'],
-    specials: ['Your Sunday specials, listed right here, every game week'],
+  if (!WATCH_VENUES.length) {
+    WATCH_VENUES = [
+      {
+        name: 'Your Bar Here',
+        tagline: "Wausau's home for Packers football — this listing is available",
+        images: [],
+        url: null,
+        address: `Ask about this placement: ${SPONSOR_INQUIRY}`,
+        phone: '',
+        features: ['20 HDTVs', '10+ Wisconsin taps', 'Sound on for every snap'],
+        specials: ['$3 game-day taps', 'Half-price wings while the Packers play'],
+      },
+      {
+        name: 'Your Restaurant Here',
+        tagline: 'The family game-day headquarters — kitchen open through the 4th quarter',
+        images: [],
+        url: null,
+        address: `Ask about this placement: ${SPONSOR_INQUIRY}`,
+        phone: '',
+        features: ['Big-screen wall', 'Kids eat free Sundays', 'Tailgate takeout packs'],
+        specials: ['Tailgate platter for four, $29', 'Bloody Mary bar until kickoff'],
+      },
+    ]
   }
 }

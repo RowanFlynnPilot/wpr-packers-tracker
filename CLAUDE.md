@@ -49,7 +49,8 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
 - `src/config.js` — single source of truth for season, team, division, all-32 team maps
   (abbrs/names/accents), sponsors, `USE_TEAM_LOGO`, and brand asset URLs. Change a team
   here and nowhere else. The SALES DEMO MODE block at the bottom fills open sponsor slots
-  with "Your Brand Here" placeholders when the URL carries `?demo` — a sales preview, never
+  with "Your Brand Here" placeholders — and the game-day guide (`WATCH_VENUES`, sold per
+  listing) with placeholder venues — when the URL carries `?demo`: a sales preview, never
   shown to ordinary readers and never overriding a sold slot. Don't remove it as dead code.
 - `src/theme.js` — palette + Fraunces/Public Sans pairing (matches the Brewers tracker and
   the "Follow the Money" design system). TWO golds, one role each: `gold` (#ffb612,

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { theme } from './theme.js'
-import { SPONSOR_DISCLAIMER, WATCH_PARTY, WPR_NEWS, SPONSORS, SEASON } from './config.js'
+import { SPONSOR_DISCLAIMER, WPR_NEWS, SPONSORS, SEASON } from './config.js'
 import { fetchStandingsBundle, fetchDivisionSchedules, fetchSeasonGames } from './api.js'
 import { lastFinalGame } from './games.js'
 import { initAnalytics, track } from './analytics.js'
@@ -164,7 +164,7 @@ export default function App() {
             <InjuryReport />
             {WPR_NEWS && <Coverage />}
             <SponsorBand />
-            {WATCH_PARTY && <Section kicker="Where to watch" title="Catch the games this week"><WhereToWatch venue={WATCH_PARTY} /></Section>}
+            <WhereToWatch />
             <ThisDay />
           </div>
         )}
