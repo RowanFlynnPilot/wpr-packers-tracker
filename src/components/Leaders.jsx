@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
 import { headshot, SEASON } from '../config.js'
-import { fetchTeamLeaders, fetchLeagueLeaders } from '../api.js'
+import { fetchTeamLeaders, fetchLeagueLeaders, fetchAthleteOverview } from '../api.js'
 import { Loading, ErrorState } from './Status.jsx'
 import { openPlayerCard } from './PlayerCard.jsx'
 
@@ -26,6 +26,34 @@ function rankNote(league, id) {
   if (!best) return null
   const label = CAT_SHORT[best.cat]
   return best.rank === 1 ? `Leads the NFL · ${label}` : `${ord(best.rank)} in the NFL · ${label}`
+}
+
+// The supporting line under each board row, from the athlete overview feed — the stats that
+// give the headline number its shape (a back's yards mean more next to his per-carry average).
+// Keyed by the board's leader category; zeros stay only where zero IS the story (TD, INT).
+const DETAILS = {
+  passingYards: [['Passing Touchdowns', 'TD'], ['Interceptions', 'INT'], ['Completion Percentage', 'cmp%']],
+  rushingYards: [['Rushing Touchdowns', 'TD'], ['Yards Per Rush Attempt', 'yds/carry'], ['Rushing Attempts', 'carries']],
+  receivingYards: [['Receiving Touchdowns', 'TD'], ['Receptions', 'catches'], ['Yards Per Reception', 'yds/catch']],
+  totalTackles: [['Solo Tackles', 'solo'], ['Sacks', 'sacks'], ['Passes Defended', 'passes def.']],
+  sacks: [['Total Tackles', 'tackles'], ['Stuffs', 'TFL'], ['Forced Fumbles', 'FF']],
+  interceptions: [['Passes Defended', 'passes def.'], ['Interception Touchdowns', 'pick-six'], ['Total Tackles', 'tackles']],
+}
+const KEEP_ZERO = new Set(['TD', 'INT'])
+function detailLine(overview, picks) {
+  if (!overview || !picks) return null
+  const stats = overview.splits?.['Regular Season']
+  if (!stats) return null
+  const parts = []
+  for (const [displayName, short] of picks) {
+    const i = overview.displayNames.indexOf(displayName)
+    if (i === -1) continue
+    const v = stats[i]
+    if (v == null || v === '') continue
+    if (!parseFloat(String(v).replace(/,/g, '')) && !KEEP_ZERO.has(short)) continue
+    parts.push(`${v} ${short}`)
+  }
+  return parts.length ? parts.join(' · ') : null
 }
 
 // "Player to watch" spotlight above the tables: the passing leader and the tackles leader.
@@ -60,7 +88,7 @@ function Spotlight({ qb, def, league }) {
 // One leader board. The top player reads as the headline — bigger headshot, gold ring, bold
 // value — and every row carries a proportional bar so the gaps are visible at a glance, not
 // just legible in the numbers.
-function LeaderTable({ title, rows, league }) {
+function LeaderTable({ title, rows, league, overviews, picks }) {
   if (!rows?.length) return null
   const max = Math.max(...rows.map((r) => r.value || 0)) || 1
   return (
@@ -68,6 +96,7 @@ function LeaderTable({ title, rows, league }) {
       <div style={{ fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.goldText, marginBottom: 10, fontWeight: 700 }}>{title}</div>
       {rows.map((r, i) => {
         const note = rankNote(league, r.id)
+        const detail = detailLine(overviews?.[r.id], picks)
         const lead = i === 0
         return (
           <div key={r.id} className="hover-row" onClick={() => openPlayerCard(r.id)} role="button" tabIndex={0}
@@ -87,7 +116,8 @@ function LeaderTable({ title, rows, league }) {
               <div style={{ height: 3, borderRadius: 2, background: theme.wash, marginTop: 5, overflow: 'hidden' }}>
                 <div style={{ width: `${Math.max(2, (r.value / max) * 100)}%`, height: '100%', borderRadius: 2, background: theme.green }} />
               </div>
-              {note && <div style={{ fontFamily: theme.sans, fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', color: theme.goldText, marginTop: 3, whiteSpace: 'nowrap' }}>{note}</div>}
+              {detail && <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 3 }}>{detail}</div>}
+              {note && <div style={{ fontFamily: theme.sans, fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', color: theme.goldText, marginTop: 2, whiteSpace: 'nowrap' }}>{note}</div>}
             </div>
           </div>
         )
@@ -100,12 +130,24 @@ function LeaderTable({ title, rows, league }) {
 export default function Leaders({ side }) {
   const [data, setData] = useState(null)
   const [league, setLeague] = useState(null)
+  const [overviews, setOverviews] = useState(null) // id → overview, for the per-row detail lines
   const [error, setError] = useState(false)
 
   useEffect(() => {
     fetchTeamLeaders().then(setData).catch(() => setError(true))
     fetchLeagueLeaders().then(setLeague).catch(() => {})
   }, [])
+
+  // One small overview read per boarded player (cached + shared with the player cards), so
+  // each row can carry its supporting stats. Fail-soft per player — a miss just means no line.
+  useEffect(() => {
+    if (!data) return
+    let alive = true
+    const ids = [...new Set(Object.values(data.categories).flat().map((l) => l.id).filter(Boolean))]
+    Promise.all(ids.map((pid) => fetchAthleteOverview(pid).then((o) => [pid, o]).catch(() => [pid, null])))
+      .then((pairs) => { if (alive) setOverviews(Object.fromEntries(pairs)) })
+    return () => { alive = false }
+  }, [data])
 
   if (error) return <ErrorState />
   if (!data) return <Loading />
@@ -116,14 +158,14 @@ export default function Leaders({ side }) {
 
   const tables = offense
     ? [
-        ['Passing yards', top('passingYards', 3)],
-        ['Rushing yards', top('rushingYards', 5)],
-        ['Receiving yards', top('receivingYards', 5)],
+        ['Passing yards', top('passingYards', 3), 'passingYards'],
+        ['Rushing yards', top('rushingYards', 5), 'rushingYards'],
+        ['Receiving yards', top('receivingYards', 5), 'receivingYards'],
       ]
     : [
-        ['Tackles', top('totalTackles', 5)],
-        ['Sacks', top('sacks', 5)],
-        ['Interceptions', top('interceptions', 4)],
+        ['Tackles', top('totalTackles', 5), 'totalTackles'],
+        ['Sacks', top('sacks', 5), 'sacks'],
+        ['Interceptions', top('interceptions', 4), 'interceptions'],
       ]
 
   if (!tables.some(([, rows]) => rows.length)) {
@@ -143,7 +185,7 @@ export default function Leaders({ side }) {
         def={offense ? null : (() => { const t = top('totalTackles', 1)[0]; return t && { ...t, display: `${t.display} tackles` } })()}
       />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 32 }}>
-        {tables.map(([title, rows]) => <LeaderTable key={title} title={title} rows={rows} league={league} />)}
+        {tables.map(([title, rows, cat]) => <LeaderTable key={title} title={title} rows={rows} league={league} overviews={overviews} picks={DETAILS[cat]} />)}
       </div>
       {data.season < SEASON && (
         <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 16 }}>
