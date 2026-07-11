@@ -342,7 +342,7 @@ export function fetchTeamLeaders() {
     const names = {}
     if (missing.size) {
       const fetched = await pooled([...missing], 6, (id) =>
-        getJSON(`${CORE}/seasons/${season}/athletes/${id}`).then((a) => ({ id, name: a.displayName, pos: a.position?.abbreviation || '' }))
+        getJSON(`${CORE}/seasons/${season}/athletes/${id}`).then((a) => ({ id, name: a.displayName, pos: a.position?.abbreviation || '', jersey: a.jersey || '' }))
       )
       fetched.forEach((a) => { if (a) names[a.id] = a })
     }
@@ -351,6 +351,7 @@ export function fetchTeamLeaders() {
       const p = resolve(l.id)
       l.name = p?.name || null
       l.pos = p?.pos || ''
+      l.jersey = p?.jersey || ''
     }))
     return { season, categories: cats }
   })
@@ -394,7 +395,9 @@ export function fetchTeamStats(teamId) {
 }
 
 // One player's game-by-game log for the stats season, newest first. The feed keys stat columns
-// by parallel `names`/`labels` arrays; rows zip them back together.
+// by parallel `names`/`labels` arrays; rows zip them back together. Preseason lines are
+// excluded — exhibition snaps pollute a stats card — and playoff rows carry a flag so the
+// card can tag them.
 export function fetchGamelog(athleteId) {
   return cached(`gamelog:${athleteId}`, 300000, async () => {
     const season = await fetchStatsSeason()
@@ -403,6 +406,8 @@ export function fetchGamelog(athleteId) {
     const eventsMeta = data.events || {}
     const rows = []
     ;(data.seasonTypes || []).forEach((st) => {
+      if (/preseason/i.test(st.displayName || '')) return
+      const playoff = /postseason/i.test(st.displayName || '')
       ;(st.categories || []).forEach((cat) => {
         if (cat.type !== 'event') return
         ;(cat.events || []).forEach((ev) => {
@@ -412,6 +417,7 @@ export function fetchGamelog(athleteId) {
             eventId: ev.eventId,
             date: meta.gameDate,
             week: meta.week,
+            playoff,
             oppAbbr: meta.opponent?.abbreviation || '',
             atVs: meta.atVs || 'vs',
             result: meta.gameResult || '',
@@ -423,6 +429,20 @@ export function fetchGamelog(athleteId) {
     })
     rows.sort((a, b) => new Date(b.date) - new Date(a.date))
     return { season, rows }
+  })
+}
+
+// One athlete's stat summary from the overview feed: Regular Season / Postseason / Career
+// splits as formatted display strings, keyed by the parallel displayNames. Powers the player
+// card's "season at a glance" tiles and career line. Fail-soft: null when the feed has none.
+export function fetchAthleteOverview(athleteId) {
+  return cached(`overview:${athleteId}`, 600000, async () => {
+    const data = await getJSON(`${WEB}/athletes/${athleteId}/overview`)
+    const s = data.statistics
+    if (!s?.displayNames?.length || !s?.splits?.length) return null
+    const splits = {}
+    s.splits.forEach((sp) => { splits[sp.displayName] = sp.stats || [] })
+    return { displayNames: s.displayNames, splits }
   })
 }
 

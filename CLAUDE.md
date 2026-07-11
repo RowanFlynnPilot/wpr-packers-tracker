@@ -70,8 +70,9 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
 - Sections are grouped into tabs in `App.jsx` (`TABS` + `TabBar.jsx`): Season (hero +
   matchup + pulse + standings/vs-North + race + playoff odds + road ahead), Schedule (full
   season list w/ box scores + next-at-Lambeau + injuries + WPR coverage + sponsor band +
-  this-day), Leaders (offense + defense + team profile), Film room (per-game win
-  probability + scoring plays + chunk plays). Only the active tab renders, and `api.js`
+  this-day), Season stats (id `leaders`: offense + defense boards + team profile), Film
+  room (per-game win probability + scoring plays + chunk plays). Only the active tab
+  renders, and `api.js`
   memoizes the heavier reads (`cached()`, short TTL) so flipping back is instant.
   Masthead, banner + title sponsor, the updated stamp, and the footer stay pinned across
   tabs. Tab switches fire a Plausible `Tab` event.

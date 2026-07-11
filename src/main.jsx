@@ -10,7 +10,9 @@ createRoot(document.getElementById('root')).render(
 )
 
 // Register the service worker (PWA: installable, faster repeat loads, offline shell).
-if ('serviceWorker' in navigator) {
+// Production only — in dev its stale-while-revalidate serves the PREVIOUS bundle on every
+// full reload, which reads as "my change didn't work".
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {})
   })

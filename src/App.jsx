@@ -40,7 +40,9 @@ const Race = lazy(() => import('./components/Race.jsx'))
 const TABS = [
   { id: 'season', label: 'Season' },
   { id: 'schedule', label: 'Schedule' },
-  { id: 'leaders', label: 'Leaders' },
+  // Label follows the house sentence case ("Film room"); the id stays `leaders` so the
+  // Plausible Tab events and panel ids keep their history.
+  { id: 'leaders', label: 'Season stats' },
   { id: 'film', label: 'Film room' },
 ]
 

@@ -46,7 +46,7 @@ Live URL: `https://rowanflynnpilot.github.io/wpr-packers-tracker/`
 
 ## Embed
 
-The tool is organized into tabs (Season / Schedule / Leaders / Film room) and
+The tool is organized into tabs (Season / Schedule / Season stats / Film room) and
 **auto-resizes**: it posts its height to the host page on every change, so the iframe
 always fits the active tab with no inner scroll. Paste BOTH the iframe and the little
 script into a WordPress **Custom HTML** block:
