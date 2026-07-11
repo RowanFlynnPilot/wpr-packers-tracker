@@ -60,7 +60,7 @@ export default function RoadAhead() {
       <p style={{ fontFamily: theme.serif, fontSize: 16, color: theme.muted, margin: '0 0 16px', maxWidth: 600, lineHeight: 1.5 }}>
         Combined winning percentage of each team's remaining opponents — the longer the bar, the harder the road.
       </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 9, maxWidth: 620 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
         {rows.map((r) => {
           const isMe = r.id === TEAM_ID
           return (
@@ -79,7 +79,7 @@ export default function RoadAhead() {
           )
         })}
       </div>
-      {verdict && <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 14, maxWidth: 620, lineHeight: 1.5 }}>{verdict}</div>}
+      {verdict && <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 14, lineHeight: 1.5 }}>{verdict}</div>}
       {season < SEASON && (
         <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 8 }}>
           Opponent strength based on final {season} records until the new season has results.
