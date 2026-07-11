@@ -109,7 +109,7 @@ export default function WhereToWatch() {
     <Section kicker="Where to watch" title="Catch the game this week">
       {next && (
         <p style={{ fontFamily: theme.serif, fontSize: 16, color: theme.muted, margin: '0 0 16px', maxWidth: 620, lineHeight: 1.5 }}>
-          Packers {next.home ? 'vs' : 'at'} the {TEAM_NAMES[next.oppId] || next.oppName}, {fmtWhen(next)} — here's where Wausau will be watching.
+          Packers {next.home ? 'vs' : 'at'} {TEAM_NAMES[next.oppId] || next.oppName}, {fmtWhen(next)} — here's where Wausau will be watching.
         </p>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: 14 }}>

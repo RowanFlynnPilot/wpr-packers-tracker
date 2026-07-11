@@ -159,12 +159,13 @@ export default function App() {
 
         {tab === 'schedule' && (
           <div role="tabpanel" id="panel-schedule" aria-labelledby="tab-schedule">
+            {/* The game-day guide leads the tab — prime placement is the product being sold. */}
+            <WhereToWatch />
             <Section kicker="The season" title="The schedule"><Schedule /></Section>
             <NextAtLambeau />
             <InjuryReport />
             {WPR_NEWS && <Coverage />}
             <SponsorBand />
-            <WhereToWatch />
             <ThisDay />
           </div>
         )}
