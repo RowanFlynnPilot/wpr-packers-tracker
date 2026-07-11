@@ -73,7 +73,7 @@ async function main() {
   s.addText("A live, season-long Green Bay Packers stats experience inside Wisconsin's most local news brand — with your name on it.", {
     x: 0.75, y: 3.15, w: 4.6, h: 1.1, fontFace: SANS, fontSize: 14, color: SAGE, lineSpacing: 20, margin: 0,
   });
-  s.addText("wausaupilotandreview.com   ·   sales@wausaupilotandreview.com", { x: 0.75, y: 4.95, w: 6, h: 0.3, fontFace: SANS, fontSize: 10.5, color: SAGE, margin: 0 });
+  s.addText("wausaupilotandreview.com   ·   weber.chris@wausaupilotandreview.com", { x: 0.75, y: 4.95, w: 6, h: 0.3, fontFace: SANS, fontSize: 10.5, color: SAGE, margin: 0 });
   // The real social share card, framed in white so it reads as an object on the green bg.
   s.addShape("rect", { x: 5.62, y: 2.78, w: 3.86, h: 2.13, fill: { color: WHITE } });
   s.addImage({ path: OG_CARD, x: 5.7, y: 2.86, w: 3.7, h: 1.97 });
@@ -254,7 +254,7 @@ async function main() {
   });
   s.addShape("rect", { x: 0.75, y: 3.6, w: 5.6, h: 1.1, fill: { color: WHITE } });
   s.addShape("rect", { x: 0.75, y: 3.6, w: 0.05, h: 1.1, fill: { color: GOLD } });
-  s.addText("sales@wausaupilotandreview.com", { x: 1.0, y: 3.76, w: 5.2, h: 0.3, fontFace: SANS, fontSize: 14, bold: true, color: GREEN, margin: 0 });
+  s.addText("weber.chris@wausaupilotandreview.com", { x: 1.0, y: 3.76, w: 5.2, h: 0.3, fontFace: SANS, fontSize: 14, bold: true, color: GREEN, margin: 0 });
   s.addText("715-301-5539   ·   602 Ruder St., Wausau, WI 54403", { x: 1.0, y: 4.1, w: 5.2, h: 0.28, fontFace: SANS, fontSize: 11, color: MUTED, margin: 0 });
   s.addText("Wausau Pilot & Review — Where Locals Look First For News", { x: 0.75, y: 5.05, w: 8.5, h: 0.28, fontFace: SANS, fontSize: 10, italic: true, color: SAGE, margin: 0 });
 

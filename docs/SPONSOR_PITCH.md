@@ -65,7 +65,7 @@ each its own sponsorable surface:
 
 ---
 
-*Contact: sales@wausaupilotandreview.com · 602 Ruder St., Wausau WI 54403 · 715-301-5539*
+*Contact: weber.chris@wausaupilotandreview.com · 602 Ruder St., Wausau WI 54403 · 715-301-5539*
 
 *The widget is not affiliated with or endorsed by the NFL, the Green Bay Packers, or ESPN.
 Data via ESPN's public NFL feeds.*

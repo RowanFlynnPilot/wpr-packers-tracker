@@ -90,7 +90,7 @@ export const SPONSORS = {
 }
 
 // Where to send sponsorship inquiries (shown on empty slots — the upsell).
-export const SPONSOR_INQUIRY = 'sales@wausaupilotandreview.com'
+export const SPONSOR_INQUIRY = 'weber.chris@wausaupilotandreview.com'
 
 // Home-game ticket links. The ESPN schedule feed carries a per-game resale deep link (Vivid
 // Seats — ESPN's ticketing partner) with a live "from $X" price; that's the one source used.
