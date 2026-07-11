@@ -86,9 +86,13 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   - `Race` — games back of the division lead, week by week, from the four division teams'
     schedules; direct end-of-line labels (logo + GB) instead of a legend.
   - `Matchup`, `NextAtLambeau`, `InjuryReport`, `VsNorth`, `PlayoffOdds`, `RoadAhead`,
-    `Coverage`, `ThisDay`, `TeamProfile` — fail-soft sections that OWN their `Section`
-    chrome: on error/empty the heading disappears with the content (never render an
-    orphaned title over blank space — follow this pattern for any new fail-soft section).
+    `Coverage`, `ThisDay`, `TeamProfile`, `Storylines`, `MilestoneWatch`, `ChunkLeaders` —
+    fail-soft sections that OWN their `Section` chrome: on error/empty the heading
+    disappears with the content (never render an orphaned title over blank space — follow
+    this pattern for any new fail-soft section). `Storylines` is the data-written editorial
+    lede (deterministic template sentences, phase-aware); `MilestoneWatch` waits for a live
+    season (paces need games remaining); `ChunkLeaders` aggregates the season's summaries
+    (parses runner/receiver from GSIS play text — games.js `chunkLeaders`).
   - `PlayerCard` — tap-any-player modal. One `<PlayerCardHost/>` mounts in App; any
     surface calls the exported `openPlayerCard(id)` (module-level hook, no prop
     threading). Card = roster bio + last-5 game log.
@@ -128,6 +132,11 @@ mode simply wait. This is one deterministic source per phase — NOT a fallback 
   who left the club get one pooled athlete read each).
 - League leaders (rank chips): `sports.core.api…/seasons/YYYY/types/2/leaders?limit=5`.
 - Team statistics (+NFL ranks!): `sports.core.api…/seasons/YYYY/types/2/teams/ID/statistics`.
+- FPI pregame projection: `sports.core.api…/events/ID/competitions/ID/predictor` —
+  `homeTeam/awayTeam.statistics` carry `gameProjection` (win %). Regular/postseason only;
+  labeled as ESPN's model wherever shown, never blended with the house Monte Carlo.
+  (The sibling `…/odds` endpoint works too — spread/O-U from DraftKings — but is UNUSED
+  pending WPR's editorial call on betting content.)
 - Roster: `site.api…/teams/9/roster` — bios + in-season injury tags ride along (that's the
   injury report's source; the dedicated injuries endpoints are ref-soup or 404).
 - Game logs: `site.web.api…/athletes/ID/gamelog?season=YYYY` — parallel `names`/`labels`
@@ -205,13 +214,17 @@ pace bar, standings w/ form strips + vs-North, week-by-week race chart, playoff-
 strength of schedule, full-season schedule w/ box scores + home-game ticket links (feed's
 Vivid Seats deep links; `TICKETS_OVERRIDE_URL` swaps in a WPR affiliate destination),
 next-at-Lambeau w/ forecast, injury report, WPR newsroom feed, this-day-in-history,
-offense/defense leaders
-w/ NFL rank chips, team profile, film room (win probability + scoring plays + chunk
-plays), player cards, three minis + the email digest PNG.)
+offense/defense leaders w/ NFL rank chips + supporting stat lines, team profile as a
+league-ladder dot plot, film room (win probability + scoring plays + chunk plays) +
+season chunk-play leaderboard, player cards w/ season tiles + full-season game logs,
+data-written storylines lede, milestone watch (activates Week 1), FPI line on the hero,
+deep-linkable tabs (`?tab=`), three minis + the email digest PNG.)
 
 - A localStorage "pick'em" (call Sunday's game, graded after the final) — sponsorable.
   Owner wants to clear this with WPR before building.
-- Season-long chunk-play leaderboard (17 cached summary reads, pooled — cheap in football).
+- Betting line on the hero/matchup (the odds endpoint is probed and works — DraftKings via
+  ESPN) — needs WPR's editorial sign-off on gambling content first.
+- Drive DNA panel (points per drive, three-and-out rate, red-zone TD% from the summaries).
 - Plausible public dashboard links per sponsor once the account is live.
 
 Keep each as a small, self-contained addition.

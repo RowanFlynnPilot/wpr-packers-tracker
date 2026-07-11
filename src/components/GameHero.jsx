@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID, SPONSORS, SITE_URL, headshot } from '../config.js'
-import { fetchFeaturedGame, fetchGameSummary, fetchLiveSummary, liveExtras, fetchStandingsBundle, fetchStatsSeason, fetchTeamSchedule } from '../api.js'
+import { fetchFeaturedGame, fetchGameSummary, fetchLiveSummary, liveExtras, fetchStandingsBundle, fetchStatsSeason, fetchTeamSchedule, fetchPredictor } from '../api.js'
 import { finals, teamGameLeaders, periodLabel } from '../games.js'
 import { fetchKickoffForecast } from '../weather.js'
 import { track } from '../analytics.js'
@@ -63,6 +63,7 @@ export default function GameHero() {
   const [forecast, setForecast] = useState(null)
   const [oppForm, setOppForm] = useState(null)    // opponent standing line (upcoming games)
   const [lastMeeting, setLastMeeting] = useState(null)
+  const [fpi, setFpi] = useState(null)            // ESPN's pregame win projection (their model, labeled)
   const [copied, setCopied] = useState(false)
   const [pop, setPop] = useState(false)
   const prevScore = useRef(null)
@@ -171,6 +172,7 @@ export default function GameHero() {
   useEffect(() => {
     setOppForm(null)
     setLastMeeting(null)
+    setFpi(null)
     if (!game || state !== 'pre') return
     let alive = true
     fetchStandingsBundle().then((b) => {
@@ -178,6 +180,8 @@ export default function GameHero() {
       const row = b.league.find((r) => r.id === game.oppId)
       if (row) setOppForm({ ...row, season: b.season })
     }).catch(() => {})
+    // ESPN's model doesn't publish projections for exhibitions; regular/postseason only.
+    if (game.seasonType !== 1) fetchPredictor(gameId, home).then((v) => { if (alive) setFpi(v) }).catch(() => {})
     fetchStatsSeason().then(async (season) => {
       const { games } = await fetchTeamSchedule(TEAM_ID, season, 2)
       if (!alive) return
@@ -304,11 +308,17 @@ export default function GameHero() {
             ? `Last meeting: a ${lastMeeting.meScore}–${lastMeeting.oppScore} tie`
             : `Last meeting: ${lastMeeting.won ? 'Packers won' : `the ${oppName} won`} ${lastMeeting.won ? `${lastMeeting.meScore}–${lastMeeting.oppScore}` : `${lastMeeting.oppScore}–${lastMeeting.meScore}`}${lastMeeting.home ? ' at Lambeau' : ''}`
           : null
-        if (!oppText && !meetText) return null
+        if (!oppText && !meetText && fpi == null) return null
         return (
           <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, margin: '-6px 0 18px', lineHeight: 1.7 }}>
             {oppText && <div>{oppText}</div>}
             {meetText && <div style={{ color: theme.green, fontWeight: 700 }}>{meetText}</div>}
+            {fpi != null && (
+              <div>
+                ESPN's FPI model gives the Packers a{' '}
+                <span style={{ color: fpi >= 50 ? theme.green : theme.ink, fontWeight: 700 }}>{fpi}%</span> shot
+              </div>
+            )}
           </div>
         )
       })()}

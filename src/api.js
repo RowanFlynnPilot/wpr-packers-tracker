@@ -239,6 +239,35 @@ export function fetchLiveSummary(eventId) {
   return getJSON(`${SITE}/summary?event=${eventId}`)
 }
 
+// Every completed game's summary for the stats season (regular + postseason), pooled — the
+// season-wide film reads (the chunk-play leaderboard). Individual misses drop out rather
+// than failing the set; each summary rides the same cache the film room uses.
+export function fetchSeasonSummaries() {
+  return cached('seasonSummaries', 600000, async () => {
+    const season = await fetchStatsSeason()
+    const [reg, post] = await Promise.all([
+      fetchTeamSchedule(TEAM_ID, season, 2),
+      fetchTeamSchedule(TEAM_ID, season, 3).catch(() => ({ games: [] })),
+    ])
+    const done = [...reg.games, ...post.games].filter((g) => g.state === 'post')
+    const sums = await pooled(done, 6, (g) => fetchGameSummary(g.id))
+    return { season, entries: done.map((g, i) => ({ game: g, summary: sums[i] })).filter((e) => e.summary) }
+  })
+}
+
+// ESPN's FPI pregame projection for one event → the Packers' win chance (0–100 %), or null
+// when the model hasn't published one. This is ESPN's model, surfaced under its own name —
+// it never blends with the house Monte Carlo in PlayoffOdds.
+export function fetchPredictor(eventId, packersHome) {
+  return cached(`predictor:${eventId}`, 600000, async () => {
+    const data = await getJSON(`${CORE}/events/${eventId}/competitions/${eventId}/predictor`)
+    const side = packersHome ? data.homeTeam : data.awayTeam
+    const stat = (side?.statistics || []).find((s) => s.name === 'gameProjection')
+    const v = Number(stat?.value ?? parseFloat(stat?.displayValue))
+    return Number.isFinite(v) ? Math.round(v) : null
+  })
+}
+
 // The pieces of a summary the LIVE hero/mini need, distilled: the score, the Packers' win
 // probability, the current situation (down & distance), and the last few plays. The score
 // comes from here too so the live surfaces tick on the summary's fast cadence — the schedule

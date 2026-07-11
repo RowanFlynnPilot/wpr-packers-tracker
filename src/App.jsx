@@ -11,6 +11,7 @@ import TabBar from './components/TabBar.jsx'
 import BookmarkButton from './components/BookmarkButton.jsx'
 import PackersBanner from './components/PackersBanner.jsx'
 import GameHero from './components/GameHero.jsx'
+import Storylines from './components/Storylines.jsx'
 import Matchup from './components/Matchup.jsx'
 import Section from './components/Section.jsx'
 import Pulse from './components/Pulse.jsx'
@@ -24,10 +25,12 @@ import SponsorBand from './components/SponsorBand.jsx'
 import WhereToWatch from './components/WhereToWatch.jsx'
 import ThisDay from './components/ThisDay.jsx'
 import Leaders from './components/Leaders.jsx'
+import MilestoneWatch from './components/MilestoneWatch.jsx'
 import TeamProfile from './components/TeamProfile.jsx'
 import PlayoffOdds from './components/PlayoffOdds.jsx'
 import RoadAhead from './components/RoadAhead.jsx'
 import FilmRoom from './components/FilmRoom.jsx'
+import ChunkLeaders from './components/ChunkLeaders.jsx'
 import PlayerCardHost from './components/PlayerCard.jsx'
 import { Loading } from './components/Status.jsx'
 
@@ -75,7 +78,12 @@ export default function App() {
   // Per-feed failure flags so a failed FIRST load shows an error state instead of an eternal
   // skeleton. Once a feed has data, later failures keep the prior data (flag cleared on success).
   const [errors, setErrors] = useState({})
-  const [tab, setTab] = useState('season')
+  // Tabs are deep-linkable: `?tab=schedule` opens there (so WPR articles can link straight to
+  // a section), and switching tabs rewrites the param via replaceState — no history spam.
+  const [tab, setTab] = useState(() => {
+    const t = new URLSearchParams(window.location.search).get('tab')
+    return TABS.some((x) => x.id === t) ? t : 'season'
+  })
 
   // Refresh on a gentle interval (and on tab focus) so the whole page — not just the hero — stays live.
   const load = useCallback(() => {
@@ -109,7 +117,15 @@ export default function App() {
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVisible) }
   }, [load])
 
-  const changeTab = (id) => { setTab(id); track('Tab', { tab: id }); window.scrollTo(0, 0) }
+  const changeTab = (id) => {
+    setTab(id)
+    track('Tab', { tab: id })
+    window.scrollTo(0, 0)
+    const url = new URL(window.location)
+    if (id === 'season') url.searchParams.delete('tab') // the default tab keeps a clean URL
+    else url.searchParams.set('tab', id)
+    window.history.replaceState(null, '', url)
+  }
 
   const lastGame = schedules ? lastFinalGame(schedules) : null
   const raceSeason = bundle?.season ?? SEASON
@@ -129,6 +145,7 @@ export default function App() {
         {tab === 'season' && (
           <div role="tabpanel" id="panel-season" aria-labelledby="tab-season">
             <GameHero />
+            <Storylines />
             <Matchup />
             <Section kicker="Season pulse" title="Where things stand"><Pulse bundle={bundle} lastGame={lastGame} opener={opener} error={errors.standings} /></Section>
             <Section kicker="NFC North" title="The standings"><Standings bundle={bundle} schedules={schedules} error={errors.standings} /><VsNorth /></Section>
@@ -154,13 +171,14 @@ export default function App() {
 
         {tab === 'leaders' && (
           <div role="tabpanel" id="panel-leaders" aria-labelledby="tab-leaders">
+            <MilestoneWatch />
             <Section kicker="Moving the ball" title="Offensive leaders" sponsor={SPONSORS.leaders} slot="leaders"><Leaders side="offense" /></Section>
             <Section kicker="Getting stops" title="Defensive leaders"><Leaders side="defense" /></Section>
             <TeamProfile />
           </div>
         )}
 
-        {tab === 'film' && <div role="tabpanel" id="panel-film" aria-labelledby="tab-film"><FilmRoom /></div>}
+        {tab === 'film' && <div role="tabpanel" id="panel-film" aria-labelledby="tab-film"><FilmRoom /><ChunkLeaders /></div>}
 
         <PlayerCardHost />
         </ErrorBoundary>

@@ -123,6 +123,31 @@ export function bigPlays(summary, packersId = TEAM_ID) {
   return plays.sort((a, b) => b.yards - a.yards)
 }
 
+// Season chunk-play leaderboard: every 20+ yard offensive gain across the season's summaries,
+// credited to the runner or receiver parsed from the play text (GSIS play-by-play is regular:
+// rushes lead with the ball-carrier, passes name the receiver after "to"; each word of a
+// surname is capitalized, so the match stops before verbs). Plays that don't parse are
+// skipped rather than mis-credited.
+const CHUNK_NAME = /([A-Z])\.((?:[A-Z][A-Za-z'’-]*)(?:\s[A-Z][A-Za-z'’-]*)*)/
+export function chunkLeaders(entries) {
+  const byName = {}
+  entries.forEach(({ summary }) => {
+    bigPlays(summary).forEach((p) => {
+      const isPass = /pass/i.test(p.text)
+      const src = isPass ? (/\sto\s(.+)$/.exec(p.text) || [])[1] : p.text.replace(/^\([^)]*\)\s*/, '')
+      const m = CHUNK_NAME.exec(src || '')
+      if (!m) return
+      const name = `${m[1]}.${m[2]}`
+      const r = byName[name] || (byName[name] = { name, initial: m[1], last: m[2], plays: 0, yards: 0, longest: 0, tds: 0 })
+      r.plays++
+      r.yards += p.yards
+      r.longest = Math.max(r.longest, p.yards)
+      if (p.scoring) r.tds++
+    })
+  })
+  return Object.values(byName).sort((a, b) => b.plays - a.plays || b.yards - a.yards)
+}
+
 // The Packers' top performer lines from a summary's per-team leaders — e.g.
 // [{ cat: 'Passing', name: 'Jordan Love', line: '22/30, 268 YDS, 3 TD' }].
 const CAT_LABELS = { passingYards: 'Passing', rushingYards: 'Rushing', receivingYards: 'Receiving', sacks: 'Sacks', totalTackles: 'Tackles' }
