@@ -44,10 +44,12 @@ brand on it before Week 1.
 
 ## See it with your name on it
 
-Append `?demo` to the tracker URL and every open placement fills with a live preview:
-`https://rowanflynnpilot.github.io/wpr-packers-tracker/?demo` — real scores, your slot,
-today. The full deck is `sponsor-deck.pptx` (this folder), and `media/` holds placement
-screenshots for proposals.
+- **The media kit, live**: `https://rowanflynnpilot.github.io/wpr-packers-tracker/sponsors.html`
+  — every placement, its current status, and live previews on one page.
+- Append `?demo` to the tracker URL and every open placement fills with a live preview:
+  `https://rowanflynnpilot.github.io/wpr-packers-tracker/?demo` — real scores, your slot,
+  today. The full deck is `sponsor-deck.pptx` (this folder), and `media/` holds placement
+  screenshots for proposals.
 
 ## Grow with us — more Wisconsin surfaces
 

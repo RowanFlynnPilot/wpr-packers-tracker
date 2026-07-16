@@ -69,11 +69,13 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   `src/embed.js` `destination()`). Clicks fire a `Mini Click` event tagged with `widget`.
   Keep them tiny — no service worker, no recharts.
 - Sections are grouped into tabs in `App.jsx` (`TABS` + `TabBar.jsx`): Season (hero +
-  matchup + pulse + standings/vs-North + race + playoff odds + road ahead), Schedule (full
-  season list w/ box scores + next-at-Lambeau + injuries + WPR coverage + sponsor band +
-  this-day), Season stats (id `leaders`: offense + defense boards + team profile), Film
-  room (per-game win probability + scoring plays + chunk plays). Only the active tab
-  renders, and `api.js`
+  storylines + matchup + pulse + standings/vs-North + race + playoff odds + road ahead),
+  Schedule (game-day guide + full season list w/ box scores + next-at-Lambeau + injuries +
+  WPR coverage + sponsor band + this-day), Season stats (id `leaders`: milestone watch +
+  offense/defense boards + team profile), Film room (per-game win probability + scoring
+  plays + chunk plays + season chunk board). `sponsors.html` is the hosted media-kit page
+  (config-driven inventory status + live mini embeds). Only the active tab renders, and
+  `api.js`
   memoizes the heavier reads (`cached()`, short TTL) so flipping back is instant.
   Masthead, banner + title sponsor, the updated stamp, and the footer stay pinned across
   tabs. Tab switches fire a Plausible `Tab` event.

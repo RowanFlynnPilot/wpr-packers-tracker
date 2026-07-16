@@ -120,7 +120,11 @@ export default function WhereToWatch() {
           <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 16, color: theme.ink, lineHeight: 1.4 }}>
             Your bar or restaurant, in front of every game-day reader — photos, specials, and what makes your room the place to watch.
           </div>
-          <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted }}>{SPONSOR_INQUIRY}</div>
+          <a href={`mailto:${SPONSOR_INQUIRY}?subject=${encodeURIComponent('Packers tracker — game-day guide listing')}`}
+            className="link-hover" onClick={() => track('Sponsor Inquiry', { slot: 'where-to-watch' })}
+            style={{ fontFamily: theme.sans, fontSize: 11.5, fontWeight: 700, color: theme.green, textDecoration: 'none' }}>
+            {SPONSOR_INQUIRY} <span aria-hidden="true">→</span>
+          </a>
         </div>
       </div>
       <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 12 }}>

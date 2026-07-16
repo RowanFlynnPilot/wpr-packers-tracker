@@ -15,6 +15,8 @@ export default defineConfig({
         mini: resolve(__dirname, 'mini.html'),
         miniStandings: resolve(__dirname, 'mini-standings.html'),
         miniDigest: resolve(__dirname, 'mini-digest.html'),
+        // The hosted media kit — config-driven inventory + live previews for WPR sales.
+        sponsors: resolve(__dirname, 'sponsors.html'),
       },
     },
   },

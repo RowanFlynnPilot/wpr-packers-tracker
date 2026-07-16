@@ -15,7 +15,7 @@ first prompt to run.
 > Read CLAUDE.md first. Then run `npm install` and `npm run dev`, and confirm the dev
 > server starts at /wpr-packers-tracker/. Don't change any code yet — I want to verify the
 > Season tab (hero countdown, matchup, pulse, standings, race chart), the Schedule tab,
-> the Leaders tab, and the Film room all load live data in the browser first. It's the
+> the Season stats tab, and the Film room all load live data in the browser first. It's the
 > offseason, so the numbers should read as clearly-labeled final-2025 figures with a
 > kickoff countdown. Report what you see, including any console errors. Note: this repo
 > is intentionally client-side only — do NOT add a scraper, cron, or cached JSON layer.
@@ -27,8 +27,8 @@ first prompt to run.
       comparison, pulse tiles, full NFC North table, a multi-line race chart).
 - [ ] Schedule tab shows the full 2026 slate (preseason group, weeks 1–18 with the bye
       row, kickoff times + TV) and completed games open a box score.
-- [ ] Leaders tab shows offense + defense tables with headshots; Film room replays a 2025
-      game with the win-probability chart.
+- [ ] Season stats tab shows offense + defense boards with headshots; Film room replays a
+      2025 game with the win-probability chart.
 - [ ] Player headshots and both logos load (WPR + Packers).
 - [ ] `npm run build` succeeds.
 
@@ -55,5 +55,5 @@ Then repo Settings -> Pages -> source = "GitHub Actions" (one time). Keep the re
 ## First real work (pick one, keep it self-contained)
 
 - Fill the title-sponsor slot in `config.js` when WPR sells it (one object, one place).
-- Season-long chunk-play leaderboard in the film room.
+- Fill a game-day guide listing (`WATCH_VENUES` in `config.js`) when a venue signs.
 - The pick'em (needs WPR sign-off first — see CLAUDE.md).

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { theme } from './theme.js'
-import { SPONSOR_DISCLAIMER, WPR_NEWS, SPONSORS, SEASON } from './config.js'
+import { SPONSOR_DISCLAIMER, WPR_NEWS, SPONSORS, SEASON, SPONSOR_INQUIRY } from './config.js'
 import { fetchStandingsBundle, fetchDivisionSchedules, fetchSeasonGames } from './api.js'
 import { lastFinalGame } from './games.js'
 import { initAnalytics, track } from './analytics.js'
@@ -118,6 +118,7 @@ export default function App() {
   }, [load])
 
   const changeTab = (id) => {
+    if (id === tab) return // re-clicking the active tab is not a tab view
     setTab(id)
     track('Tab', { tab: id })
     window.scrollTo(0, 0)
@@ -130,8 +131,21 @@ export default function App() {
   const lastGame = schedules ? lastFinalGame(schedules) : null
   const raceSeason = bundle?.season ?? SEASON
 
+  // ?demo pages look identical to the live page — a forwarded demo link explains itself.
+  const demo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('demo')
+
   return (
     <div style={{ background: theme.paper, color: theme.ink, minHeight: '100vh' }}>
+      {demo && (
+        <div style={{ background: theme.gold, color: theme.green, fontFamily: theme.sans, fontSize: 11.5, fontWeight: 700, textAlign: 'center', padding: '7px 14px' }}>
+          Sales preview — open placements are shown filled with samples.{' '}
+          <a href={`mailto:${SPONSOR_INQUIRY}?subject=${encodeURIComponent('Packers tracker sponsorship')}`}
+            onClick={() => track('Sponsor Inquiry', { slot: 'demo-ribbon' })}
+            style={{ color: theme.green, textDecoration: 'underline' }}>
+            Book a placement
+          </a>
+        </div>
+      )}
       <Masthead />
       <PackersBanner />
       <div style={{ maxWidth: 880, margin: '0 auto', padding: '0 20px' }}>
@@ -186,7 +200,10 @@ export default function App() {
         <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '22px 0 44px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6 }}>
           Data via ESPN's public NFL feeds · refreshes live. Not affiliated with or endorsed by the NFL, the Green Bay Packers, or ESPN.<br />
           {SPONSOR_DISCLAIMER && <>{SPONSOR_DISCLAIMER}<br /></>}
-          Wausau Pilot &amp; Review · 715-301-5539
+          Wausau Pilot &amp; Review · 715-301-5539 ·{' '}
+          <a href="sponsors.html" target="_blank" rel="noopener noreferrer" className="link-hover" style={{ color: theme.green, fontWeight: 700, textDecoration: 'none' }}>
+            Advertise on this tracker
+          </a>
         </footer>
       </div>
     </div>

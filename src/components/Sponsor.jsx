@@ -1,13 +1,28 @@
+import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
 import { SPONSOR_INQUIRY } from '../config.js'
+import { fetchSeasonGames } from '../api.js'
 import { track } from '../analytics.js'
 
 // Sponsor lockup. One responsibility: render a paid sponsor, or an "available" upsell card.
 // `variant` adapts the chrome to the dark green banner vs. a light editorial section.
 // `slot` labels the placement (banner/hero/race/leaders) for per-slot click reporting.
 // `fullWidth` stretches the lockup across its container (the banner) as a horizontal bar.
+// Upsell cards are a working funnel: the email is a tappable mailto with the placement in the
+// subject, clicks fire a `Sponsor Inquiry` event, and until Week 1 a kickoff countdown makes
+// the deadline real.
 export default function Sponsor({ sponsor, variant = 'light', compact = false, fullWidth = false, slot }) {
   const dark = variant === 'dark'
+  const [daysToKickoff, setDaysToKickoff] = useState(null)
+  useEffect(() => {
+    if (sponsor) return // sold slots don't sell themselves
+    let alive = true
+    fetchSeasonGames().then(({ games }) => {
+      const opener = games.find((g) => g.seasonType === 2 && g.state === 'pre')
+      if (alive && opener) setDaysToKickoff(Math.ceil((new Date(opener.date) - Date.now()) / 86400000))
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [sponsor])
   const labelColor = dark ? '#cfd8d3' : theme.muted
   const nameColor = dark ? '#fff' : theme.ink
   const border = dark ? 'rgba(255,255,255,0.4)' : theme.rule
@@ -39,15 +54,25 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, f
     </div>
   )
 
-  // Open slot — a tasteful upsell rather than an empty hole.
+  // Open slot — a tasteful upsell rather than an empty hole, and a working funnel: tap the
+  // email to start the conversation.
   if (!sponsor) {
+    const mailto = `mailto:${SPONSOR_INQUIRY}?subject=${encodeURIComponent(`Packers tracker sponsorship — ${slot || 'placement'}`)}`
     return (
       <div style={{ textAlign: fullWidth ? 'left' : 'right', width: fullWidth ? '100%' : undefined, border: `1px dashed ${border}`, borderRadius: 4, padding: '8px 12px' }}>
         {label('Sponsorship available')}
         <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 13, color: nameColor, marginTop: 3 }}>
           Reach Wisconsin sports fans
         </div>
-        <div style={{ fontFamily: theme.sans, fontSize: 10, color: labelColor, marginTop: 2 }}>{SPONSOR_INQUIRY}</div>
+        <a href={mailto} className="link-hover" onClick={() => track('Sponsor Inquiry', { slot: slot || 'unknown' })}
+          style={{ display: 'inline-block', fontFamily: theme.sans, fontSize: 10.5, fontWeight: 700, color: dark ? '#fff' : theme.green, textDecoration: 'none', marginTop: 3 }}>
+          {SPONSOR_INQUIRY} <span aria-hidden="true">→</span>
+        </a>
+        {daysToKickoff > 0 && daysToKickoff <= 150 && (
+          <div style={{ fontFamily: theme.sans, fontSize: 9.5, fontWeight: 700, letterSpacing: '0.04em', color: dark ? theme.gold : theme.goldText, marginTop: 3 }}>
+            Kickoff in {daysToKickoff} days — placements close before Week 1
+          </div>
+        )}
       </div>
     )
   }

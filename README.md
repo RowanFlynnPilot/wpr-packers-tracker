@@ -161,6 +161,10 @@ Demo link: `https://rowanflynnpilot.github.io/wpr-packers-tracker/?demo`
 
 ## Sales kit
 
+- **The hosted media kit**: `https://rowanflynnpilot.github.io/wpr-packers-tracker/sponsors.html`
+  — inventory status drawn live from `config.js` (a sold slot flips to "Sold" automatically),
+  live mini embeds, and one-tap inquiry links. This is the URL to send a prospect; it can't
+  go stale. Also linked from the tracker footer ("Advertise on this tracker").
 - `docs/sponsor-deck.pptx` — the sponsorship deck. Regenerate after inventory/branding
   changes with `node scripts/sponsor-deck.cjs` (needs `npm i -g pptxgenjs react react-dom
   react-icons sharp`).
@@ -173,8 +177,8 @@ Code-side items ship with the repo; these need a human:
 
 1. **Plausible**: add `rowanflynnpilot.github.io` as a site in the WPR Plausible account —
    until then every event is silently dropped and there is no reach number for sales.
-   Then add the goals: `Sponsor Click`, `Mini Click`, `Tab`, `Share`, `Box Score`,
-   `Player Card`, `Coverage Click`, `Bookmark`, `Widget Error`, `Tickets Click`.
+   Then add the goals: `Sponsor Click`, `Sponsor Inquiry`, `Mini Click`, `Tab`, `Share`,
+   `Box Score`, `Player Card`, `Coverage Click`, `Bookmark`, `Widget Error`, `Tickets Click`.
 2. **Custom domain (recommended)**: point `packers.wausaupilotandreview.com` at Pages
    before the sales push — the deck, pitch, OG tags, and Plausible domain all bake the
    URL in, so moving later is costly. The github.io URL redirects automatically once set.
