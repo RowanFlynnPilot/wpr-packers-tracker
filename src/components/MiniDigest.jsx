@@ -17,6 +17,9 @@ const Headshot = ({ id, size }) => (
 
 const fmtDay = (iso) => new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 const fmtTime = (iso) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+// ESPN reuses week numbers for playoff rounds — a wild-card game is week 1 again, so
+// postseason games say "Playoffs", never "Wk 1".
+const wk = (g) => (g.seasonType === 3 ? 'Playoffs' : g.week ? `Wk ${g.week}` : '')
 
 // Newsletter "digest" mini: last final (score + the Packers' top performers), next game
 // (kickoff, TV, venue), and the NFC North standings — one at-a-glance card. The whole card is
@@ -114,7 +117,7 @@ export default function MiniDigest() {
     const won = last.won
     lastBlock = (
       <div style={{ padding: '11px 14px' }}>
-        {heading(`Last game · ${last.week ? `Wk ${last.week} · ` : ''}${fmtDay(last.date)}`)}
+        {heading(`Last game · ${wk(last) ? `${wk(last)} · ` : ''}${fmtDay(last.date)}`)}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <TeamLogo id={TEAM_ID} size={22} />
@@ -154,7 +157,7 @@ export default function MiniDigest() {
   if (next) {
     nextBlock = (
       <div style={last ? section : { padding: '11px 14px' }}>
-        {heading(`Next up · ${next.week ? `Wk ${next.week} · ` : ''}${fmtDay(next.date)}${next.timeValid ? ` · ${fmtTime(next.date)}` : ''}`)}
+        {heading(`Next up · ${wk(next) ? `${wk(next)} · ` : ''}${fmtDay(next.date)}${next.timeValid ? ` · ${fmtTime(next.date)}` : ''}`)}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: theme.serif, fontSize: 14, color: theme.ink }}>
           <TeamLogo id={TEAM_ID} size={20} />
           <span style={{ fontWeight: 700, color: theme.green }}>Packers</span>

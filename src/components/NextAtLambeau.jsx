@@ -40,7 +40,7 @@ export default function NextAtLambeau() {
         <TeamLogo id={game.oppId} size={46} />
         <div style={{ minWidth: 0, flex: '1 1 220px' }}>
           <div style={{ fontFamily: theme.serif, fontSize: 20, color: theme.ink }}>
-            {game.oppName} at Lambeau Field{game.week ? ` · Week ${game.week}` : ''}
+            {game.oppName} at Lambeau Field{game.seasonType === 3 ? ` · ${game.note || 'Playoffs'}` : game.week ? ` · Week ${game.week}` : ''}
           </div>
           <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, marginTop: 3 }}>
             {when}{game.tv ? ` · ${game.tv}` : ''}{days > 1 ? ` · in ${days} days` : ''}

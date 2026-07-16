@@ -178,10 +178,11 @@ export default function MiniGame() {
     ? new Date(game.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()
     : `${isToday ? 'TODAY' : new Date(game.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()} · ${game.timeValid ? new Date(game.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : 'TBD'}${game.tv ? ` · ${game.tv}` : ''}`
 
-  // Countdown chip: minutes/hours inside 12 hours, days beyond (football is weekly).
+  // Countdown chip: minutes/hours inside 12 hours, days beyond (football is weekly). A flexed
+  // game's placeholder time never gets an hours countdown next to its "TBD" kicker.
   const msToStart = state === 'pre' ? new Date(game.date).getTime() - now : null
   let countdown = null
-  if (msToStart != null && msToStart > 0) {
+  if (msToStart != null && msToStart > 0 && (game.timeValid || msToStart >= 12 * 3600 * 1000)) {
     if (msToStart < 12 * 3600 * 1000) {
       const h = Math.floor(msToStart / 3600000)
       const m = Math.floor((msToStart % 3600000) / 60000)
@@ -206,7 +207,8 @@ export default function MiniGame() {
       {band(live ? 'Current game' : final ? 'Final score' : game.seasonType === 1 ? 'Preseason' : 'Upcoming game')}
       <div style={{ padding: '9px 14px 10px' }}>
         <div style={{ fontSize: 10, letterSpacing: '0.14em', fontWeight: 700, color: live ? theme.goldText : theme.muted }}>
-          {kicker}{!live && !final && game.week ? ` · WK ${game.week}` : ''}
+          {/* Playoff rounds reuse week numbers — say PLAYOFFS, never "WK 1", for January games. */}
+          {kicker}{!live && !final ? (game.seasonType === 3 ? ' · PLAYOFFS' : game.week ? ` · WK ${game.week}` : '') : ''}
         </div>
         {countdown && (
           <div style={{ display: 'inline-block', background: theme.gold, color: theme.green, fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', borderRadius: 10, padding: '2px 9px', marginTop: 5 }}>

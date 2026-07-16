@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
 import { headshot, SEASON } from '../config.js'
-import { fetchTeamLeaders, fetchLeagueLeaders, fetchAthleteOverview } from '../api.js'
+import { fetchTeamLeaders, fetchLeagueLeaders, fetchAthleteOverviews } from '../api.js'
 import { Loading, ErrorState } from './Status.jsx'
 import { openPlayerCard } from './PlayerCard.jsx'
 
@@ -138,14 +138,14 @@ export default function Leaders({ side }) {
     fetchLeagueLeaders().then(setLeague).catch(() => {})
   }, [])
 
-  // One small overview read per boarded player (cached + shared with the player cards), so
-  // each row can carry its supporting stats. Fail-soft per player — a miss just means no line.
+  // One small overview read per boarded player (pooled in the API layer, cached + shared with
+  // the player cards), so each row can carry its supporting stats. Fail-soft per player — a
+  // miss just means no line.
   useEffect(() => {
     if (!data) return
     let alive = true
     const ids = [...new Set(Object.values(data.categories).flat().map((l) => l.id).filter(Boolean))]
-    Promise.all(ids.map((pid) => fetchAthleteOverview(pid).then((o) => [pid, o]).catch(() => [pid, null])))
-      .then((pairs) => { if (alive) setOverviews(Object.fromEntries(pairs)) })
+    fetchAthleteOverviews(ids).then((map) => { if (alive) setOverviews(map) }).catch(() => {})
     return () => { alive = false }
   }, [data])
 

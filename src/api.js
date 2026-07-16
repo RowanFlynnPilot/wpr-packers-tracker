@@ -465,6 +465,15 @@ export function fetchGamelog(athleteId) {
   })
 }
 
+// Overviews for a set of athletes (the leader boards' detail lines), pooled so a tab open
+// doesn't fire twenty parallel requests. Misses resolve to null entries in the map.
+export async function fetchAthleteOverviews(athleteIds) {
+  const results = await pooled(athleteIds, 6, (id) => fetchAthleteOverview(id))
+  const map = {}
+  athleteIds.forEach((id, i) => { map[id] = results[i] })
+  return map
+}
+
 // One athlete's stat summary from the overview feed: Regular Season / Postseason / Career
 // splits as formatted display strings, keyed by the parallel displayNames. Powers the player
 // card's "season at a glance" tiles and career line. Fail-soft: null when the feed has none.

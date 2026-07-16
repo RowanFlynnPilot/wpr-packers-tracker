@@ -27,9 +27,10 @@ const settle = async (page) => {
   await page.waitForTimeout(1200) // logos + late fetches paint
 }
 
+let browser
 try {
   await waitForServer()
-  const browser = await chromium.launch()
+  browser = await chromium.launch()
 
   // ---- Full-page surfaces (demo mode: open slots show "Your Brand Here") ----
   const page = await browser.newPage({ viewport: { width: 1200, height: 1600 }, deviceScaleFactor: 2 })
@@ -43,16 +44,17 @@ try {
   // The featured-game hero card.
   await page.locator('#panel-season > div').first().screenshot({ path: MEDIA('hero.png') })
 
-  // Film room: tab bar through the turning-point callout.
+  // Film room: tab bar through the turning-point callout (which only exists when the game had
+  // a ≥4% win-probability swing — fall back to the chart's bottom edge otherwise).
   await page.goto(`${BASE}?demo&tab=film`, { waitUntil: 'networkidle' })
   await page.waitForSelector('.recharts-surface')
-  await page.getByText('The turning point', { exact: false }).waitFor()
+  await page.getByText('The turning point', { exact: false }).waitFor({ timeout: 5000 }).catch(() => {})
   await settle(page)
   const filmClip = await page.evaluate(() => {
     const top = document.querySelector('[role="tablist"]').getBoundingClientRect().top
     // Deepest div starting with the callout kicker is the kicker line; its parent is the card.
     const matches = [...document.querySelectorAll('#panel-film div')].filter((d) => d.textContent.startsWith('The turning point'))
-    const card = matches[matches.length - 1].parentElement
+    const card = matches.length ? matches[matches.length - 1].parentElement : document.querySelector('.recharts-surface').closest('div')
     return { top: Math.floor(top) - 6, bottom: Math.ceil(card.getBoundingClientRect().bottom) + 10 }
   })
   await page.screenshot({ path: MEDIA('film-room.png'), clip: { x: 0, y: filmClip.top, width: 1200, height: filmClip.bottom - filmClip.top } })
@@ -71,8 +73,8 @@ try {
   await shootMini('mini-standings.html', 'mini-standings.png', '.mini-card table tbody tr')
   await shootMini('mini-digest.html', 'mini-digest.png', '.mini-card table tbody tr')
 
-  await browser.close()
   console.log('docs/media refreshed')
 } finally {
+  if (browser) await browser.close().catch(() => {})
   server.kill()
 }

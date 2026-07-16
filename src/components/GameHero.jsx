@@ -209,9 +209,11 @@ export default function GameHero() {
   const venueLine = !live && !final ? [game.venue, game.tv && `${game.tv}`].filter(Boolean).join(' · ') : null
 
   // Pre-game countdown: hours+minutes inside 12 hours, days beyond that (football is weekly).
+  // A flexed game's placeholder time supports a day count but never an hours countdown — that
+  // would contradict the "kickoff TBD" line beside it.
   const msToStart = state === 'pre' ? new Date(game.date).getTime() - now : null
   let countdown = null
-  if (msToStart != null && msToStart > 0) {
+  if (msToStart != null && msToStart > 0 && (game.timeValid || msToStart >= 12 * 3600 * 1000)) {
     if (msToStart < 12 * 3600 * 1000) {
       const h = Math.floor(msToStart / 3600000)
       const m = Math.floor((msToStart % 3600000) / 60000)

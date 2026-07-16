@@ -100,14 +100,16 @@ export function gameFlow(summary, packersHome) {
 
 // A game's offensive snaps of 20+ yards from the Packers, biggest first — the "chunk plays"
 // list. Pass/rush snaps only: punts, kickoffs and field goals also carry big statYardage
-// numbers, but a 55-yard missed field goal is nobody's explosive play.
+// numbers, but a 55-yard missed field goal is nobody's explosive play — and turnover returns
+// ("Pass Interception Return", fumble returns) carry the OPPONENT's return yardage on a
+// Packers drive, which is nobody's Packers gain either.
 export function bigPlays(summary, packersId = TEAM_ID) {
   const plays = []
   ;(summary.drives?.previous || []).forEach((d) => {
     if (Number(d.team?.id) !== packersId) return
     ;(d.plays || []).forEach((p) => {
       const type = p.type?.text || ''
-      if (!/pass|rush|touchdown/i.test(type) || /punt|kick|field goal/i.test(type)) return
+      if (!/pass|rush|touchdown/i.test(type) || /punt|kick|field goal|intercept|fumble/i.test(type)) return
       if ((p.statYardage || 0) >= 20) {
         plays.push({
           id: p.id,

@@ -44,7 +44,11 @@ export default function Storylines() {
             : `the year closed with a ${score} ${last.won ? 'win over' : 'loss to'} the ${last.oppName}`
           out.push(<>Last season the Packers went <strong>{rec(me)}</strong> — {ord(rank)} in the {DIVISION_NAME} — and {ending}.</>)
         }
-        const opener = games.find((g) => g.seasonType === 2 && g.state === 'pre')
+        // While the opener itself is being played (Week 1 live, no finals yet, so the stats
+        // season hasn't flipped) the "road back opens…" line would point at Week 2 — the hero
+        // above is already showing the real thing, so the sentence sits out.
+        const live = games.some((g) => g.state === 'in')
+        const opener = live ? null : games.find((g) => g.seasonType === 2 && g.state === 'pre')
         const homeOpener = games.find((g) => g.seasonType === 2 && g.state === 'pre' && g.home)
         if (opener) {
           out.push(<>The road back opens <strong>{fmtDate(opener.date)}</strong> {opener.home ? 'against' : 'at'} the {TEAM_NAMES[opener.oppId] || opener.oppName}{homeOpener && homeOpener.id !== opener.id ? <> — Lambeau's first game is {fmtDate(homeOpener.date)} against the {TEAM_NAMES[homeOpener.oppId] || homeOpener.oppName}</> : null}.</>)
@@ -58,13 +62,15 @@ export default function Storylines() {
       } else {
         // ---- In season: last game, the race, the next one. ----
         const regGames = games.filter((g) => g.seasonType === 2)
-        const finals = regGames.filter((g) => g.state === 'post')
+        // The recap covers playoffs too — in January the last game IS the playoff game.
+        const finals = games.filter((g) => g.seasonType !== 1 && g.state === 'post')
         const last = finals[finals.length - 1]
         if (last) {
           let star = null
           try { star = teamGameLeaders(await fetchGameSummary(last.id))[0] || null } catch { /* sentence drops its clause */ }
           const score = last.won ? `${last.meScore}–${last.oppScore}` : `${last.oppScore}–${last.meScore}`
-          out.push(<>The Packers {last.tied ? `played the ${last.oppName} to a ${last.meScore}–${last.oppScore} tie` : `${last.won ? 'beat' : 'fell to'} the ${last.oppName} ${score}`} {last.home ? 'at Lambeau' : 'on the road'}{star ? <> behind <strong>{star.name}</strong>'s {star.line}</> : null}.</>)
+          const round = last.seasonType === 3 ? ` in the ${last.note || 'playoffs'}` : ''
+          out.push(<>The Packers {last.tied ? `played the ${last.oppName} to a ${last.meScore}–${last.oppScore} tie` : `${last.won ? 'beat' : 'fell to'} the ${last.oppName} ${score}`} {last.home ? 'at Lambeau' : 'on the road'}{round}{star ? <> behind <strong>{star.name}</strong>'s {star.line}</> : null}.</>)
         }
         if (me) {
           const leader = bundle.standings[0]

@@ -14,17 +14,25 @@ export function useModalFocus(ref, active = true) {
     // Queried per keypress, not once — the dialog's contents change as its data loads.
     const focusables = () => [...el.querySelectorAll('button, a[href], [tabindex]:not([tabindex="-1"])')]
     focusables()[0]?.focus()
+    // The listener lives on document, not the dialog: when loading content swaps to loaded
+    // content the focused element can unmount (focus falls to <body>), and a dialog-scoped
+    // listener would never see the next Tab — the trap has to recapture from anywhere.
     const onKey = (e) => {
       if (e.key !== 'Tab') return
       const list = focusables()
       if (!list.length) return
+      if (!el.contains(document.activeElement)) {
+        e.preventDefault()
+        ;(e.shiftKey ? list[list.length - 1] : list[0]).focus()
+        return
+      }
       const i = list.indexOf(document.activeElement)
       if (e.shiftKey && i <= 0) { e.preventDefault(); list[list.length - 1].focus() }
       else if (!e.shiftKey && i === list.length - 1) { e.preventDefault(); list[0].focus() }
     }
-    el.addEventListener('keydown', onKey)
+    document.addEventListener('keydown', onKey)
     return () => {
-      el.removeEventListener('keydown', onKey)
+      document.removeEventListener('keydown', onKey)
       if (invoker?.focus) invoker.focus()
     }
   }, [ref, active])

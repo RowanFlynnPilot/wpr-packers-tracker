@@ -5,6 +5,12 @@ import { ANALYTICS } from './config.js'
 
 let started = false
 
+// The queue stub exists from module load, not from initAnalytics — an event fired before App's
+// effects run (e.g. the ErrorBoundary catching a first-paint crash) queues instead of vanishing.
+if (typeof window !== 'undefined' && ANALYTICS.domain) {
+  window.plausible = window.plausible || function () { (window.plausible.q = window.plausible.q || []).push(arguments) }
+}
+
 // Inject the (cookieless) Plausible script once. Idempotent so React StrictMode's
 // double-effect in dev can't load it twice.
 export function initAnalytics() {
