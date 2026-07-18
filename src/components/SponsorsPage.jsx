@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
 import { SPONSORS, WATCH_VENUES, SPONSOR_INQUIRY, SEASON } from '../config.js'
 import { fetchSeasonGames } from '../api.js'
-import { track } from '../analytics.js'
+import { useInquiry } from '../useInquiry.js'
 import Masthead from './Masthead.jsx'
 
 // The hosted media kit (sponsors.html) — one URL that sells the tracker: the inventory drawn
@@ -46,6 +46,25 @@ const WHY = [
   ['Per-slot', 'reporting — impressions and clicks for your placement, not the page average'],
 ]
 
+// Inquiry CTA: opens the mail sheet where one exists AND copies the address with a visible
+// confirmation — a desk with no mail handler never sees a dead click (useInquiry).
+function Cta({ subject, slot, label, big = false, dark = false }) {
+  const { onClick, copied } = useInquiry(slot)
+  return (
+    <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', gap: 5 }}>
+      <a href={mailto(subject)} onClick={onClick} className="link-hover"
+        style={{ display: 'inline-block', background: theme.gold, color: theme.green, fontFamily: theme.sans, fontWeight: 700, fontSize: big ? 15 : 12.5, borderRadius: 8, padding: big ? '13px 26px' : '9px 16px', textDecoration: 'none' }}>
+        {label}
+      </a>
+      {copied && (
+        <span style={{ fontFamily: theme.sans, fontSize: 11, fontWeight: 700, color: dark ? theme.gold : theme.green }}>
+          ✓ {SPONSOR_INQUIRY} copied — paste it into any email
+        </span>
+      )}
+    </span>
+  )
+}
+
 export default function SponsorsPage() {
   const [days, setDays] = useState(null)
 
@@ -58,14 +77,7 @@ export default function SponsorsPage() {
     return () => { alive = false }
   }, [])
 
-  const inquire = (slot) => track('Sponsor Inquiry', { slot })
   const kicker = { fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700 }
-  const cta = (subject, slot, label, big = false) => (
-    <a href={mailto(subject)} onClick={() => inquire(slot)} className="link-hover"
-      style={{ display: 'inline-block', background: theme.gold, color: theme.green, fontFamily: theme.sans, fontWeight: 700, fontSize: big ? 15 : 12.5, borderRadius: 8, padding: big ? '13px 26px' : '9px 16px', textDecoration: 'none' }}>
-      {label}
-    </a>
-  )
 
   return (
     <div style={{ background: theme.paper, color: theme.ink, minHeight: '100vh' }}>
@@ -83,7 +95,7 @@ export default function SponsorsPage() {
             news brand — with your name on it.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-            {cta(`Packers tracker sponsorship — ${SEASON} season`, 'media-kit-header', 'Start the conversation', true)}
+            <Cta subject={`Packers tracker sponsorship — ${SEASON} season`} slot="media-kit-header" label="Start the conversation" big dark />
             {days > 0 && (
               <span style={{ fontFamily: theme.sans, fontSize: 12.5, fontWeight: 700, color: theme.gold }}>
                 Kickoff in {days} days — placements close before Week 1
@@ -125,7 +137,7 @@ export default function SponsorsPage() {
                   style={{ fontFamily: theme.sans, fontSize: 12, fontWeight: 700, color: theme.green, textDecoration: 'none' }}>
                   See it live <span aria-hidden="true">→</span>
                 </a>
-                {!sold && cta(`Packers tracker sponsorship — ${item.name}`, `media-kit-${item.key}`, 'Inquire')}
+                {!sold && <Cta subject={`Packers tracker sponsorship — ${item.name}`} slot={`media-kit-${item.key}`} label="Inquire" />}
               </div>
             </div>
           )
@@ -156,8 +168,8 @@ export default function SponsorsPage() {
         </div>
 
         {/* Closing CTA */}
-        <div style={{ textAlign: 'center', margin: '40px 0 20px' }}>
-          {cta(`Packers tracker sponsorship — ${SEASON} season`, 'media-kit-footer', `Book a placement for the ${SEASON} season`, true)}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '40px 0 20px' }}>
+          <Cta subject={`Packers tracker sponsorship — ${SEASON} season`} slot="media-kit-footer" label={`Book a placement for the ${SEASON} season`} big />
           <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, marginTop: 10 }}>
             {SPONSOR_INQUIRY} · 715-301-5539 · Wausau Pilot &amp; Review
           </div>

@@ -3,6 +3,7 @@ import { theme } from '../theme.js'
 import { SPONSOR_INQUIRY } from '../config.js'
 import { fetchSeasonGames } from '../api.js'
 import { track } from '../analytics.js'
+import { useInquiry } from '../useInquiry.js'
 
 // Sponsor lockup. One responsibility: render a paid sponsor, or an "available" upsell card.
 // `variant` adapts the chrome to the dark green banner vs. a light editorial section.
@@ -14,6 +15,7 @@ import { track } from '../analytics.js'
 export default function Sponsor({ sponsor, variant = 'light', compact = false, fullWidth = false, slot }) {
   const dark = variant === 'dark'
   const [daysToKickoff, setDaysToKickoff] = useState(null)
+  const inquiry = useInquiry(slot || 'unknown')
   useEffect(() => {
     if (sponsor) return // sold slots don't sell themselves
     let alive = true
@@ -64,9 +66,9 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, f
         <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 13, color: nameColor, marginTop: 3 }}>
           Reach Wisconsin sports fans
         </div>
-        <a href={mailto} className="link-hover" onClick={() => track('Sponsor Inquiry', { slot: slot || 'unknown' })}
+        <a href={mailto} className="link-hover" onClick={inquiry.onClick}
           style={{ display: 'inline-block', fontFamily: theme.sans, fontSize: 10.5, fontWeight: 700, color: dark ? '#fff' : theme.green, textDecoration: 'none', marginTop: 3 }}>
-          {SPONSOR_INQUIRY} <span aria-hidden="true">→</span>
+          {inquiry.copied ? '✓ Address copied — paste into any email' : <>{SPONSOR_INQUIRY} <span aria-hidden="true">→</span></>}
         </a>
         {daysToKickoff > 0 && daysToKickoff <= 150 && (
           <div style={{ fontFamily: theme.sans, fontSize: 9.5, fontWeight: 700, letterSpacing: '0.04em', color: dark ? theme.gold : theme.goldText, marginTop: 3 }}>

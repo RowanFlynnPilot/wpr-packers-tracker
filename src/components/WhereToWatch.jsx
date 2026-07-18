@@ -3,6 +3,7 @@ import { theme } from '../theme.js'
 import { WATCH_VENUES, SPONSOR_INQUIRY, TEAM_NAMES } from '../config.js'
 import { fetchSeasonGames } from '../api.js'
 import { track } from '../analytics.js'
+import { useInquiry } from '../useInquiry.js'
 import Section from './Section.jsx'
 
 // The game-day guide — bar/restaurant listings sold per listing (config WATCH_VENUES): photos,
@@ -93,6 +94,7 @@ function VenueCard({ venue }) {
 
 export default function WhereToWatch() {
   const [next, setNext] = useState(null)
+  const inquiry = useInquiry('where-to-watch')
 
   useEffect(() => {
     if (!WATCH_VENUES.length) return
@@ -121,9 +123,9 @@ export default function WhereToWatch() {
             Your bar or restaurant, in front of every game-day reader — photos, specials, and what makes your room the place to watch.
           </div>
           <a href={`mailto:${SPONSOR_INQUIRY}?subject=${encodeURIComponent('Packers tracker — game-day guide listing')}`}
-            className="link-hover" onClick={() => track('Sponsor Inquiry', { slot: 'where-to-watch' })}
+            className="link-hover" onClick={inquiry.onClick}
             style={{ fontFamily: theme.sans, fontSize: 11.5, fontWeight: 700, color: theme.green, textDecoration: 'none' }}>
-            {SPONSOR_INQUIRY} <span aria-hidden="true">→</span>
+            {inquiry.copied ? '✓ Address copied — paste into any email' : <>{SPONSOR_INQUIRY} <span aria-hidden="true">→</span></>}
           </a>
         </div>
       </div>

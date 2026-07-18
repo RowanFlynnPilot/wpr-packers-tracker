@@ -5,6 +5,7 @@ import { fetchStandingsBundle, fetchDivisionSchedules, fetchSeasonGames } from '
 import { lastFinalGame } from './games.js'
 import { initAnalytics, track } from './analytics.js'
 import { setupAutoResize } from './autosize.js'
+import { useInquiry } from './useInquiry.js'
 import Masthead from './components/Masthead.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import TabBar from './components/TabBar.jsx'
@@ -138,6 +139,7 @@ export default function App() {
 
   // ?demo pages look identical to the live page — a forwarded demo link explains itself.
   const demo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('demo')
+  const ribbonInquiry = useInquiry('demo-ribbon')
 
   return (
     <div style={{ background: theme.paper, color: theme.ink, minHeight: '100vh' }}>
@@ -145,9 +147,9 @@ export default function App() {
         <div style={{ background: theme.gold, color: theme.green, fontFamily: theme.sans, fontSize: 11.5, fontWeight: 700, textAlign: 'center', padding: '7px 14px' }}>
           Sales preview — open placements are shown filled with samples.{' '}
           <a href={`mailto:${SPONSOR_INQUIRY}?subject=${encodeURIComponent('Packers tracker sponsorship')}`}
-            onClick={() => track('Sponsor Inquiry', { slot: 'demo-ribbon' })}
+            onClick={ribbonInquiry.onClick}
             style={{ color: theme.green, textDecoration: 'underline' }}>
-            Book a placement
+            {ribbonInquiry.copied ? '✓ Address copied' : 'Book a placement'}
           </a>
         </div>
       )}
