@@ -214,6 +214,28 @@ export function fetchDivisionSchedules(season) {
   })
 }
 
+// The last n completed meetings (regular + postseason) with one opponent, newest first —
+// the hero's division-rivalry ledger. Sweeps back from the stats season across five years,
+// pooled; a missing season just contributes nothing.
+export function fetchRecentMeetings(oppId, n = 5) {
+  return cached(`meetings:${oppId}`, 600000, async () => {
+    const season = await fetchStatsSeason()
+    const years = [season, season - 1, season - 2, season - 3, season - 4]
+    const per = await pooled(years, 4, async (y) => {
+      const [reg, post] = await Promise.all([
+        fetchTeamSchedule(TEAM_ID, y, 2),
+        fetchTeamSchedule(TEAM_ID, y, 3).catch(() => ({ games: [] })),
+      ])
+      return [...reg.games, ...post.games]
+        .filter((g) => g.state === 'post' && g.oppId === oppId)
+        .map((g) => ({ ...g, season: y }))
+    })
+    return per.filter(Boolean).flat()
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, n)
+  })
+}
+
 // The single "featured" game for the hero: live now; else a just-finished final (held for 36
 // hours so a Monday reader still sees Sunday's result); else the next kickoff; else the last
 // final. Considers preseason + regular + postseason.

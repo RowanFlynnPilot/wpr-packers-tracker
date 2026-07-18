@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID, SEASON, GAMES_IN_SEASON, headshot } from '../config.js'
 import { fetchTeamLeaders, fetchTeamSchedule } from '../api.js'
+import { shareStatCard } from '../share-card.js'
 import { openPlayerCard } from './PlayerCard.jsx'
 import Section from './Section.jsx'
 
@@ -22,6 +23,7 @@ const fmt = (n) => n.toLocaleString('en-US')
 
 export default function MilestoneWatch() {
   const [items, setItems] = useState(null)
+  const [shared, setShared] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -56,6 +58,26 @@ export default function MilestoneWatch() {
 
   if (!items) return null
 
+  // The leading chase as a branded share card — milestone hunts are the season's most
+  // repostable numbers.
+  const shareCard = async () => {
+    const m = items[0]
+    const ok = await shareStatCard({
+      card: 'milestone',
+      kicker: 'Milestone watch',
+      headline: m.reached
+        ? `${m.name} hit ${fmt(m.target)} ${m.label}`
+        : `${m.name} is chasing ${fmt(m.target)} ${m.label}`,
+      stats: [
+        { value: fmt(m.value), label: 'So far' },
+        m.reached ? { value: '✓', label: 'Milestone reached' } : { value: fmt(m.pace), label: 'On pace for' },
+        { value: `${Math.min(100, Math.round(m.progress * 100))}%`, label: 'Of the way there' },
+      ],
+      footnote: 'The Packers, by the numbers — Wausau Pilot & Review',
+    })
+    if (ok) { setShared(true); setTimeout(() => setShared(false), 2500) }
+  }
+
   return (
     <Section kicker="Milestone watch" title="Chasing the numbers">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 12 }}>
@@ -83,6 +105,12 @@ export default function MilestoneWatch() {
             </div>
           </div>
         ))}
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <button onClick={shareCard} className="link-hover"
+          style={{ cursor: 'pointer', background: 'transparent', border: 'none', padding: 0, fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.04em', color: shared ? theme.green : theme.muted, fontWeight: shared ? 700 : 400 }}>
+          {shared ? 'Card ready to post' : 'Share the chase as a card'}
+        </button>
       </div>
     </Section>
   )

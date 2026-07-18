@@ -76,6 +76,44 @@ function pickStats(overview, splitName, n) {
   return out
 }
 
+// Game-by-game bars for the player's signature counting stat (the log's columns are
+// primary-category-first, so the first matching label IS the story: a QB's passing yards, a
+// back's rushing yards, a linebacker's tackles). Gold marks the season high. Pure SVG — the
+// card stays recharts-free.
+const SPARK_LABELS = { YDS: 'Yards', TOT: 'Tackles', TCKL: 'Tackles', SOLO: 'Solo tackles', SACK: 'Sacks', REC: 'Catches' }
+function SparkBars({ rows }) {
+  const series = [...rows].reverse() // oldest → newest reads like a season
+  let pick = null
+  for (const l of Object.keys(SPARK_LABELS)) {
+    if (series.some((g) => g.stats.some((s) => s.label === l && s.value !== '' && s.value != null))) { pick = l; break }
+  }
+  if (!pick) return null
+  const vals = series.map((g) => {
+    const s = g.stats.find((x) => x.label === pick)
+    const v = parseFloat(String(s?.value ?? '').replace(/,/g, ''))
+    return Number.isFinite(v) ? v : 0
+  })
+  if (vals.filter((v) => v > 0).length < 3) return null
+  const max = Math.max(...vals)
+  const BAR = 9, GAP = 3, H = 42
+  const width = vals.length * (BAR + GAP) - GAP
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={{ ...label, marginBottom: 6 }}>{SPARK_LABELS[pick]} by game</div>
+      <svg width={width} height={H} role="img" aria-label={`${SPARK_LABELS[pick]} per game across the season`} style={{ display: 'block', maxWidth: '100%' }}>
+        {vals.map((v, i) => {
+          const h = Math.max(2, (v / max) * (H - 4))
+          return <rect key={i} x={i * (BAR + GAP)} y={H - h} width={BAR} height={h} rx={1.5}
+            fill={v === max ? theme.gold : theme.green} />
+        })}
+      </svg>
+      <div style={{ fontFamily: theme.sans, fontSize: 10.5, color: theme.muted, marginTop: 4 }}>
+        Season high {max.toLocaleString('en-US')} · {vals.length} games, oldest to newest
+      </div>
+    </div>
+  )
+}
+
 export default function PlayerCardHost() {
   const [id, setId] = useState(null)
   const [bio, setBio] = useState(null)
@@ -182,6 +220,9 @@ export default function PlayerCardHost() {
                   )}
                 </div>
               )}
+
+              {/* Game-by-game shape of the season, then the log itself. */}
+              {rows.length > 0 && <SparkBars rows={rows} />}
 
               {/* Game log: last five by default, the whole season on demand. */}
               {!log ? <div style={{ marginTop: 14 }}><Loading lines={2} /></div> : rows.length > 0 && (

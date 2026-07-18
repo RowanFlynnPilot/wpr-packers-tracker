@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID, FRANCHISE_BEST, SEASON, DIVISION_NAME, CONFERENCE, GAMES_IN_SEASON } from '../config.js'
 import { paceWins } from '../games.js'
+import { shareStatCard } from '../share-card.js'
 import { useIsNarrow } from '../useIsNarrow.js'
 import { Loading, ErrorState } from './Status.jsx'
 
@@ -43,6 +44,7 @@ const gb = (leader, team) => ((effW(leader) - effW(team)) + (effL(team) - effL(l
 // figures (labeled), with a kickoff countdown chip; in season it's the live pulse.
 export default function Pulse({ bundle, lastGame, opener, error }) {
   const narrow = useIsNarrow()
+  const [shared, setShared] = useState(false)
   const animate = !pulseAnimated && typeof window !== 'undefined' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
   useEffect(() => { if (bundle) pulseAnimated = true }, [bundle])
   if (!bundle) return error ? <ErrorState /> : <Loading />
@@ -96,6 +98,34 @@ export default function Pulse({ bundle, lastGame, opener, error }) {
   // Kickoff countdown chip while we wait on the new season.
   const daysToKickoff = opener ? Math.ceil((new Date(opener.date) - Date.now()) / 86400000) : null
 
+  // The season pulse as a branded 1200×630 card — the reader carries the numbers (and the
+  // tracker) into their feed. Fail-soft: a refused share just leaves the button as it was.
+  const shareCard = async () => {
+    const stats = (offseason
+      ? [
+          { value: rec(me), label: `${season} record` },
+          { value: ord(rank), label: 'In the NFC North' },
+          { value: `${pd > 0 ? '+' : ''}${pd}`, label: 'Point diff' },
+          me.homeRecord && { value: me.homeRecord, label: 'At Lambeau' },
+        ]
+      : [
+          { value: rec(me), label: 'Record' },
+          { value: ord(rank), label: `In the ${DIVISION_NAME}` },
+          sc && { value: sc, label: 'Streak' },
+          { value: `${pd > 0 ? '+' : ''}${pd}`, label: 'Point diff' },
+        ]).filter(Boolean)
+    const ok = await shareStatCard({
+      card: 'pulse',
+      kicker: offseason ? `Final ${season}` : 'The season pulse',
+      headline: offseason ? `The ${season} Packers, by the numbers` : `The Packers are ${rec(me)}`,
+      stats,
+      footnote: offseason && daysToKickoff > 0
+        ? `The ${SEASON} season kicks off in ${daysToKickoff} days`
+        : `Updated ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`,
+    })
+    if (ok) { setShared(true); setTimeout(() => setShared(false), 2500) }
+  }
+
   // Pace vs the franchise-best season — Wisconsin-pride bait when the club is rolling.
   const pace = offseason ? null : paceWins(me)
   const best = FRANCHISE_BEST
@@ -136,6 +166,13 @@ export default function Pulse({ bundle, lastGame, opener, error }) {
           Final {season} figures{opener ? ` — the tracker flips to the new season when the Packers open ${opener.home ? 'at Lambeau against' : 'at'} the ${opener.oppName}` : ''}.
         </div>
       )}
+
+      <div style={{ marginTop: 14 }}>
+        <button onClick={shareCard} className="link-hover"
+          style={{ cursor: 'pointer', background: 'transparent', border: 'none', padding: 0, fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.04em', color: shared ? theme.green : theme.muted, fontWeight: shared ? 700 : 400 }}>
+          {shared ? 'Card ready to post' : 'Share these numbers as a card'}
+        </button>
+      </div>
 
       {/* Pace vs the franchise-best season. */}
       {pace != null && (() => {

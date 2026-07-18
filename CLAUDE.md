@@ -225,7 +225,9 @@ next-at-Lambeau w/ forecast, injury report, WPR newsroom feed, this-day-in-histo
 offense/defense leaders w/ NFL rank chips + supporting stat lines, team profile as a
 league-ladder dot plot, film room (win probability + scoring plays + chunk plays) +
 season chunk-play leaderboard + drive-DNA panel, player cards w/ season tiles +
-full-season game logs,
+game-by-game spark bars + full-season game logs, shareable canvas stat cards
+(src/share-card.js — Pulse + MilestoneWatch; carries the title sponsor into feeds),
+hero rivalry ledger on division games (fetchRecentMeetings),
 data-written storylines lede, milestone watch (activates Week 1), FPI line on the hero,
 deep-linkable tabs (`?tab=`), three minis + the email digest PNG.)
 
