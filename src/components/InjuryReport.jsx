@@ -46,7 +46,7 @@ export default function InjuryReport() {
         {players.map((p) => (
           <div key={p.id} role="button" tabIndex={0} onClick={() => openPlayerCard(p.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayerCard(p.id) } }} className="card-hover"
             style={{ display: 'flex', alignItems: 'center', gap: 10, border: `1px solid ${theme.rule}`, borderRadius: 6, padding: '9px 11px', background: '#fff', cursor: 'pointer' }}>
-            <img src={headshot(p.id)} alt="" width={34} height={34} style={{ borderRadius: '50%', objectFit: 'cover', background: theme.wash, flexShrink: 0 }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
+            <img src={headshot(p.id)} alt="" width={34} height={34} loading="lazy" decoding="async" style={{ borderRadius: '50%', objectFit: 'cover', background: theme.wash, flexShrink: 0 }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontFamily: theme.serif, fontSize: 14.5, color: theme.ink, lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
               <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 2 }}>{p.pos}{p.detail ? ` · ${p.detail}` : ''}</div>

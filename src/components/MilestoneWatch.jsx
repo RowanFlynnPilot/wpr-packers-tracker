@@ -66,7 +66,7 @@ export default function MilestoneWatch() {
             className="card-hover"
             style={{ border: `1px solid ${theme.rule}`, borderRadius: 8, padding: '12px 14px', background: '#fff', cursor: 'pointer' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <img src={headshot(m.id)} alt="" width={34} height={34}
+              <img src={headshot(m.id)} alt="" width={34} height={34} loading="lazy" decoding="async"
                 style={{ borderRadius: '50%', objectFit: 'cover', background: theme.wash, flexShrink: 0 }}
                 onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
               <div style={{ minWidth: 0 }}>

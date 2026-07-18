@@ -5,6 +5,10 @@ body { background: #fff; color: var(--ink); }
 table { border-collapse: collapse; width: 100%; }
 img { border: 0; }
 
+/* Keyboard focus in the house dark gold — the browser-default blue ring fights the palette.
+   :focus-visible only (mouse clicks stay ringless). */
+:focus-visible { outline: 2px solid #8a6d00; outline-offset: 2px; border-radius: 2px; }
+
 /* Loading skeletons — shimmer in the brand's warm neutrals. */
 .skeleton {
   background: linear-gradient(90deg, #efe9dc 25%, #f7f4ec 37%, #efe9dc 63%);

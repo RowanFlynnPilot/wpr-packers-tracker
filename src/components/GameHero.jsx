@@ -252,7 +252,7 @@ export default function GameHero() {
 
   const TeamBlock = ({ id, name }) => (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flex: narrow ? '0 1 120px' : '0 1 190px' }}>
-      <TeamLogo id={id} size={logoSize} />
+      <TeamLogo id={id} size={logoSize} loading="eager" />
       <div style={{ fontFamily: theme.serif, fontSize: nameSize, color: theme.ink, lineHeight: 1.05 }}>{name}</div>
     </div>
   )
@@ -373,7 +373,7 @@ export default function GameHero() {
         <div style={{ display: 'flex', justifyContent: 'center', gap: narrow ? 14 : 26, flexWrap: 'wrap', margin: '0 0 18px' }}>
           {leaders.map((l) => (
             <div key={l.cat} style={{ display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left' }}>
-              <img src={headshot(l.id)} alt="" width={34} height={34} style={{ borderRadius: '50%', objectFit: 'cover', background: theme.paper, flexShrink: 0 }} onError={(e) => { e.currentTarget.style.display = 'none' }} />
+              <img src={headshot(l.id)} alt="" width={34} height={34} loading="lazy" decoding="async" style={{ borderRadius: '50%', objectFit: 'cover', background: theme.paper, flexShrink: 0 }} onError={(e) => { e.currentTarget.style.display = 'none' }} />
               <div>
                 <div style={{ fontFamily: theme.sans, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>{l.cat}</div>
                 <div style={{ fontFamily: theme.sans, fontSize: 11.5, color: theme.ink }}>

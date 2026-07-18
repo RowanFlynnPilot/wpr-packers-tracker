@@ -31,6 +31,7 @@ import PlayoffOdds from './components/PlayoffOdds.jsx'
 import RoadAhead from './components/RoadAhead.jsx'
 import FilmRoom from './components/FilmRoom.jsx'
 import ChunkLeaders from './components/ChunkLeaders.jsx'
+import DriveDNA from './components/DriveDNA.jsx'
 import PlayerCardHost from './components/PlayerCard.jsx'
 import { Loading } from './components/Status.jsx'
 
@@ -121,7 +122,11 @@ export default function App() {
     if (id === tab) return // re-clicking the active tab is not a tab view
     setTab(id)
     track('Tab', { tab: id })
-    window.scrollTo(0, 0)
+    // Standalone, scroll ourselves; embedded, the auto-sized iframe has no inner scroll, so
+    // ask the host to bring the widget's top back into view (snippet in the README) — without
+    // this a reader deep in one tab lands stranded mid-way down the next.
+    if (window.self === window.top) window.scrollTo(0, 0)
+    else window.parent.postMessage({ type: 'wpr-packers-scroll' }, '*')
     const url = new URL(window.location)
     if (id === 'season') url.searchParams.delete('tab') // the default tab keeps a clean URL
     else url.searchParams.set('tab', id)
@@ -193,7 +198,7 @@ export default function App() {
           </div>
         )}
 
-        {tab === 'film' && <div role="tabpanel" id="panel-film" aria-labelledby="tab-film"><FilmRoom /><ChunkLeaders /></div>}
+        {tab === 'film' && <div role="tabpanel" id="panel-film" aria-labelledby="tab-film"><FilmRoom /><ChunkLeaders /><DriveDNA /></div>}
 
         <PlayerCardHost />
         </ErrorBoundary>

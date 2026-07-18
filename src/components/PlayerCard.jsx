@@ -144,7 +144,7 @@ export default function PlayerCardHost() {
                   {bio.jersey}
                 </div>
               )}
-              <img src={headshot(id)} alt="" width={76} height={76}
+              <img src={headshot(id)} alt="" width={76} height={76} decoding="async"
                 style={{ borderRadius: '50%', objectFit: 'cover', background: '#fff', flexShrink: 0, boxShadow: `0 0 0 3px ${theme.gold}` }}
                 onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
               <div style={{ minWidth: 0, position: 'relative' }}>

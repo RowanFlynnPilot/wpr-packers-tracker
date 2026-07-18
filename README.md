@@ -60,9 +60,13 @@ script into a WordPress **Custom HTML** block:
 <script>
 window.addEventListener('message', function (e) {
   if (e.origin !== 'https://rowanflynnpilot.github.io') return
-  if (e.data && e.data.type === 'wpr-packers-height') {
-    var f = document.getElementById('wpr-packers')
-    if (f && e.data.height) f.style.height = e.data.height + 'px'
+  var f = document.getElementById('wpr-packers')
+  if (!f || !e.data) return
+  if (e.data.type === 'wpr-packers-height' && e.data.height) f.style.height = e.data.height + 'px'
+  // Tab switches ask the host to bring the widget's top back into view (the auto-sized
+  // iframe has no inner scroll, so a reader deep in one tab would land mid-way down the next).
+  if (e.data.type === 'wpr-packers-scroll' && f.getBoundingClientRect().top < 0) {
+    f.scrollIntoView({ behavior: 'smooth' })
   }
 })
 </script>

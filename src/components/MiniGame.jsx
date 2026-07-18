@@ -12,7 +12,7 @@ const REFRESH_MS = 30000
 const IDLE_REFRESH_MS = 120000
 
 const Headshot = ({ id, size }) => (
-  <img src={headshot(id)} alt="" width={size} height={size}
+  <img src={headshot(id)} alt="" width={size} height={size} loading="lazy" decoding="async"
     style={{ borderRadius: '50%', objectFit: 'cover', background: theme.wash, flexShrink: 0 }}
     onError={(e) => { e.currentTarget.style.display = 'none' }} />
 )

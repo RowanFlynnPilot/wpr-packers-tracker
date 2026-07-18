@@ -73,7 +73,8 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   Schedule (game-day guide + full season list w/ box scores + next-at-Lambeau + injuries +
   WPR coverage + sponsor band + this-day), Season stats (id `leaders`: milestone watch +
   offense/defense boards + team profile), Film room (per-game win probability + scoring
-  plays + chunk plays + season chunk board). `sponsors.html` is the hosted media-kit page
+  plays + chunk plays + season chunk board + drive DNA). `sponsors.html` is the hosted
+  media-kit page
   (config-driven inventory status + live mini embeds). Only the active tab renders, and
   `api.js`
   memoizes the heavier reads (`cached()`, short TTL) so flipping back is instant.
@@ -81,7 +82,8 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   tabs. Tab switches fire a Plausible `Tab` event.
 - `src/autosize.js` — when embedded, posts document height to the host on every change
   (ResizeObserver) so the iframe fits the active tab. The host embed listens for
-  `{ type: 'wpr-packers-height' }` (snippet in README). No-op when standalone.
+  `{ type: 'wpr-packers-height' }`; tab switches also post `{ type: 'wpr-packers-scroll' }`
+  so the host scrolls the widget's top back into view (snippet in README). No-op standalone.
 - `src/components/` — one file per concern (separation of concerns):
   - `Masthead`, `PackersBanner`, `Section`, `TabBar` — chrome.
   - `BookmarkButton` — stickiness nudge pinned in the top bar (⌘/Ctrl+D + copy-link).
@@ -89,7 +91,8 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   - `Race` — games back of the division lead, week by week, from the four division teams'
     schedules; direct end-of-line labels (logo + GB) instead of a legend.
   - `Matchup`, `NextAtLambeau`, `InjuryReport`, `VsNorth`, `PlayoffOdds`, `RoadAhead`,
-    `Coverage`, `ThisDay`, `TeamProfile`, `Storylines`, `MilestoneWatch`, `ChunkLeaders` —
+    `Coverage`, `ThisDay`, `TeamProfile`, `Storylines`, `MilestoneWatch`, `ChunkLeaders`,
+    `DriveDNA` —
     fail-soft sections that OWN their `Section` chrome: on error/empty the heading
     disappears with the content (never render an orphaned title over blank space — follow
     this pattern for any new fail-soft section). `Storylines` is the data-written editorial
@@ -221,7 +224,8 @@ Vivid Seats deep links; `TICKETS_OVERRIDE_URL` swaps in a WPR affiliate destinat
 next-at-Lambeau w/ forecast, injury report, WPR newsroom feed, this-day-in-history,
 offense/defense leaders w/ NFL rank chips + supporting stat lines, team profile as a
 league-ladder dot plot, film room (win probability + scoring plays + chunk plays) +
-season chunk-play leaderboard, player cards w/ season tiles + full-season game logs,
+season chunk-play leaderboard + drive-DNA panel, player cards w/ season tiles +
+full-season game logs,
 data-written storylines lede, milestone watch (activates Week 1), FPI line on the hero,
 deep-linkable tabs (`?tab=`), three minis + the email digest PNG.)
 
@@ -229,7 +233,6 @@ deep-linkable tabs (`?tab=`), three minis + the email digest PNG.)
   Owner wants to clear this with WPR before building.
 - Betting line on the hero/matchup (the odds endpoint is probed and works — DraftKings via
   ESPN) — needs WPR's editorial sign-off on gambling content first.
-- Drive DNA panel (points per drive, three-and-out rate, red-zone TD% from the summaries).
 - Plausible public dashboard links per sponsor once the account is live.
 
 Keep each as a small, self-contained addition.

@@ -49,7 +49,7 @@ export default function ChunkLeaders() {
             tabIndex={clickable ? 0 : undefined}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: lead ? '9px 6px' : '7px 6px', borderTop: i ? `1px solid ${theme.rule}` : 'none', cursor: clickable ? 'pointer' : 'default' }}>
             {r.id != null ? (
-              <img src={headshot(r.id)} alt="" width={lead ? 40 : 30} height={lead ? 40 : 30}
+              <img src={headshot(r.id)} alt="" width={lead ? 40 : 30} height={lead ? 40 : 30} loading="lazy" decoding="async"
                 style={{ borderRadius: '50%', background: theme.wash, objectFit: 'cover', flexShrink: 0, boxShadow: lead ? `0 0 0 2px ${theme.gold}` : undefined }}
                 onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
             ) : (

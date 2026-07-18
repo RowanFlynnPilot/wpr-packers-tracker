@@ -150,6 +150,58 @@ export function chunkLeaders(entries) {
   return Object.values(byName).sort((a, b) => b.plays - a.plays || b.yards - a.yards)
 }
 
+// Season drive profile from the cached summaries — how possessions start, how efficiently
+// they move, and how they end — for the offense AND the defense (opponents' drives against
+// Green Bay). Clock-kill possessions (END OF HALF/GAME) sit out entirely. A drive's points
+// come from the scoring plays it contains, credited only when the DRIVING team scored — a
+// pick-six thrown by the offense is that drive ending in a turnover, not points. ESPN's
+// start.yardLine is a FIXED home-goal coordinate (verified: home "GB 17" → 17, away
+// "DET 24" → 76), so own-side field position = yardLine for the home team and
+// 100 - yardLine for the visitor.
+export function driveDNA(entries, packersId = TEAM_ID) {
+  const mk = () => ({ drives: 0, points: 0, threeOuts: 0, startSum: 0, startN: 0, ends: { TD: 0, FG: 0, Punt: 0, Turnover: 0, Other: 0 } })
+  const sides = { offense: mk(), defense: mk() }
+  entries.forEach(({ summary }) => {
+    const homeId = Number(summary.header?.competitions?.[0]?.competitors?.find((c) => c.homeAway === 'home')?.team?.id)
+    const pts = {} // scoring play id → { points, teamId }, from the running score
+    let h = 0, a = 0
+    ;(summary.scoringPlays || []).forEach((p) => {
+      pts[String(p.id)] = { points: (p.homeScore - h) + (p.awayScore - a), teamId: Number(p.team?.id) }
+      h = p.homeScore
+      a = p.awayScore
+    })
+    ;(summary.drives?.previous || []).forEach((d) => {
+      const teamId = Number(d.team?.id)
+      const s = teamId === packersId ? sides.offense : sides.defense
+      const result = (d.result || '').toUpperCase()
+      if (!result || /END OF (HALF|GAME)/.test(result)) return
+      s.drives++
+      ;(d.plays || []).forEach((p) => {
+        const sc = pts[String(p.id)]
+        if (sc && sc.teamId === teamId) s.points += sc.points
+      })
+      if (result === 'PUNT' && (d.offensivePlays ?? 99) <= 3) s.threeOuts++
+      if (d.start?.yardLine != null && homeId) {
+        s.startSum += teamId === homeId ? d.start.yardLine : 100 - d.start.yardLine
+        s.startN++
+      }
+      if (/INT|FUMBLE|DOWNS/.test(result)) s.ends.Turnover++
+      else if (/TD|TOUCHDOWN/.test(result)) s.ends.TD++
+      else if (result === 'FG') s.ends.FG++
+      else if (result === 'PUNT') s.ends.Punt++
+      else s.ends.Other++
+    })
+  })
+  const rates = (s) => (s.drives ? {
+    drives: s.drives,
+    pointsPerDrive: s.points / s.drives,
+    threeOutPct: (s.threeOuts / s.drives) * 100,
+    avgStart: s.startN ? Math.round(s.startSum / s.startN) : null,
+    ends: s.ends,
+  } : null)
+  return { offense: rates(sides.offense), defense: rates(sides.defense) }
+}
+
 // The Packers' top performer lines from a summary's per-team leaders — e.g.
 // [{ cat: 'Passing', name: 'Jordan Love', line: '22/30, 268 YDS, 3 TD' }].
 const CAT_LABELS = { passingYards: 'Passing', rushingYards: 'Rushing', receivingYards: 'Receiving', sacks: 'Sacks', totalTackles: 'Tackles' }

@@ -99,7 +99,7 @@ export default function FilmRoom() {
               <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginTop: 22 }}>
                 {leaders.map((l) => (
                   <div key={l.cat} style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 170px' }}>
-                    <img src={headshot(l.id)} alt="" width={32} height={32} style={{ borderRadius: '50%', objectFit: 'cover', background: theme.wash, flexShrink: 0 }} onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                    <img src={headshot(l.id)} alt="" width={32} height={32} loading="lazy" decoding="async" style={{ borderRadius: '50%', objectFit: 'cover', background: theme.wash, flexShrink: 0 }} onError={(e) => { e.currentTarget.style.display = 'none' }} />
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontFamily: theme.sans, fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>{l.cat}</div>
                       <div style={{ fontFamily: theme.sans, fontSize: 11.5, color: theme.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

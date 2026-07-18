@@ -41,6 +41,7 @@ export default function TabBar({ tabs, active, onChange }) {
               color: on ? theme.green : theme.muted,
               borderBottom: `3px solid ${on ? theme.gold : 'transparent'}`,
               textAlign: 'center', whiteSpace: 'nowrap',
+              transition: 'color 0.15s ease, border-color 0.15s ease',
             }}
           >
             {t.label}
