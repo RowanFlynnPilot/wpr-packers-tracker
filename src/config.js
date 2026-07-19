@@ -52,8 +52,11 @@ export const teamLogo = (teamId) =>
 export const TEAM_LOGO = teamLogo(TEAM_ID)
 export const headshot = (athleteId) => `https://a.espncdn.com/i/headshots/nfl/players/full/${athleteId}.png`
 
-// WPR brand assets (the publication's own logo).
+// WPR brand assets (the publication's own logo). The typewriter badge is the press seal used
+// across WPR's tools (wpr-water etc.) — served from OUR public/ copy, never hot-linked from a
+// sibling repo's hashed assets.
 export const WPR_LOGO = 'https://wausaupilotandreview.com/wp-content/uploads/2024/04/WausauPilotandReviewLogo.png'
+export const WPR_BADGE = `${import.meta.env.BASE_URL}wpr-typewriter-badge.png`
 export const WPR_TAGLINE = 'Where Locals Look First For News'
 export const WPR_URL = 'https://wausaupilotandreview.com/'
 

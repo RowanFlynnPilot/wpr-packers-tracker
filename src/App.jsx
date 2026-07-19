@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { theme } from './theme.js'
-import { SPONSOR_DISCLAIMER, WPR_NEWS, SPONSORS, SEASON, SPONSOR_INQUIRY } from './config.js'
+import { SPONSOR_DISCLAIMER, WPR_NEWS, SPONSORS, SEASON, SPONSOR_INQUIRY, WPR_BADGE } from './config.js'
 import { fetchStandingsBundle, fetchDivisionSchedules, fetchSeasonGames } from './api.js'
 import { lastFinalGame } from './games.js'
 import { initAnalytics, track } from './analytics.js'
@@ -204,13 +204,17 @@ export default function App() {
 
         <PlayerCardHost />
         </ErrorBoundary>
-        <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '22px 0 44px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6 }}>
-          Data via ESPN's public NFL feeds · refreshes live. Not affiliated with or endorsed by the NFL, the Green Bay Packers, or ESPN.<br />
-          {SPONSOR_DISCLAIMER && <>{SPONSOR_DISCLAIMER}<br /></>}
-          Wausau Pilot &amp; Review · 715-301-5539 ·{' '}
-          <a href="sponsors.html" target="_blank" rel="noopener noreferrer" className="link-hover" style={{ color: theme.green, fontWeight: 700, textDecoration: 'none' }}>
-            Advertise on this tracker
-          </a>
+        <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '22px 0 44px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6, display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          <img src={WPR_BADGE} alt="" width={44} height={44} loading="lazy" decoding="async"
+            style={{ flexShrink: 0, marginTop: 2 }} onError={(e) => { e.currentTarget.style.display = 'none' }} />
+          <div>
+            Data via ESPN's public NFL feeds · refreshes live. Not affiliated with or endorsed by the NFL, the Green Bay Packers, or ESPN.<br />
+            {SPONSOR_DISCLAIMER && <>{SPONSOR_DISCLAIMER}<br /></>}
+            Wausau Pilot &amp; Review · 715-301-5539 ·{' '}
+            <a href="sponsors.html" target="_blank" rel="noopener noreferrer" className="link-hover" style={{ color: theme.green, fontWeight: 700, textDecoration: 'none' }}>
+              Advertise on this tracker
+            </a>
+          </div>
         </footer>
       </div>
     </div>

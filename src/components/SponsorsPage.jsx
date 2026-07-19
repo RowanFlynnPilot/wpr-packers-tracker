@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
-import { SPONSORS, WATCH_VENUES, SPONSOR_INQUIRY, SEASON } from '../config.js'
+import { SPONSORS, WATCH_VENUES, SPONSOR_INQUIRY, SEASON, WPR_BADGE } from '../config.js'
 import { fetchSeasonGames } from '../api.js'
 import { useInquiry } from '../useInquiry.js'
 import Masthead from './Masthead.jsx'
@@ -175,9 +175,13 @@ export default function SponsorsPage() {
           </div>
         </div>
 
-        <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '18px 0 40px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6 }}>
-          The tracker is not affiliated with or endorsed by the NFL, the Green Bay Packers, or ESPN. Data via ESPN's public NFL feeds.{' '}
-          <a href="./" className="link-hover" style={{ color: theme.green, fontWeight: 700, textDecoration: 'none' }}>See the tracker →</a>
+        <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '18px 0 40px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6, display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          <img src={WPR_BADGE} alt="" width={44} height={44} loading="lazy" decoding="async"
+            style={{ flexShrink: 0, marginTop: 2 }} onError={(e) => { e.currentTarget.style.display = 'none' }} />
+          <div>
+            The tracker is not affiliated with or endorsed by the NFL, the Green Bay Packers, or ESPN. Data via ESPN's public NFL feeds.{' '}
+            <a href="./" className="link-hover" style={{ color: theme.green, fontWeight: 700, textDecoration: 'none' }}>See the tracker →</a>
+          </div>
         </footer>
       </div>
     </div>
