@@ -84,8 +84,30 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, f
   // frames it naturally.
   const Box = sponsor.url ? 'a' : 'div'
 
-  // Full-width bar: eyebrow on top, then logo · tagline · CTA on one wrapping row.
+  // Directions: the whole card is already an <a>, so this renders as a button-role span
+  // (nested anchors are invalid) that opens the platform's maps app — Apple Maps on Apple
+  // hardware, Google Maps everywhere else. Same treatment as the Brewers tracker.
+  const openDirections = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const q = encodeURIComponent(sponsor.address)
+    const apple = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent)
+    track('Sponsor Click', { sponsor: sponsor.name, slot: slot || 'unknown', action: 'directions' })
+    window.open(apple ? `https://maps.apple.com/?daddr=${q}` : `https://www.google.com/maps/dir/?api=1&destination=${q}`, '_blank', 'noopener')
+  }
+  const directionsChip = sponsor.address && (
+    <span role="button" tabIndex={0} onClick={openDirections} onKeyDown={(e) => e.key === 'Enter' && openDirections(e)} className="link-hover"
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1.5px solid ${theme.gold}`, borderRadius: 16, padding: '4px 12px', fontFamily: theme.sans, fontSize: 11.5, fontWeight: 700, color: theme.green, whiteSpace: 'nowrap', cursor: 'pointer' }}>
+      <svg width="11" height="14" viewBox="0 0 12 15" aria-hidden="true"><path d="M6 0C2.9 0 .5 2.4.5 5.4c0 3.9 4.9 9 5.1 9.2a.55.55 0 0 0 .8 0c.2-.2 5.1-5.3 5.1-9.2C11.5 2.4 9.1 0 6 0zm0 7.6a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4z" fill={theme.gold} /></svg>
+      Directions
+    </span>
+  )
+
+  // Full-width bar: eyebrow on top, then logo · big amenity line + location · actions.
+  // The tagline splits at the em-dash: what the sponsor offers reads LARGE; where they are
+  // sits under it — the bar's middle carries real weight instead of one small gray line.
   if (fullWidth) {
+    const [amenities, location] = (sponsor.tagline || '').split('—').map((s) => s.trim())
     return (
       <Box
         {...linkProps}
@@ -93,25 +115,31 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, f
         style={{
           display: 'block', width: '100%', textAlign: 'left', textDecoration: 'none',
           background: '#fff', border: `1px solid ${theme.rule}`, borderTop: `3px solid ${theme.gold}`,
-          borderRadius: 8, padding: '12px 18px 13px',
+          borderRadius: 8, padding: '10px 18px 12px',
           boxShadow: dark ? '0 6px 20px rgba(0,0,0,0.25)' : '0 2px 8px rgba(0,0,0,0.06)',
         }}
       >
         <div style={{ fontFamily: theme.sans, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>Presented by</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', marginTop: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', marginTop: 6 }}>
           {sponsor.logo ? (
             <img src={sponsor.logo} alt={sponsor.name} style={{ display: 'block', height: 50, objectFit: 'contain' }} />
           ) : (
             <div style={{ fontFamily: theme.serif, fontSize: 20, color: theme.ink }}>{sponsor.name}</div>
           )}
           {sponsor.tagline && (
-            <div style={{ fontFamily: theme.sans, fontSize: 11.5, color: theme.muted, lineHeight: 1.4, flex: '1 1 200px' }}>{sponsor.tagline}</div>
-          )}
-          {sponsor.url && (
-            <div style={{ fontFamily: theme.sans, fontSize: 11.5, fontWeight: 700, color: theme.green, whiteSpace: 'nowrap', marginLeft: 'auto' }}>
-              Plan your visit <span aria-hidden="true">→</span>
+            <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+              <div style={{ fontFamily: theme.sans, fontSize: 15.5, fontWeight: 700, color: theme.ink, lineHeight: 1.3 }}>{amenities}</div>
+              {location && <div style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted, marginTop: 2 }}>{location}</div>}
             </div>
           )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginLeft: 'auto' }}>
+            {directionsChip}
+            {sponsor.url && (
+              <span style={{ fontFamily: theme.sans, fontSize: 12, fontWeight: 700, color: theme.green, whiteSpace: 'nowrap' }}>
+                Plan your visit <span aria-hidden="true">→</span>
+              </span>
+            )}
+          </div>
         </div>
       </Box>
     )

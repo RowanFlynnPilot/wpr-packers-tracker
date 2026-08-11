@@ -86,10 +86,20 @@ export const WPR_NEWS = {
 
 // Sellable sponsor surfaces. One title slot (the green banner) plus two inline section slots.
 // A slot is either a sponsor object or null (renders as an "available" upsell card).
-// Sponsor shape: { name, logo, url, tagline? } — logo optional (falls back to the name in serif).
+// Sponsor shape: { name, logo, url, tagline?, address? } — logo optional (falls back to the
+// name in serif); address powers the banner's "Directions" button.
 export const SPONSORS = {
-  // Title sponsor — open inventory at launch (set to a sponsor object to fill it).
-  header: null,
+  // Title sponsor — Ho-Chunk Gaming Wittenberg, the same partner presenting WPR's Brewers
+  // tracker (same treatment: logo from WPR's own WordPress uploads, UTM-tagged destination).
+  header: {
+    name: 'Ho-Chunk Gaming Wittenberg',
+    logo: 'https://wausaupilotandreview.com/wp-content/uploads/2025/07/HCG-W-Logo-1-336x115.jpg',
+    url: 'https://www.ho-chunkgaming.com/wittenberg/?utm_source=wausaupilotandreview&utm_medium=widget&utm_campaign=packers_tracker',
+    tagline: '800+ slots · Hotel · Dining — Wittenberg, WI',
+    // Street address powers the banner's "Directions" button (Apple Maps on Apple devices,
+    // Google Maps elsewhere). Omit on a sponsor with no physical destination.
+    address: 'N7198 US-45, Wittenberg, WI 54499',
+  },
   // Open inventory. Set to a sponsor object (same shape as above) to fill the slot.
   race: null,
   leaders: null,
@@ -128,7 +138,8 @@ export const TICKETS_OVERRIDE_URL = null
 export let WATCH_VENUES = []
 
 // Shown in the footer when a gaming brand is the title sponsor. Editable; set to '' to hide.
-export const SPONSOR_DISCLAIMER = ''
+export const SPONSOR_DISCLAIMER =
+  'Must be 21+. If you or someone you know has a gambling problem, call 1-800-GAMBLER.'
 
 // Privacy-light analytics (Plausible — cookieless, no consent banner). For sponsor ROI:
 // page views = impressions, plus a 'Sponsor Click' event per slot = click-throughs.
