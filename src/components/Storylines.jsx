@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
-import { TEAM_ID, SEASON, DIVISION, DIVISION_NAME, TEAM_NAMES } from '../config.js'
+import { TEAM_ID, SEASON, DIVISION, DIVISION_NAME, TEAM_NAMES, CAMP_OPEN } from '../config.js'
 import { fetchStandingsBundle, fetchSeasonGames, fetchTeamSchedule, fetchGameSummary, fetchPredictor } from '../api.js'
 import { gamesBack, teamGameLeaders, scheduleNotes } from '../games.js'
 import Section from './Section.jsx'
@@ -14,6 +14,17 @@ import Section from './Section.jsx'
 const ord = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]) }
 const fmtDate = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
 const fmtWhen = (iso) => new Date(iso).toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit' })
+
+// Which day of training camp today is (day 1 = the first practice, CAMP_OPEN in config), or
+// null when unset, camp hasn't opened, or the count has gone stale — a forgotten config line
+// next summer should mute the count, not have the lede claiming day 300 of camp.
+function campDayToday() {
+  if (!CAMP_OPEN) return null
+  const [y, m, d] = CAMP_OPEN.split('-').map(Number)
+  const today = new Date()
+  const n = Math.floor((today.setHours(0, 0, 0, 0) - new Date(y, m - 1, d)) / 86400000) + 1
+  return n >= 1 && n <= 45 ? n : null
+}
 
 export default function Storylines() {
   const [lines, setLines] = useState(null)
@@ -30,6 +41,42 @@ export default function Storylines() {
       const out = []
 
       if (off) {
+        const live = games.some((g) => g.state === 'in')
+
+        // ---- The daily beat: training camp and the exhibition slate. Rewritten from the
+        // calendar every day (camp day, days to kickoff, the latest exhibition result), so
+        // the lede reads different tomorrow than it does today. Sits out while a game is
+        // live — the hero above IS the story then.
+        if (!live) {
+          const preNext = games.find((g) => g.seasonType === 1 && g.state === 'pre')
+          const preFinals = games.filter((g) => g.seasonType === 1 && g.state === 'post')
+          const regNext = games.find((g) => g.seasonType === 2 && g.state === 'pre')
+          const countdown = (g) => {
+            const days = Math.max(0, Math.ceil((new Date(g.date) - Date.now()) / 86400000))
+            const when = g.timeValid ? `${fmtWhen(g.date)}${g.tv ? ` · ${g.tv}` : ''}` : `${fmtDate(g.date)}, kickoff TBD`
+            return days === 0 ? <>is <strong>tonight</strong> ({when})</>
+              : days === 1 ? <>is <strong>tomorrow</strong> ({when})</>
+              : <>is <strong>{days} days out</strong> ({when})</>
+          }
+          if (preNext) {
+            const preLeft = games.filter((g) => g.seasonType === 1 && g.state === 'pre').length
+            const what = !preFinals.length ? 'the preseason opener' : preLeft === 1 ? 'the preseason finale' : `preseason week ${preNext.week}`
+            const where = `${preNext.home ? 'against' : 'at'} the ${TEAM_NAMES[preNext.oppId] || preNext.oppName}`
+            const lastPre = preFinals[preFinals.length - 1]
+            const campDay = campDayToday()
+            if (lastPre) {
+              const score = lastPre.won ? `${lastPre.meScore}–${lastPre.oppScore}` : `${lastPre.oppScore}–${lastPre.meScore}`
+              out.push(<>The Packers {lastPre.won ? 'took' : 'dropped'} their last exhibition, {score} {lastPre.won ? 'over' : 'to'} the {lastPre.oppName} — {what} {where} {countdown(preNext)}.</>)
+            } else {
+              out.push(<>{campDay ? <>Day <strong>{campDay}</strong> of training camp in Green Bay</> : <>Training camp rolls on in Green Bay</>} — {what} {where} {countdown(preNext)}.</>)
+            }
+          } else if (regNext && preFinals.length) {
+            const lastPre = preFinals[preFinals.length - 1]
+            const score = lastPre.won ? `${lastPre.meScore}–${lastPre.oppScore}` : `${lastPre.oppScore}–${lastPre.meScore}`
+            out.push(<>The exhibition slate closed with a {score} {lastPre.won ? 'win over' : 'loss to'} the {lastPre.oppName} — now the games count: kickoff {countdown(regNext)}.</>)
+          }
+        }
+
         // ---- Offseason: wrap last season, point at the new one. ----
         const [reg, post] = await Promise.all([
           fetchTeamSchedule(TEAM_ID, bundle.season, 2),
@@ -47,7 +94,6 @@ export default function Storylines() {
         // While the opener itself is being played (Week 1 live, no finals yet, so the stats
         // season hasn't flipped) the "road back opens…" line would point at Week 2 — the hero
         // above is already showing the real thing, so the sentence sits out.
-        const live = games.some((g) => g.state === 'in')
         const opener = live ? null : games.find((g) => g.seasonType === 2 && g.state === 'pre')
         const homeOpener = games.find((g) => g.seasonType === 2 && g.state === 'pre' && g.home)
         if (opener) {

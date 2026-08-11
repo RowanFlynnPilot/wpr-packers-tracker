@@ -64,6 +64,12 @@ export const WPR_URL = 'https://wausaupilotandreview.com/'
 // it. Packers: 15–1 in 2011. Update if the club sets a new mark.
 export const FRANCHISE_BEST = { wins: 15, year: 2011 }
 
+// First training-camp practice — the one camp fact no feed carries, one line a year from the
+// club's announcement (2026: veterans reported July 28, first practice July 29). Powers the
+// storylines' "Day N of training camp" beat; null skips the count (the lede still reads
+// "Training camp rolls on"), and a stale year self-mutes rather than miscounting.
+export const CAMP_OPEN = '2026-07-29'
+
 // Canonical URL of the standalone tracker — used by the share button, the calendar-event
 // description, and the social-card tags in index.html.
 export const SITE_URL = 'https://rowanflynnpilot.github.io/wpr-packers-tracker/'
