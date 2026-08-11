@@ -27,6 +27,27 @@ const settle = async (page) => {
   await page.waitForTimeout(1200) // logos + late fetches paint
 }
 
+// ESPN's edge fingerprints headless browsers and serves their API responses WITHOUT the CORS
+// header (real browsers are unaffected) — every shot here would render its sections empty.
+// Same fix as render-digest.mjs: proxy the page's ESPN API calls through Node's fetch, where
+// CORS doesn't apply, and hand the JSON back with the header the page expects. One
+// registration per page covers every navigation that page makes.
+const proxyEspn = (page) => page.route('**://*.espn.com/**', async (route) => {
+  try {
+    const res = await fetch(route.request().url())
+    await route.fulfill({
+      status: res.status,
+      headers: {
+        'content-type': res.headers.get('content-type') || 'application/json',
+        'access-control-allow-origin': '*',
+      },
+      body: Buffer.from(await res.arrayBuffer()),
+    })
+  } catch {
+    await route.abort()
+  }
+})
+
 let browser
 try {
   await waitForServer()
@@ -34,6 +55,7 @@ try {
 
   // ---- Full-page surfaces (demo mode: open slots show "Your Brand Here") ----
   const page = await browser.newPage({ viewport: { width: 1200, height: 1600 }, deviceScaleFactor: 2 })
+  await proxyEspn(page)
   await page.goto(`${BASE}?demo`, { waitUntil: 'networkidle' })
   await settle(page)
 
@@ -61,17 +83,24 @@ try {
   await page.close()
 
   // ---- Minis (demo mode shows the sponsor line) ----
-  const shootMini = async (file, out, waitSel) => {
+  const shootMini = async (file, out, ready) => {
     const p = await browser.newPage({ viewport: { width: 470, height: 1000 }, deviceScaleFactor: 2 })
+    await proxyEspn(p)
     await p.goto(`${BASE}${file}?demo`, { waitUntil: 'networkidle' })
-    await p.waitForSelector(waitSel)
+    await ready(p)
     await settle(p)
     await p.locator('.mini-card').screenshot({ path: MEDIA(out) })
     await p.close()
   }
-  await shootMini('mini.html', 'mini-scoreboard.png', '.mini-card')
-  await shootMini('mini-standings.html', 'mini-standings.png', '.mini-card table tbody tr')
-  await shootMini('mini-digest.html', 'mini-digest.png', '.mini-card table tbody tr')
+  await shootMini('mini.html', 'mini-scoreboard.png', (p) => p.waitForSelector('.mini-card'))
+  await shootMini('mini-standings.html', 'mini-standings.png', (p) => p.waitForSelector('.mini-card table tbody tr'))
+  // The digest's third block is the standings table in season, the div-based preseason slate
+  // during the exhibition window — wait for whichever arrives.
+  await shootMini('mini-digest.html', 'mini-digest.png', (p) => p.waitForFunction(() => {
+    const card = document.querySelector('.mini-card')
+    if (!card) return false
+    return !!card.querySelector('table tbody tr') || (card.innerText || '').includes('PRESEASON SLATE')
+  }, null, { timeout: 30000 }))
 
   console.log('docs/media refreshed')
 } finally {
