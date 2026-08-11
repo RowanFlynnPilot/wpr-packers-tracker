@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID, SEASON, CONFERENCE, DIVISION_NAME, GAMES_IN_SEASON } from '../config.js'
-import { fetchStandings } from '../api.js'
+import { fetchStandings, fetchStatsSeason } from '../api.js'
 import Section from './Section.jsx'
 
 const SIMS = 4000
@@ -79,13 +79,18 @@ export default function PlayoffOdds() {
 
   useEffect(() => {
     let alive = true
-    fetchStandings(SEASON).then((rows) => {
+    ;(async () => {
+      // Gate on the phase source, not the standings: ESPN's preseason standings aren't
+      // empty (the Hall of Fame game shows up as a 1–0 in August), so "any recorded
+      // result" opens the gate a month early. fetchStatsSeason flips to SEASON only once
+      // a regular-season game is final — exactly when the sim stops being a coin flip.
+      if (await fetchStatsSeason() !== SEASON) return
+      const rows = await fetchStandings(SEASON)
       if (!alive) return
       const conf = rows.filter((t) => t.conf === CONFERENCE)
       if (conf.length < 12) return // sanity: a short table means a bad response — skip quietly
-      if (!conf.some((t) => t.wins + t.losses + t.ties > 0)) return // season hasn't kicked off
       setOdds(simulate(conf))
-    }).catch(() => {})
+    })().catch(() => {})
     return () => { alive = false }
   }, [])
 

@@ -40,6 +40,8 @@ const DETAILS = {
   interceptions: [['Passes Defended', 'passes def.'], ['Interception Touchdowns', 'pick-six'], ['Total Tackles', 'tackles']],
 }
 const KEEP_ZERO = new Set(['TD', 'INT'])
+// Units that read wrong at exactly one — "1 sacks" is a typo in print.
+const SINGULAR = { carries: 'carry', catches: 'catch', sacks: 'sack', 'passes def.': 'pass def.', tackles: 'tackle' }
 function detailLine(overview, picks) {
   if (!overview || !picks) return null
   const stats = overview.splits?.['Regular Season']
@@ -50,8 +52,9 @@ function detailLine(overview, picks) {
     if (i === -1) continue
     const v = stats[i]
     if (v == null || v === '') continue
-    if (!parseFloat(String(v).replace(/,/g, '')) && !KEEP_ZERO.has(short)) continue
-    parts.push(`${v} ${short}`)
+    const n = parseFloat(String(v).replace(/,/g, ''))
+    if (!n && !KEEP_ZERO.has(short)) continue
+    parts.push(`${v} ${n === 1 ? SINGULAR[short] || short : short}`)
   }
   return parts.length ? parts.join(' · ') : null
 }

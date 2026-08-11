@@ -150,6 +150,26 @@ export function chunkLeaders(entries) {
   return Object.values(byName).sort((a, b) => b.plays - a.plays || b.yards - a.yards)
 }
 
+// Every athlete who appears in one team's box scores across the season's summaries, deduped —
+// { id, name } per player. The chunk-play board resolves parsed play-by-play names through the
+// roster first, then through this: a player who left the club is gone from the roster but still
+// in the box scores of the games he made plays in.
+export function summaryAthletes(entries, teamId = TEAM_ID) {
+  const byId = {}
+  entries.forEach(({ summary }) => {
+    ;(summary.boxscore?.players || []).forEach((side) => {
+      if (Number(side.team?.id) !== teamId) return
+      ;(side.statistics || []).forEach((cat) => {
+        ;(cat.athletes || []).forEach((a) => {
+          const id = Number(a.athlete?.id)
+          if (id && !byId[id]) byId[id] = { id, name: a.athlete.displayName || '' }
+        })
+      })
+    })
+  })
+  return Object.values(byId)
+}
+
 // Season drive profile from the cached summaries — how possessions start, how efficiently
 // they move, and how they end — for the offense AND the defense (opponents' drives against
 // Green Bay). Clock-kill possessions (END OF HALF/GAME) sit out entirely. A drive's points

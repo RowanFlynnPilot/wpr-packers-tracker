@@ -17,9 +17,13 @@ const Headshot = ({ id, size }) => (
 
 const fmtDay = (iso) => new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 const fmtTime = (iso) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-// ESPN reuses week numbers for playoff rounds — a wild-card game is week 1 again, so
-// postseason games say "Playoffs", never "Wk 1".
-const wk = (g) => (g.seasonType === 3 ? 'Playoffs' : g.week ? `Wk ${g.week}` : '')
+// ESPN reuses week numbers across season types — a wild-card game is week 1 again, and so is
+// an August exhibition. Postseason games say "Playoffs"; preseason games say so out loud, so
+// an exhibition score never reads like the real thing.
+const wk = (g) =>
+  g.seasonType === 3 ? 'Playoffs'
+  : g.seasonType === 1 ? (g.week ? `Preseason Wk ${g.week}` : 'Preseason')
+  : g.week ? `Wk ${g.week}` : ''
 
 // Newsletter "digest" mini: last final (score + the Packers' top performers), next game
 // (kickoff, TV, venue), and the NFC North standings — one at-a-glance card. The whole card is
@@ -32,12 +36,14 @@ export default function MiniDigest() {
   const [leaders, setLeaders] = useState(null)  // last game's Packers leaders
 
   const load = useCallback(() => {
+    // Preseason counts here, same as the hero and the scoreboard mini — an August newsletter
+    // should carry August's games. The wk() labels keep an exhibition from reading like the
+    // regular season, and Week 1 takes the card back over naturally.
     fetchSeasonGames().then(({ games: all }) => {
-      const reg = all.filter((g) => g.seasonType !== 1)
-      const finals = reg.filter((g) => g.state === 'post')
+      const finals = all.filter((g) => g.state === 'post')
       setGames({
         last: finals[finals.length - 1] || null,
-        next: reg.find((g) => g.state === 'pre') || null,
+        next: all.find((g) => g.state === 'pre') || null,
       })
     }).catch(() => {})
     fetchStandingsBundle().then(setBundle).catch(() => {})

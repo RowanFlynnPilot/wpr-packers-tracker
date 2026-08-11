@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
 import { SEASON, headshot } from '../config.js'
 import { fetchSeasonSummaries, fetchRoster } from '../api.js'
-import { chunkLeaders } from '../games.js'
+import { chunkLeaders, summaryAthletes } from '../games.js'
 import { openPlayerCard } from './PlayerCard.jsx'
 import Section from './Section.jsx'
 
 // "Explosive-play leaders" — the season-long chunk-play board: every 20+ yard gain across the
 // year's summaries, credited to the runner/receiver (games.js chunkLeaders). One pooled sweep
-// of the summaries the film room already caches. Names resolve to the roster for headshots and
-// player cards; a player the parse can't place on the roster still shows by play-by-play name.
+// of the summaries the film room already caches. Names resolve through the roster, then the
+// box scores; a player neither can place still shows by play-by-play name.
 // Owns its Section; fail-soft — before there's a completed game there's no board.
 export default function ChunkLeaders() {
   const [data, setData] = useState(null)
@@ -19,8 +19,13 @@ export default function ChunkLeaders() {
     ;(async () => {
       const [{ season, entries }, roster] = await Promise.all([fetchSeasonSummaries(), fetchRoster()])
       if (!entries.length) return
+      // Resolve parsed names through the roster (name + position + card), then through the
+      // season's box scores (name + card) — a leader who left the club in the offseason is
+      // gone from the roster but still fully named in the games he made the plays in.
+      const boxed = summaryAthletes(entries)
       const rows = chunkLeaders(entries).slice(0, 8).map((r) => {
-        const p = roster.list.find((x) => x.name.endsWith(r.last) && x.name[0] === r.initial)
+        const match = (x) => x.name.endsWith(r.last) && x.name[0] === r.initial
+        const p = roster.list.find(match) || boxed.find(match)
         return { ...r, id: p?.id ?? null, display: p?.name || r.name, pos: p?.pos || '' }
       })
       if (alive && rows.length) setData({ season, rows, games: entries.length })
