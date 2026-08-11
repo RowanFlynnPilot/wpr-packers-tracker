@@ -26,8 +26,10 @@ const wk = (g) =>
   : g.week ? `Wk ${g.week}` : ''
 
 // Newsletter "digest" mini: last final (score + the Packers' top performers), next game
-// (kickoff, TV, venue), and the NFC North standings — one at-a-glance card. The whole card is
-// one link into the full tracker (target=_top navigates the hosting page, not the iframe).
+// (kickoff, TV, venue), and the NFC North standings — one at-a-glance card. While the
+// standings are still last season's and exhibitions are underway, the preseason slate takes
+// the table's spot (results fill in game by game) and hands it back at Week 1. The whole card
+// is one link into the full tracker (target=_top navigates the hosting page, not the iframe).
 // Self-contained, fail-soft: any section with no data simply doesn't render (in the offseason
 // that's the "last game" block until the games come back).
 export default function MiniDigest() {
@@ -44,6 +46,8 @@ export default function MiniDigest() {
       setGames({
         last: finals[finals.length - 1] || null,
         next: all.find((g) => g.state === 'pre') || null,
+        slate: all.filter((g) => g.seasonType === 1),
+        opener: all.find((g) => g.seasonType === 2 && g.state === 'pre') || null,
       })
     }).catch(() => {})
     fetchStandingsBundle().then(setBundle).catch(() => {})
@@ -178,9 +182,51 @@ export default function MiniDigest() {
     )
   }
 
+  // ---- Preseason slate — stands in for the standings while the table is still last
+  // season's. Exhibition results and dates are the live story in August; the block hands
+  // the spot back to the real table the moment the new season's standings exist. The deep
+  // offseason (no preseason schedule published yet) keeps the labeled final standings —
+  // a year-old table beats a blank card.
+  let slateBlock = null
+  const slate = games?.slate || []
+  if (slate.length && (!bundle || bundle.season < SEASON)) {
+    slateBlock = (
+      <div style={lastBlock || nextBlock ? section : { padding: '11px 14px' }}>
+        {heading('Preseason slate')}
+        {slate.map((g, i) => {
+          const nextUp = g.id === next?.id
+          const right = g.state === 'post'
+            ? <span style={{ color: g.won ? theme.green : g.tied ? theme.muted : theme.red, fontWeight: 700 }}>
+                {g.won ? 'W' : g.tied ? 'T' : 'L'} {g.won ? `${g.meScore}–${g.oppScore}` : `${g.oppScore}–${g.meScore}`}
+              </span>
+            : g.state === 'in'
+              ? <span style={{ color: theme.red, fontWeight: 700 }}>Live · {g.meScore}–{g.oppScore}</span>
+              : <span style={{ color: theme.muted }}>{fmtDay(g.date)}{g.timeValid ? ` · ${fmtTime(g.date)}` : ''}</span>
+          return (
+            <div key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '5px 0', borderTop: i ? `1px solid ${theme.rule}` : 'none', fontSize: 11.5 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                <span style={{ fontSize: 9, letterSpacing: '0.06em', color: theme.muted, fontWeight: 700, flexShrink: 0 }}>WK {g.week}</span>
+                <TeamLogo id={g.oppId} size={16} />
+                <span style={{ fontFamily: theme.serif, fontSize: 13, color: theme.ink, fontWeight: nextUp ? 700 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {g.home ? 'vs' : 'at'} {g.oppName}
+                </span>
+              </span>
+              <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>{right}</span>
+            </div>
+          )
+        })}
+        {games?.opener && (
+          <div style={{ fontSize: 10, color: theme.muted, marginTop: 6 }}>
+            The real thing: {fmtDay(games.opener.date)} {games.opener.home ? 'vs' : 'at'} the {games.opener.oppName} — the {DIVISION_NAME} table returns at Week 1.
+          </div>
+        )}
+      </div>
+    )
+  }
+
   // ---- NFC North standings ----
   let standingsBlock = null
-  if (bundle) {
+  if (bundle && !slateBlock) {
     const rows = bundle.standings
     const stale = bundle.season < SEASON
     const th = { fontSize: 9, letterSpacing: '0.04em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700, textAlign: 'right', padding: '3px 6px' }
@@ -225,6 +271,7 @@ export default function MiniDigest() {
       {band}
       {lastBlock}
       {nextBlock}
+      {slateBlock}
       {standingsBlock}
       {footer}
     </a>
