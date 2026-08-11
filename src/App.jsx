@@ -16,6 +16,7 @@ import Storylines from './components/Storylines.jsx'
 import Matchup from './components/Matchup.jsx'
 import Section from './components/Section.jsx'
 import Pulse from './components/Pulse.jsx'
+import PreseasonSlate from './components/PreseasonSlate.jsx'
 import Standings from './components/Standings.jsx'
 import VsNorth from './components/VsNorth.jsx'
 import Schedule from './components/Schedule.jsx'
@@ -169,6 +170,7 @@ export default function App() {
             <Storylines />
             <Matchup />
             <Section kicker="Season pulse" title="Where things stand"><Pulse bundle={bundle} lastGame={lastGame} opener={opener} error={errors.standings} /></Section>
+            <PreseasonSlate />
             <Section kicker="NFC North" title="The standings"><Standings bundle={bundle} schedules={schedules} error={errors.standings} /><VsNorth /></Section>
             <Section kicker="The division race" title="NFC North, week by week" sponsor={SPONSORS.race} slot="race">
               <Suspense fallback={<Loading block />}><Race schedules={schedules} season={raceSeason} error={errors.schedules} /></Suspense>
