@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { theme } from '../theme.js'
-import { SITE_URL, WPR_NEWS } from '../config.js'
+import { SITE_URL, WPR_EMBED_URL, WPR_NEWS } from '../config.js'
 import { track } from '../analytics.js'
 
 // Stickiness nudge: "bookmark this page so you come back." No browser exposes a programmatic
@@ -12,12 +12,12 @@ import { track } from '../analytics.js'
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent || '')
 const isTouch = typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(pointer: coarse)').matches
 
-// The URL a bookmark/copy should point at: the dedicated WPR Packers page when embedded (so
+// The URL a bookmark/copy should point at: the tracker's own WPR page when embedded (so
 // readers land back on the news site, not the bare iframe), else the standalone tracker.
 function bookmarkUrl() {
   if (typeof window === 'undefined') return SITE_URL
   if (window.self === window.top) return window.location.href
-  return (WPR_NEWS && WPR_NEWS.archive) || document.referrer || SITE_URL
+  return WPR_EMBED_URL || (WPR_NEWS && WPR_NEWS.archive) || document.referrer || SITE_URL
 }
 
 const Key = ({ children }) => (

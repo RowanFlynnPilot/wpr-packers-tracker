@@ -43,6 +43,8 @@ Push to `main`. The `Deploy to GitHub Pages` workflow builds and publishes autom
 In the repo Settings → Pages, set the source to **GitHub Actions** once.
 
 Live URL: `https://rowanflynnpilot.github.io/wpr-packers-tracker/`
+Embedded on the news site at: `https://wausaupilotandreview.com/green-bay-packers/` — the
+page reader-facing links (bookmark copy, hero share, mini taps) point at.
 
 ## Embed
 
@@ -86,7 +88,7 @@ the full tracker; the `to` parameter sets where a tap lands (the tracker's page 
 news site). Without it, the card links to the standalone tracker.
 
 ```html
-<iframe src="https://rowanflynnpilot.github.io/wpr-packers-tracker/mini.html?to=https://wausaupilotandreview.com/category/sports/green-bay-packers/"
+<iframe src="https://rowanflynnpilot.github.io/wpr-packers-tracker/mini.html?to=https://wausaupilotandreview.com/green-bay-packers/"
         style="width:100%;border:0;height:280px" loading="lazy"
         title="Packers scoreboard — tap for the full tracker"></iframe>
 ```
@@ -99,7 +101,7 @@ fire a `Mini Click` event tagged with the `widget` (add it as a goal to report o
 A compact NFC North standings card at `/mini-standings.html`. Same `to` + click behavior.
 
 ```html
-<iframe src="https://rowanflynnpilot.github.io/wpr-packers-tracker/mini-standings.html?to=https://wausaupilotandreview.com/category/sports/green-bay-packers/"
+<iframe src="https://rowanflynnpilot.github.io/wpr-packers-tracker/mini-standings.html?to=https://wausaupilotandreview.com/green-bay-packers/"
         style="width:100%;border:0;height:260px" loading="lazy"
         title="NFC North standings — tap for the full tracker"></iframe>
 ```
@@ -111,7 +113,7 @@ next game (kickoff, TV, venue), and the NFC North standings in one card. Built f
 newsletter / sidebar use. Same `to` + click behavior.
 
 ```html
-<iframe src="https://rowanflynnpilot.github.io/wpr-packers-tracker/mini-digest.html?to=https://wausaupilotandreview.com/category/sports/green-bay-packers/"
+<iframe src="https://rowanflynnpilot.github.io/wpr-packers-tracker/mini-digest.html?to=https://wausaupilotandreview.com/green-bay-packers/"
         style="width:100%;border:0;height:480px" loading="lazy"
         title="Packers digest — tap for the full tracker"></iframe>
 ```
@@ -130,13 +132,13 @@ the newsletter's HTML (works in every email client) — the image links to the W
 page:
 
 ```html
-<a href="https://wausaupilotandreview.com/category/sports/green-bay-packers/">
+<a href="https://wausaupilotandreview.com/green-bay-packers/">
   <img src="https://rowanflynnpilot.github.io/wpr-packers-tracker/digest.png"
        alt="Packers digest — last game, next game and the NFC North standings"
        width="600" style="width:100%;max-width:600px;height:auto;border:0;display:block" />
 </a>
 <p style="margin:8px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;text-align:center">
-  <a href="https://wausaupilotandreview.com/category/sports/green-bay-packers/"
+  <a href="https://wausaupilotandreview.com/green-bay-packers/"
      style="color:#203731;font-weight:bold;text-decoration:none">See the full live Packers tracker →</a>
 </p>
 ```

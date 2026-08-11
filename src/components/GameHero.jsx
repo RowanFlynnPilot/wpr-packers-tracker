@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { theme } from '../theme.js'
-import { TEAM_ID, DIVISION, SPONSORS, SITE_URL, headshot } from '../config.js'
+import { TEAM_ID, DIVISION, SPONSORS, SITE_URL, WPR_EMBED_URL, headshot } from '../config.js'
 import { fetchFeaturedGame, fetchGameSummary, fetchLiveSummary, liveExtras, fetchStandingsBundle, fetchStatsSeason, fetchTeamSchedule, fetchPredictor, fetchRecentMeetings } from '../api.js'
 import { finals, teamGameLeaders, periodLabel } from '../games.js'
 import { fetchKickoffForecast } from '../weather.js'
@@ -231,9 +231,10 @@ export default function GameHero() {
   }
 
   // Share the game (native sheet on mobile, clipboard elsewhere). When embedded, share the
-  // hosting WPR page rather than the bare iframe URL.
+  // tracker's WPR page rather than the bare iframe URL (document.referrer is origin-only
+  // under the default referrer policy, so it can't be the primary source).
   const share = () => {
-    const url = window.self === window.top ? window.location.href : (document.referrer || SITE_URL)
+    const url = window.self === window.top ? window.location.href : (WPR_EMBED_URL || document.referrer || SITE_URL)
     const text = live
       ? `Packers ${meScore}–${oppScore} ${game.home ? 'vs' : 'at'} the ${oppName} — live now`
       : final

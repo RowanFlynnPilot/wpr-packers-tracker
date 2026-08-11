@@ -70,9 +70,14 @@ export const FRANCHISE_BEST = { wins: 15, year: 2011 }
 // "Training camp rolls on"), and a stale year self-mutes rather than miscounting.
 export const CAMP_OPEN = '2026-07-29'
 
-// Canonical URL of the standalone tracker — used by the share button, the calendar-event
-// description, and the social-card tags in index.html.
+// Canonical URL of the standalone tracker — the social-card tags in index.html describe this
+// page, and it's the last-resort fallback for reader-facing links.
 export const SITE_URL = 'https://rowanflynnpilot.github.io/wpr-packers-tracker/'
+
+// The tool's public home on the news site (live since Aug 2026) — where reader-facing links
+// land: bookmark copy-link, the hero share button when embedded, and mini taps without a
+// ?to= override. Keeping readers on wausaupilotandreview.com is the point of the embed.
+export const WPR_EMBED_URL = 'https://wausaupilotandreview.com/green-bay-packers/'
 
 // WPR's own Packers coverage, pulled live from the WordPress REST API (keyless + CORS-open,
 // same rules as the ESPN/weather clients). `categoryId` is the "Green Bay Packers" category
