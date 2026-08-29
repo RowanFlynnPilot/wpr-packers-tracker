@@ -1,10 +1,14 @@
 import { theme } from '../theme.js'
+import { useIsNarrow } from '../useIsNarrow.js'
 
 // Section navigation for the tracker. Tabs flex to equal shares of the full width (no scroll,
 // no dead space); the active tab gets a gold underline. Full ARIA tabs contract: roving
 // tabindex (one Tab stop for the whole bar), arrow keys move + select, Home/End jump, and each
 // tab points at its panel (App wraps tab content in the matching role="tabpanel").
+// On narrow screens a tab's `short` label (when provided) stands in for the full one — five
+// equal shares of 375px can't hold "Season stats" without clipping.
 export default function TabBar({ tabs, active, onChange }) {
+  const narrow = useIsNarrow()
   const select = (id) => {
     onChange(id)
     document.getElementById(`tab-${id}`)?.focus()
@@ -44,7 +48,7 @@ export default function TabBar({ tabs, active, onChange }) {
               transition: 'color 0.15s ease, border-color 0.15s ease',
             }}
           >
-            {t.label}
+            {narrow ? t.short || t.label : t.label}
           </button>
         )
       })}

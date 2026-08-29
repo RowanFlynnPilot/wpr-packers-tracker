@@ -126,6 +126,64 @@ export function fetchSeasonGames() {
   })
 }
 
+// One scoreboard event normalized NEUTRALLY — both sides, no team perspective — for surfaces
+// that render league-wide games (the pick'em). Scores here are bare strings (scoreOf handles
+// both shapes); records ride along for the pregame rows.
+export function normalizeLeagueGame(e) {
+  const comp = e.competitions?.[0]
+  if (!comp) return null
+  const homeC = comp.competitors.find((c) => c.homeAway === 'home')
+  const awayC = comp.competitors.find((c) => c.homeAway === 'away')
+  if (!homeC || !awayC) return null
+  const st = comp.status?.type || {}
+  const side = (c) => ({
+    id: Number(c.team.id),
+    abbr: c.team.abbreviation,
+    name: c.team.shortDisplayName || c.team.displayName,
+    // A scheduled game has no score — the feed's "0" placeholder would render as a real 0.
+    score: (st.state || 'pre') === 'pre' ? null : scoreOf(c.score),
+    record: (c.records || [])[0]?.summary || '',
+  })
+  return {
+    id: e.id,
+    date: e.date,
+    timeValid: e.timeValid !== false,
+    state: st.state || 'pre',
+    completed: !!st.completed,
+    detail: st.shortDetail || '',
+    home: side(homeC),
+    away: side(awayC),
+    tv: comp.broadcasts?.[0]?.names?.[0] || comp.broadcasts?.[0]?.media?.shortName || '',
+  }
+}
+
+// Where the league clock stands, for the pick'em: ESPN's bare scoreboard reports the current
+// week. Preseason clamps forward to regular-season Week 1 (picks open before kickoff); the
+// postseason and any other season's clock return null (the card shows a final tally or sits
+// out). Deliberately regular-season only.
+export function fetchPickemWeek() {
+  return cached('pickemWeek', 300000, async () => {
+    const data = await getJSON(`${SITE}/scoreboard`)
+    if (data.season?.year !== SEASON) return null
+    const type = data.season?.type
+    if (type === 1) return 1
+    if (type === 3) return null
+    return data.week?.number || 1
+  })
+}
+
+// One regular-season week of the league scoreboard, normalized + kickoff-sorted. Cached on the
+// same short TTL as the other live reads; grading and the pick rows share the fetch.
+export function fetchScoreboardWeek(week) {
+  return cached(`scoreboard:${week}`, 60000, async () => {
+    const data = await getJSON(`${SITE}/scoreboard?seasontype=2&week=${week}&dates=${SEASON}`)
+    return (data.events || [])
+      .map(normalizeLeagueGame)
+      .filter(Boolean)
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+  })
+}
+
 // The season the numbers should describe: SEASON once it has kicked off (any completed
 // regular-season game), else the one before it — in the offseason the standings, leaders and
 // film room show last season's final figures, clearly labeled, and flip over automatically

@@ -48,8 +48,9 @@ page reader-facing links (bookmark copy, hero share, mini taps) point at.
 
 ## Embed
 
-The tool is organized into tabs (Season / Schedule / Season stats / Film room) — deep-link
-a tab with `?tab=schedule|leaders|film` (handy for linking from articles) — and
+The tool is organized into tabs (Season / Schedule / Season stats / Film room / Pick'em) —
+deep-link a tab with `?tab=schedule|leaders|film|pickem` (handy for linking from articles;
+`?tab=pickem` makes a great newsletter CTA: "make your picks") — and
 **auto-resizes**: it posts its height to the host page on every change, so the iframe
 always fits the active tab with no inner scroll. Paste BOTH the iframe and the little
 script into a WordPress **Custom HTML** block:

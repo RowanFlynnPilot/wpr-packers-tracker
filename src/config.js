@@ -111,6 +111,9 @@ export const SPONSORS = {
   // Kickoff-forecast credit (a compact "Presented by" line in the hero — no upsell card
   // when empty; the forecast simply renders unsponsored until this is sold).
   forecast: null,
+  // The weekly pick'em tab (WPR-approved Aug 2026) — a habit-forming surface, sold like the
+  // section slots.
+  pickem: null,
 }
 
 // Where to send sponsorship inquiries (shown on empty slots — the upsell).
@@ -172,6 +175,7 @@ if (typeof window !== 'undefined' && new URLSearchParams(window.location.search)
   SPONSORS.race = SPONSORS.race || demo
   SPONSORS.leaders = SPONSORS.leaders || demo
   SPONSORS.forecast = SPONSORS.forecast || { name: 'Your Brand Here' }
+  SPONSORS.pickem = SPONSORS.pickem || demo
   if (!WATCH_VENUES.length) {
     WATCH_VENUES = [
       {

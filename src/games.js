@@ -289,6 +289,22 @@ export function rankThisDay(items) {
   return scored
 }
 
+// Grade one week of pick'em picks against that week's scoreboard (normalizeLeagueGame shape).
+// A tie grades as a miss — pick'em convention is win-or-nothing. Picks on games still to play
+// count as pending, so a week only settles when every picked game is final.
+export function gradePicks(games, picks) {
+  let correct = 0, wrong = 0, pending = 0
+  games.forEach((g) => {
+    const pick = picks[g.id]
+    if (!pick) return
+    if (!g.completed) { pending++; return }
+    const winner = g.home.score > g.away.score ? g.home.id : g.away.score > g.home.score ? g.away.id : null
+    if (winner === pick) correct++
+    else wrong++
+  })
+  return { correct, wrong, pending, decided: correct + wrong }
+}
+
 // A win-percentage record projected across a full season, for the pace bar.
 export function paceWins(row) {
   const played = row.wins + row.losses + row.ties

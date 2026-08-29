@@ -73,7 +73,10 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   Schedule (game-day guide + full season list w/ box scores + next-at-Lambeau + injuries +
   WPR coverage + sponsor band + this-day), Season stats (id `leaders`: milestone watch +
   offense/defense boards + team profile), Film room (per-game win probability + scoring
-  plays + chunk plays + season chunk board + drive DNA). `sponsors.html` is the hosted
+  plays + chunk plays + season chunk board + drive DNA), Pick'em (the week's full NFL
+  slate — picks in localStorage only, NO backend/accounts by design; graded from the
+  scoreboard feed; past weeks settle into stored results so the season tally never
+  re-fans-out; sponsorable slot `pickem`). Tab labels carry `short` variants for phones. `sponsors.html` is the hosted
   media-kit page
   (config-driven inventory status + live mini embeds). Only the active tab renders, and
   `api.js`
@@ -143,6 +146,11 @@ mode simply wait. This is one deterministic source per phase — NOT a fallback 
   labeled as ESPN's model wherever shown, never blended with the house Monte Carlo.
   (The sibling `…/odds` endpoint works too — spread/O-U from DraftKings — but is UNUSED
   pending WPR's editorial call on betting content.)
+- League scoreboard: `site.api…/scoreboard` — bare call reports where the league clock
+  stands (`season.type` 1/2/3 + `week.number`); `?seasontype=2&week=N&dates=YYYY` pins one
+  regular-season week (16ish events, both competitors inline). Feeds the pick'em via
+  `normalizeLeagueGame` (neutral, both sides — NOT normalizeEvent's one-team perspective).
+  Scheduled games carry placeholder "0" scores — normalize them to null.
 - Roster: `site.api…/teams/9/roster` — bios + in-season injury tags ride along (that's the
   injury report's source; the dedicated injuries endpoints are ref-soup or 404).
 - Game logs: `site.web.api…/athletes/ID/gamelog?season=YYYY` — parallel `names`/`labels`
@@ -231,10 +239,9 @@ hero rivalry ledger on division games (fetchRecentMeetings),
 data-written storylines lede, milestone watch (activates Week 1), FPI line on the hero,
 deep-linkable tabs (`?tab=`), three minis + the email digest PNG.)
 
-- A localStorage "pick'em" (call Sunday's game, graded after the final) — sponsorable.
-  Owner wants to clear this with WPR before building.
 - Betting line on the hero/matchup (the odds endpoint is probed and works — DraftKings via
   ESPN) — needs WPR's editorial sign-off on gambling content first.
+  (The pick'em shipped Aug 2026 as its own tab — full weekly NFL slate, WPR-approved.)
 - Plausible public dashboard links per sponsor once the account is live.
 
 Keep each as a small, self-contained addition.

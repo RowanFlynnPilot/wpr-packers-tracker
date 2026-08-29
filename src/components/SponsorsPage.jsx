@@ -33,6 +33,11 @@ const INVENTORY = [
     sold: () => !!SPONSORS.forecast, demo: './?demo',
   },
   {
+    key: 'pickem', name: 'Weekly pick’em',
+    desc: 'Your lockup over the pick’em — readers call every NFL game each week and come back to see how they did. The stickiest surface on the tracker.',
+    sold: () => !!SPONSORS.pickem, demo: './?demo&tab=pickem',
+  },
+  {
     key: 'where-to-watch', name: 'Game-day guide listings',
     desc: 'Your bar or restaurant in the “Where to watch” guide: photos, amenity chips, game-day specials, and a tracked link. Sold per listing — multiple venues run side by side.',
     sold: () => false, multi: true, demo: './?demo&tab=schedule',

@@ -32,6 +32,7 @@ import TeamProfile from './components/TeamProfile.jsx'
 import PlayoffOdds from './components/PlayoffOdds.jsx'
 import RoadAhead from './components/RoadAhead.jsx'
 import FilmRoom from './components/FilmRoom.jsx'
+import Pickem from './components/Pickem.jsx'
 import ChunkLeaders from './components/ChunkLeaders.jsx'
 import DriveDNA from './components/DriveDNA.jsx'
 import PlayerCardHost from './components/PlayerCard.jsx'
@@ -45,11 +46,13 @@ const Race = lazy(() => import('./components/Race.jsx'))
 // fire only when a reader opens it (and the API memoizes them across revisits).
 const TABS = [
   { id: 'season', label: 'Season' },
-  { id: 'schedule', label: 'Schedule' },
+  { id: 'schedule', label: 'Schedule', short: 'Sched.' },
   // Label follows the house sentence case ("Film room"); the id stays `leaders` so the
-  // Plausible Tab events and panel ids keep their history.
-  { id: 'leaders', label: 'Season stats' },
-  { id: 'film', label: 'Film room' },
+  // Plausible Tab events and panel ids keep their history. `short` labels keep five tabs
+  // legible on phones (TabBar swaps them in below the narrow breakpoint).
+  { id: 'leaders', label: 'Season stats', short: 'Stats' },
+  { id: 'film', label: 'Film room', short: 'Film' },
+  { id: 'pickem', label: "Pick'em" },
 ]
 
 // Subtle "Updated Xm ago" stamp; re-renders every 30s so the relative time stays current.
@@ -203,6 +206,10 @@ export default function App() {
         )}
 
         {tab === 'film' && <div role="tabpanel" id="panel-film" aria-labelledby="tab-film"><FilmRoom /><ChunkLeaders /><DriveDNA /></div>}
+
+        {tab === 'pickem' && (
+          <div role="tabpanel" id="panel-pickem" aria-labelledby="tab-pickem"><Pickem /></div>
+        )}
 
         <PlayerCardHost />
         </ErrorBoundary>
