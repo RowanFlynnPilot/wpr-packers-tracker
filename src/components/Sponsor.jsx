@@ -20,6 +20,10 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, f
     if (sponsor) return // sold slots don't sell themselves
     let alive = true
     fetchSeasonGames().then(({ games }) => {
+      // Only before the season: once a regular-season game is final, the next 'pre' game is
+      // just next week's — "Kickoff in 6 days — placements close before Week 1" would be
+      // nonsense in October. The urgency line retires with the real kickoff.
+      if (games.some((g) => g.seasonType === 2 && g.state === 'post')) return
       const opener = games.find((g) => g.seasonType === 2 && g.state === 'pre')
       if (alive && opener) setDaysToKickoff(Math.ceil((new Date(opener.date) - Date.now()) / 86400000))
     }).catch(() => {})

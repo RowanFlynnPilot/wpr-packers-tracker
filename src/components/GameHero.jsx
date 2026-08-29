@@ -426,7 +426,7 @@ export default function GameHero() {
         </button>
         {canAlert && (
           <button onClick={toggleAlerts} className="link-hover" style={{ cursor: 'pointer', background: 'transparent', border: 'none', fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.04em', color: alertsOn ? theme.green : theme.muted, fontWeight: alertsOn ? 700 : 400 }}>
-            {alertsOn ? 'Game alerts on (while this tab is open)' : 'Alert me at kickoff'}
+            {alertsOn ? 'Game alerts on (while this tab is open)' : final ? 'Alert me at the next kickoff' : 'Alert me at kickoff'}
           </button>
         )}
       </div>

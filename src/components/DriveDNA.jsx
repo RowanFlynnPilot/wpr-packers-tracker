@@ -77,7 +77,7 @@ export default function DriveDNA() {
       <SideBlock label="The offense" sub="Packers drives" s={data.offense} />
       <SideBlock label="The defense" sub="Opponents' drives vs Green Bay" s={data.defense} />
       <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 14 }}>
-        {data.season < SEASON ? `Final ${data.season}` : 'Season to date'} · {data.games} games ·
+        {data.season < SEASON ? `Final ${data.season}` : 'Season to date'} · {data.games} game{data.games === 1 ? '' : 's'} ·
         clock-kill possessions excluded · computed from the play-by-play.
       </div>
     </Section>

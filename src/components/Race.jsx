@@ -63,7 +63,9 @@ export default function Race({ schedules, season, error }) {
               .map((id) => {
                 const isMe = Number(id) === TEAM_ID
                 return (
-                  <Line key={id} type="monotone" dataKey={id} name={DIVISION[id]} stroke={TEAM_COLORS[id]} strokeWidth={isMe ? 3 : 1.5} strokeOpacity={isMe ? 1 : 0.55} dot={false} isAnimationActive={false} label={endLabel(id, isMe)} />
+                  // dot: a line needs two points — with only Week 1 in the books the chart
+                  // would render nothing, so single-week data shows as points instead.
+                  <Line key={id} type="monotone" dataKey={id} name={DIVISION[id]} stroke={TEAM_COLORS[id]} strokeWidth={isMe ? 3 : 1.5} strokeOpacity={isMe ? 1 : 0.55} dot={data.length < 2 ? { r: 4, fill: TEAM_COLORS[id], strokeWidth: 0 } : false} isAnimationActive={false} label={endLabel(id, isMe)} />
                 )
               })}
           </LineChart>

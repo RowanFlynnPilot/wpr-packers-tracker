@@ -40,7 +40,7 @@ export default function ChunkLeaders() {
   return (
     <Section kicker="Explosives, season-long" title="The chunk-play leaders">
       <p style={{ fontFamily: theme.serif, fontSize: 16, color: theme.muted, margin: '0 0 14px', maxWidth: 620, lineHeight: 1.5 }}>
-        Who supplies the 20-plus-yard gains — every explosive across {games} games, credited to
+        Who supplies the 20-plus-yard gains — every explosive across {games} game{games === 1 ? '' : 's'}, credited to
         the runner or receiver.
       </p>
       {rows.map((r, i) => {
