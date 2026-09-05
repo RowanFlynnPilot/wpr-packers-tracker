@@ -128,10 +128,13 @@ mode simply wait. This is one deterministic source per phase — NOT a fallback 
 - Schedule: `site.api…/teams/gb/schedule?season=YYYY&seasontype=1|2|3` (pre/reg/post).
   Postseason/preseason 404 or come back empty until published — `fetchSeasonGames()`
   tolerates that for types 1/3 only; the regular season fails fast.
-- Standings: `site.api…/apis/v2/…/standings?season=YYYY&level=3` — division-grouped, every
-  stat (incl. playoffSeed, division/home/road records) inline. NOT published for a season
-  until it exists; `fetchStandings` throws then (callers on the current season treat that
-  as "not yet").
+- Standings: `site.api…/apis/v2/…/standings?season=YYYY&level=3&seasontype=2` —
+  division-grouped, every stat (incl. playoffSeed, division/home/road records) inline. NOT
+  published for a season until it exists; `fetchStandings` throws then (callers on the
+  current season treat that as "not yet"). KEEP `seasontype=2` pinned: the bare call
+  follows the league clock and serves PRESEASON records in August (GB 2–1 under
+  `season=2026`, verified Sep 2026) — it would poison the Pulse the evening the tracker
+  flips to the new season.
 - Summary: `site.api…/summary?event=ID` carries box score, drives (w/ per-play
   `statYardage` + `type`), `winprobability` (per play, home %), `scoringPlays`, per-team
   `leaders`, and header linescores — one cached read powers the hero final state, box
