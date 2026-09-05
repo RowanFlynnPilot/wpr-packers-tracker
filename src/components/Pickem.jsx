@@ -29,7 +29,7 @@ function Side({ team, picked, pickable, onPick, result }) {
   return (
     <button
       onClick={pickable ? onPick : undefined}
-      disabled={!pickable && !picked}
+      disabled={!pickable}
       aria-pressed={picked}
       style={{
         display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 0', minWidth: 0,
@@ -74,7 +74,11 @@ export default function Pickem() {
       try {
         const g = await fetchScoreboardWeek(Number(wk))
         const grade = gradePicks(g, entry.picks)
-        if (grade.decided && !grade.pending) {
+        // Settle when every picked game is final — or, once the week is two behind the
+        // league clock, on whatever HAS decided: a postponed game must never hold a
+        // whole week's correct picks out of the season tally forever.
+        const stale = currentWeek != null && Number(wk) < currentWeek - 1
+        if (grade.decided && (!grade.pending || stale)) {
           entry.result = { correct: grade.correct, total: grade.decided }
           changed = true
         }

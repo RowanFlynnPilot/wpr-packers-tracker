@@ -198,9 +198,12 @@ export function fetchStatsSeason() {
 // League standings for a season at division level, flattened into plain rows. Throws if the
 // season's table isn't published yet (ESPN omits `standings` until the season exists) — callers
 // asking for the current season before kickoff treat that as "not yet".
+// `seasontype=2` is pinned on purpose: the bare call follows the league clock, and in August
+// it served PRESEASON records under `season=2026` (GB 2–1, CAR 3–1 — verified Sep 2026).
+// Pinned, the table is the regular-season one in every phase, identical for finished seasons.
 export function fetchStandings(season) {
   return cached(`standings:${season}`, 60000, async () => {
-    const data = await getJSON(`${SITE_V2}/standings?season=${season}&level=3`)
+    const data = await getJSON(`${SITE_V2}/standings?season=${season}&level=3&seasontype=2`)
     const rows = []
     ;(data.children || []).forEach((conf) => {
       ;(conf.children || []).forEach((div) => {

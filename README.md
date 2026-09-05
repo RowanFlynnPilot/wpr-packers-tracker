@@ -76,7 +76,18 @@ window.addEventListener('message', function (e) {
 ```
 
 The `height` in the style is just a first-paint fallback (the script takes over once it
-loads). `allow` lets the share button use the native share sheet / clipboard inside the
+loads).
+
+Optional — deep links THROUGH the news-site page: the iframe `src` is fixed, so
+`wausaupilotandreview.com/green-bay-packers/?tab=pickem` wouldn't reach the widget on its
+own. Add this line at the top of the same `<script>` and the host page's `?tab=` is
+forwarded into the iframe (so a newsletter can link "make your picks" straight to the
+pick'em on the WPR page):
+
+```js
+var t = new URLSearchParams(location.search).get('tab')
+if (t) { var f0 = document.getElementById('wpr-packers'); f0.src = f0.src.split('?')[0] + '?tab=' + encodeURIComponent(t) }
+``` `allow` lets the share button use the native share sheet / clipboard inside the
 iframe. Embedded views are tracked automatically (they appear in Plausible with
 wausaupilotandreview.com as the source); tab switches fire a `Tab` event, and the
 "Bookmark" button fires a `Bookmark` event.
