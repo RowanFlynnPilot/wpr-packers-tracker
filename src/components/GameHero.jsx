@@ -275,7 +275,15 @@ export default function GameHero() {
       </div>
       {(when || weekLabel || countdown) && (
         <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, marginTop: 6 }}>
-          {[weekLabel, when, countdown].filter(Boolean).join(' · ')}
+          {[weekLabel, when].filter(Boolean).join(' · ')}
+          {/* The countdown is the one fact here that changes while you look at it — it carries
+              the weight instead of trailing a gray run-on line. */}
+          {countdown && (
+            <>
+              {(weekLabel || when) && ' · '}
+              <strong style={{ color: theme.ink, fontWeight: 700 }}>{countdown}</strong>
+            </>
+          )}
         </div>
       )}
       {venueLine && (

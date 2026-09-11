@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { theme } from '../theme.js'
 import { headshot } from '../config.js'
-import { fetchRoster, fetchAthlete, fetchAthleteOverview, fetchGamelog } from '../api.js'
+import { fetchRoster, fetchAthlete, fetchAthleteOverview, fetchAthleteSeasonStats, fetchGamelog } from '../api.js'
 import { track } from '../analytics.js'
 import { useModalFocus } from '../useModalFocus.js'
 import { Loading } from './Status.jsx'
@@ -31,45 +31,67 @@ function statLine(stats) {
     .join(' · ')
 }
 
-// Curated picks for the stat tiles, in priority order. Each position's overview feed only
-// carries its own categories, so one list serves quarterbacks, backs, receivers and
-// defenders alike; zero lines are skipped ("0 forced fumbles" is nobody's headline).
-const STAT_PICKS = [
-  ['Passing Yards', 'Pass yds'],
-  ['Passing Touchdowns', 'Pass TD'],
-  ['Completion Percentage', 'Cmp %'],
-  ['Passer Rating', 'Rating'],
-  ['Interceptions', 'INT'],
-  ['Rushing Yards', 'Rush yds'],
-  ['Rushing Touchdowns', 'Rush TD'],
-  ['Rushing Attempts', 'Carries'],
-  ['Receptions', 'Catches'],
-  ['Receiving Yards', 'Rec yds'],
-  ['Receiving Touchdowns', 'Rec TD'],
-  ['Receiving Targets', 'Targets'],
-  ['Total Tackles', 'Tackles'],
-  ['Solo Tackles', 'Solo'],
-  ['Sacks', 'Sacks'],
-  ['Passes Defended', 'Passes def.'],
-  ['Forced Fumbles', 'Forced fum.'],
+// Curated picks for the season tiles, in priority order, keyed `category.stat` on the
+// season-pinned stats feed. Every player carries every category (a receiver has a passing
+// block full of zeros), so the order IS the position logic: the first non-zero stats a player
+// owns are the ones worth six tiles. Zero lines are skipped — "0 forced fumbles" is nobody's
+// headline — which is also what keeps a receiver's empty passing block off the card.
+const SEASON_PICKS = [
+  ['passing.passingYards', 'Pass yds'],
+  ['passing.passingTouchdowns', 'Pass TD'],
+  ['passing.completionPct', 'Cmp %'],
+  ['passing.QBRating', 'Rating'],
+  // Interceptions THROWN sit in the passing block, interceptions TAKEN in the defensive one —
+  // two different stats under one label. Both are listed, each in its own position; the
+  // zero-guard means only the relevant one ever surfaces on a given player's card.
+  ['passing.interceptions', 'INT'],
+  ['rushing.rushingYards', 'Rush yds'],
+  ['rushing.rushingTouchdowns', 'Rush TD'],
+  ['rushing.rushingAttempts', 'Carries'],
+  ['receiving.receptions', 'Catches'],
+  ['receiving.receivingYards', 'Rec yds'],
+  ['receiving.receivingTouchdowns', 'Rec TD'],
+  ['receiving.receivingTargets', 'Targets'],
+  ['defensive.totalTackles', 'Tackles'],
+  ['defensive.soloTackles', 'Solo'],
+  ['defensive.sacks', 'Sacks'],
+  ['defensiveInterceptions.interceptions', 'INT'],
+  ['defensive.passesDefended', 'Passes def.'],
+  ['general.fumblesForced', 'Forced fum.'],
 ]
-function pickStats(overview, splitName, n) {
-  const stats = overview?.splits?.[splitName]
+function pickSeason(stats, n) {
   if (!stats) return []
-  // 'Interceptions' is thrown (a QB's headline mistake) but also taken (a defender's prize),
-  // under one feed label. For defenders, rank it with the other takeaway stats instead of up
-  // in the passing block — otherwise a linebacker's card leads with "1 INT".
-  const picks = [...STAT_PICKS]
-  if (overview.displayNames.includes('Total Tackles')) {
-    const [int] = picks.splice(picks.findIndex(([d]) => d === 'Interceptions'), 1)
-    picks.splice(picks.findIndex(([d]) => d === 'Sacks') + 1, 0, int)
-  }
   const out = []
-  for (const [displayName, short] of picks) {
+  for (const [key, short] of SEASON_PICKS) {
+    const v = stats[key]
+    if (v == null || v === '') continue
+    const num = parseFloat(String(v).replace(/,/g, ''))
+    if (!Number.isFinite(num) || !num) continue
+    out.push({ label: short, value: v })
+    if (out.length === n) break
+  }
+  return out
+}
+
+// The career line still comes from the overview feed — its Career split is genuinely career,
+// and one read covers every position's own categories.
+const CAREER_PICKS = [
+  ['Passing Yards', 'Pass yds'], ['Passing Touchdowns', 'Pass TD'],
+  ['Rushing Yards', 'Rush yds'], ['Rushing Touchdowns', 'Rush TD'],
+  ['Receptions', 'Catches'], ['Receiving Yards', 'Rec yds'], ['Receiving Touchdowns', 'Rec TD'],
+  ['Total Tackles', 'Tackles'], ['Sacks', 'Sacks'], ['Interceptions', 'INT'],
+]
+function pickCareer(overview, n) {
+  const stats = overview?.splits?.Career
+  if (!stats) return []
+  const out = []
+  for (const [displayName, short] of CAREER_PICKS) {
     const i = overview.displayNames.indexOf(displayName)
     if (i === -1) continue
     const v = stats[i]
-    if (v == null || v === '' || !parseFloat(String(v).replace(/,/g, ''))) continue
+    if (v == null || v === '') continue
+    const num = parseFloat(String(v).replace(/,/g, ''))
+    if (!Number.isFinite(num) || !num) continue
     out.push({ label: short, value: v })
     if (out.length === n) break
   }
@@ -83,17 +105,21 @@ function pickStats(overview, splitName, n) {
 const SPARK_LABELS = { YDS: 'Yards', TOT: 'Tackles', TCKL: 'Tackles', SOLO: 'Solo tackles', SACK: 'Sacks', REC: 'Catches' }
 function SparkBars({ rows }) {
   const series = [...rows].reverse() // oldest → newest reads like a season
-  let pick = null
-  for (const l of Object.keys(SPARK_LABELS)) {
-    if (series.some((g) => g.stats.some((s) => s.label === l && s.value !== '' && s.value != null))) { pick = l; break }
-  }
-  if (!pick) return null
-  const vals = series.map((g) => {
-    const s = g.stats.find((x) => x.label === pick)
+  // Take the first column that actually PLOTS, not the first that merely appears. A defender's
+  // log carries a YDS column (interception and fumble returns) that is zero almost every week;
+  // stopping at it because it exists left every defensive card without its bars.
+  const read = (l) => series.map((g) => {
+    const s = g.stats.find((x) => x.label === l)
     const v = parseFloat(String(s?.value ?? '').replace(/,/g, ''))
     return Number.isFinite(v) ? v : 0
   })
-  if (vals.filter((v) => v > 0).length < 3) return null
+  let pick = null
+  let vals = null
+  for (const l of Object.keys(SPARK_LABELS)) {
+    const v = read(l)
+    if (v.filter((x) => x > 0).length >= 3) { pick = l; vals = v; break }
+  }
+  if (!pick) return null
   const max = Math.max(...vals)
   const BAR = 9, GAP = 3, H = 42
   const width = vals.length * (BAR + GAP) - GAP
@@ -119,6 +145,7 @@ export default function PlayerCardHost() {
   const [bio, setBio] = useState(null)
   const [log, setLog] = useState(null)
   const [overview, setOverview] = useState(null)
+  const [seasonStats, setSeasonStats] = useState(null)
   const [showAll, setShowAll] = useState(false)
   const dialogRef = useRef(null)
   useModalFocus(dialogRef, !!id)
@@ -132,6 +159,7 @@ export default function PlayerCardHost() {
     setBio(null)
     setLog(null)
     setOverview(null)
+    setSeasonStats(null)
     setShowAll(false)
     if (!id) return
     let alive = true
@@ -143,6 +171,7 @@ export default function PlayerCardHost() {
       .catch(() => { if (alive) setId(null) })
     fetchGamelog(id).then((g) => { if (alive) setLog(g) }).catch(() => { if (alive) setLog({ rows: [] }) })
     fetchAthleteOverview(id).then((o) => { if (alive) setOverview(o) }).catch(() => {})
+    fetchAthleteSeasonStats(id).then((s) => { if (alive) setSeasonStats(s) }).catch(() => {})
     return () => { alive = false }
   }, [id])
 
@@ -158,8 +187,8 @@ export default function PlayerCardHost() {
   const day = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   const rows = log?.rows || []
   const shown = showAll ? rows : rows.slice(0, 5)
-  const season = pickStats(overview, 'Regular Season', 6)
-  const career = pickStats(overview, 'Career', 3)
+  const season = pickSeason(seasonStats, 6)
+  const career = pickCareer(overview, 3)
   const resultColor = (r) => (r === 'W' ? theme.green : r === 'L' ? theme.red : theme.muted)
 
   return (
@@ -201,11 +230,14 @@ export default function PlayerCardHost() {
             </div>
 
             <div style={{ padding: '16px 20px 20px' }}>
-              {/* Season at a glance — stat tiles from the overview feed. */}
+              {/* Season at a glance — tiles pinned to the season the tracker is describing, so
+                  the header names the year rather than leaving the reader to guess. */}
               {season.length > 0 && (
                 <div>
-                  <div style={{ ...label, color: theme.goldText }}>Season at a glance</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 8 }}>
+                  <div style={{ ...label, color: theme.goldText }}>{log?.season ? `${log.season} season` : 'Season'} at a glance</div>
+                  {/* Column count follows the tile count so the last row is never one orphan
+                      beside two empty cells — four stats read as 2×2, not 3+1. */}
+                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${season.length <= 2 ? season.length : season.length % 3 === 0 ? 3 : season.length % 2 === 0 ? 2 : 3}, 1fr)`, gap: 8, marginTop: 8 }}>
                     {season.map((s) => (
                       <div key={s.label} style={{ border: `1px solid ${theme.rule}`, borderRadius: 6, padding: '8px 10px', background: theme.wash }}>
                         <div style={{ fontFamily: theme.serif, fontSize: 18, color: theme.ink, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
@@ -213,11 +245,13 @@ export default function PlayerCardHost() {
                       </div>
                     ))}
                   </div>
-                  {career.length > 0 && (
-                    <div style={{ fontSize: 11, color: theme.muted, marginTop: 8 }}>
-                      Career: {career.map((c) => `${c.value} ${c.label.toLowerCase()}`).join(' · ')}
-                    </div>
-                  )}
+                </div>
+              )}
+              {/* Career reads on its own: a rookie with no season tiles yet still has a line,
+                  and a veteran's career total is the fact that outlives any one season. */}
+              {career.length > 0 && (
+                <div style={{ fontSize: 11, color: theme.muted, marginTop: season.length ? 8 : 0 }}>
+                  Career: {career.map((c) => `${c.value} ${c.label.toLowerCase()}`).join(' · ')}
                 </div>
               )}
 
@@ -226,7 +260,7 @@ export default function PlayerCardHost() {
 
               {/* Game log: last five by default, the whole season on demand. */}
               {!log ? <div style={{ marginTop: 14 }}><Loading lines={2} /></div> : rows.length > 0 && (
-                <div style={{ marginTop: season.length ? 18 : 0 }}>
+                <div style={{ marginTop: season.length || career.length ? 18 : 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 4 }}>
                     <div style={label}>
                       {showAll ? 'Game log' : `Last ${shown.length} games`}{log.season ? ` · ${log.season}` : ''}

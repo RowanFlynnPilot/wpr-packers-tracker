@@ -43,7 +43,8 @@ function Side({ team, picked, pickable, onPick, result }) {
         style={{ objectFit: 'contain', flexShrink: 0 }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
       <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         <span style={{ fontSize: 13.5, fontWeight: picked ? 700 : 600, color: theme.ink }}>{team.abbr}</span>
-        {team.record && <span style={{ fontSize: 11, color: theme.muted }}> {team.record}</span>}
+        {/* Week 1 has all 32 clubs at 0–0 — thirty-two identical "0-0"s are noise, not context. */}
+        {team.record && team.record !== '0-0' && <span style={{ fontSize: 11, color: theme.muted }}> {team.record}</span>}
       </span>
       {team.score != null && (
         <span style={{ marginLeft: 'auto', fontSize: 14, fontWeight: 700, color: theme.ink, fontVariantNumeric: 'tabular-nums' }}>{team.score}</span>
@@ -135,7 +136,7 @@ export default function Pickem() {
   if (week === null) {
     if (!season.total) return shell(note('Picks open when the season’s slate is posted.'))
     return shell(
-      <div style={{ border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 8, background: theme.wash, padding: '16px 20px', fontFamily: theme.sans }}>
+      <div style={{ border: `1px solid ${theme.rule}`, borderTop: `3px solid ${theme.gold}`, borderRadius: 8, background: theme.wash, padding: '16px 20px', fontFamily: theme.sans }}>
         <div style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>Final tally</div>
         <div style={{ fontFamily: theme.serif, fontSize: 22, color: theme.ink, marginTop: 4 }}>
           You called <strong>{season.correct}</strong> of <strong>{season.total}</strong> this season.
@@ -151,14 +152,39 @@ export default function Pickem() {
 
   return shell(
     <div>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 4 }}>
-        <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted }}>
-          Tap a team to call each game — picks lock at kickoff.
+      {/* The reader's card. Always visible, from an empty sheet onward: a pick'em with no
+          running score is a form, and a form is not a habit. The bar makes "you have four left"
+          a glance instead of a count, and the records give a returning reader something of
+          their own on the page. */}
+      <div style={{ borderTop: `2px solid ${theme.green}`, borderBottom: `1px solid ${theme.rule}`, padding: '12px 0 14px', marginBottom: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ fontFamily: theme.serif, fontSize: 22, color: theme.ink, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+            {pickedCount} <span style={{ fontSize: 15, color: theme.muted }}>of {games.length} called</span>
+          </div>
+          <div style={{ display: 'flex', gap: 18, fontFamily: theme.sans, fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
+            {grade.decided > 0 && (
+              <span style={{ color: theme.muted }}>
+                This week <strong style={{ color: grade.correct >= grade.wrong ? theme.green : theme.red, fontSize: 13 }}>{grade.correct}–{grade.wrong}</strong>
+              </span>
+            )}
+            {/* Only once there IS a season behind this week — otherwise it just restates it. */}
+            {season.total > grade.decided && (
+              <span style={{ color: theme.muted }}>
+                Season <strong style={{ color: theme.ink, fontSize: 13 }}>{season.correct}–{season.total - season.correct}</strong>
+              </span>
+            )}
+          </div>
         </div>
-        <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.ink, fontVariantNumeric: 'tabular-nums' }}>
-          {pickedCount ? <><strong>{pickedCount}</strong> of {games.length} picked</> : null}
-          {grade.decided ? <> · this week <strong style={{ color: theme.green }}>{grade.correct}–{grade.wrong}</strong></> : null}
-          {season.total > grade.decided ? <> · season <strong>{season.correct}–{season.total - season.correct}</strong></> : null}
+        <div style={{ height: 4, borderRadius: 2, background: theme.rule, marginTop: 10, overflow: 'hidden' }} aria-hidden="true">
+          {/* Scaled, not widened: animating width relayouts the bar on every frame. */}
+          <div style={{ width: '100%', height: '100%', borderRadius: 2, background: theme.gold, transformOrigin: 'left', transform: `scaleX(${pickedCount / games.length})`, transition: 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)' }} />
+        </div>
+        <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, marginTop: 9 }}>
+          {pickedCount === 0
+            ? 'Tap a team to call each game — picks lock at kickoff.'
+            : pickedCount < games.length
+            ? `${games.length - pickedCount} still to call — picks lock at kickoff.`
+            : 'Every game called. Come back after the finals to see how you did.'}
         </div>
       </div>
 

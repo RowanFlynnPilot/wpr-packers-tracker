@@ -60,25 +60,35 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, f
     </div>
   )
 
-  // Open slot — a tasteful upsell rather than an empty hole, and a working funnel: tap the
-  // email to start the conversation.
+  // Open slot — a tasteful upsell rather than an empty hole, and a working funnel. The ask is a
+  // button, not a raw address: a 10px mailto set flush right is a classified, and this slot has
+  // to look like something a business would want to be in. The address stays underneath for
+  // anyone who'd rather copy it than tap (and the tap copies it too, for desktops with no mail
+  // handler).
   if (!sponsor) {
     const mailto = `mailto:${SPONSOR_INQUIRY}?subject=${encodeURIComponent(`Packers tracker sponsorship — ${slot || 'placement'}`)}`
     return (
-      <div style={{ textAlign: fullWidth ? 'left' : 'right', width: fullWidth ? '100%' : undefined, border: `1px dashed ${border}`, borderRadius: 4, padding: '8px 12px' }}>
+      <div style={{ textAlign: 'left', width: fullWidth ? '100%' : undefined, maxWidth: fullWidth ? undefined : 260, border: `1px dashed ${border}`, borderRadius: 6, padding: '11px 14px 12px' }}>
         {label('Sponsorship available')}
-        <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 13, color: nameColor, marginTop: 3 }}>
+        <div style={{ fontFamily: theme.serif, fontSize: 15, lineHeight: 1.25, color: nameColor, marginTop: 4 }}>
           Reach Wisconsin sports fans
         </div>
-        <a href={mailto} className="link-hover" onClick={inquiry.onClick}
-          style={{ display: 'inline-block', fontFamily: theme.sans, fontSize: 10.5, fontWeight: 700, color: dark ? '#fff' : theme.green, textDecoration: 'none', marginTop: 3 }}>
-          {inquiry.copied ? '✓ Address copied — paste into any email' : <>{SPONSOR_INQUIRY} <span aria-hidden="true">→</span></>}
-        </a>
         {daysToKickoff > 0 && daysToKickoff <= 150 && (
-          <div style={{ fontFamily: theme.sans, fontSize: 9.5, fontWeight: 700, letterSpacing: '0.04em', color: dark ? theme.gold : theme.goldText, marginTop: 3 }}>
+          <div style={{ fontFamily: theme.sans, fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', color: dark ? theme.gold : theme.goldText, marginTop: 4 }}>
             Kickoff in {daysToKickoff} days — placements close before Week 1
           </div>
         )}
+        <a href={mailto} className="link-hover" onClick={inquiry.onClick}
+          style={{
+            display: 'inline-block', marginTop: 9, padding: '6px 13px', borderRadius: 5,
+            background: dark ? theme.gold : theme.green, color: dark ? theme.green : '#fff',
+            fontFamily: theme.sans, fontSize: 12, fontWeight: 700, letterSpacing: '0.01em', textDecoration: 'none',
+          }}>
+          {inquiry.copied ? '✓ Address copied' : <>Book this placement <span aria-hidden="true">→</span></>}
+        </a>
+        <div style={{ fontFamily: theme.sans, fontSize: 10.5, color: labelColor, marginTop: 6, wordBreak: 'break-word' }}>
+          {SPONSOR_INQUIRY}
+        </div>
       </div>
     )
   }

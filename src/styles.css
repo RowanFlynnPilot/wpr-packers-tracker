@@ -1,4 +1,7 @@
-:root { --ink:#1a1a1a; }
+:root {
+  --ink:#1a1a1a; --green:#203731; --gold:#ffb612; --gold-text:#8a6d00;
+  --rule:#e3ddd0; --wash:#f7f5f0; --muted:#6b6b6b;
+}
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body { background: #fff; color: var(--ink); }
@@ -8,6 +11,41 @@ img { border: 0; }
 /* Keyboard focus in the house dark gold — the browser-default blue ring fights the palette.
    :focus-visible only (mouse clicks stay ringless). */
 :focus-visible { outline: 2px solid #8a6d00; outline-offset: 2px; border-radius: 2px; }
+
+/* The surfaces the browser draws for us still belong to the design: a system-blue selection
+   and a system scrollbar are the two places a carefully set page gives itself away. */
+::selection { background: var(--gold); color: var(--green); }
+:root { scrollbar-color: #c9c1af var(--wash); }
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: var(--wash); }
+::-webkit-scrollbar-thumb { background: #cdc5b3; border: 3px solid var(--wash); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #b3a992; }
+a { text-underline-offset: 2px; text-decoration-thickness: 1px; }
+
+/* Every number on this page is a stat sitting in a column next to another stat — proportional
+   digits make those columns wobble as scores tick over. Lining figures throughout. */
+body { font-variant-numeric: tabular-nums; }
+
+/* The native <select> in the film room: house border, house chevron, house focus. */
+.field {
+  appearance: none; -webkit-appearance: none;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23203731' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 7px 32px 7px 11px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.field:hover { border-color: var(--gold); }
+
+/* Leader boards flow down newspaper columns rather than sitting in a grid — the boards have
+   different row counts, and a grid row sizes to its tallest cell. Each board sets
+   break-inside: avoid so it never splits across the column break. */
+.stat-boards { column-count: 2; column-gap: 40px; }
+@media (max-width: 559px) { .stat-boards { column-count: 1; } }
 
 /* Loading skeletons — shimmer in the brand's warm neutrals. */
 .skeleton {

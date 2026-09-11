@@ -548,18 +548,40 @@ export function fetchGamelog(athleteId) {
   })
 }
 
-// Overviews for a set of athletes (the leader boards' detail lines), pooled so a tab open
-// doesn't fire twenty parallel requests. Misses resolve to null entries in the map.
-export async function fetchAthleteOverviews(athleteIds) {
-  const results = await pooled(athleteIds, 6, (id) => fetchAthleteOverview(id))
+// One athlete's stats for a SPECIFIC season, keyed `category.stat` ("passing.passingTouchdowns",
+// "defensive.sacks") — qualified because names collide across categories (a quarterback's
+// passing.sacks is sacks TAKEN). Values are ESPN's display strings, so "3,381" stays formatted.
+//
+// Why not the overview feed: its "Regular Season" split follows the LEAGUE clock, not the
+// season a board is describing. In the offseason it is a row of dashes for most of the roster,
+// which rendered as "- TD · - INT" under the leader boards and emptied the player card. This
+// endpoint is pinned to the season the caller asks for, so the numbers always match the label.
+// `season` defaults to the season the tracker is describing (phase-aware).
+export function fetchAthleteSeasonStats(athleteId, season) {
+  return cached(`athStats:${season ?? 'auto'}:${athleteId}`, 600000, async () => {
+    const yr = season ?? await fetchStatsSeason()
+    const data = await getJSON(`${CORE}/seasons/${yr}/types/2/athletes/${athleteId}/statistics`)
+    const cats = data.splits?.categories
+    if (!cats?.length) return null
+    const stats = {}
+    cats.forEach((c) => c.stats?.forEach((s) => { stats[`${c.name}.${s.name}`] = s.displayValue }))
+    return stats
+  })
+}
+
+// The same read for a set of athletes (the leader boards' detail lines), pooled so opening a
+// tab doesn't fire twenty parallel requests. Misses resolve to null entries in the map.
+export async function fetchAthleteSeasonStatsMany(athleteIds, season) {
+  const results = await pooled(athleteIds, 6, (id) => fetchAthleteSeasonStats(id, season))
   const map = {}
   athleteIds.forEach((id, i) => { map[id] = results[i] })
   return map
 }
 
 // One athlete's stat summary from the overview feed: Regular Season / Postseason / Career
-// splits as formatted display strings, keyed by the parallel displayNames. Powers the player
-// card's "season at a glance" tiles and career line. Fail-soft: null when the feed has none.
+// splits as formatted display strings, keyed by the parallel displayNames. The CAREER split is
+// what this feed is trusted for (see fetchAthleteSeasonStats for the season numbers).
+// Fail-soft: null when the feed has none.
 export function fetchAthleteOverview(athleteId) {
   return cached(`overview:${athleteId}`, 600000, async () => {
     const data = await getJSON(`${WEB}/athletes/${athleteId}/overview`)

@@ -42,13 +42,15 @@ export default function InjuryReport() {
 
   return (
     <Section kicker="The trainer's room" title="Injury report">
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 10 }}>
         {players.map((p) => (
           <div key={p.id} role="button" tabIndex={0} onClick={() => openPlayerCard(p.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayerCard(p.id) } }} className="card-hover"
             style={{ display: 'flex', alignItems: 'center', gap: 10, border: `1px solid ${theme.rule}`, borderRadius: 6, padding: '9px 11px', background: '#fff', cursor: 'pointer' }}>
             <img src={headshot(p.id)} alt="" width={34} height={34} loading="lazy" decoding="async" style={{ borderRadius: '50%', objectFit: 'cover', background: theme.wash, flexShrink: 0 }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontFamily: theme.serif, fontSize: 14.5, color: theme.ink, lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
+              {/* Wraps rather than truncates — a card that says "Johnathan Bald…" tells the
+                  reader less than it costs them, and half this roster has a long surname. */}
+              <div style={{ fontFamily: theme.serif, fontSize: 14.5, color: theme.ink, lineHeight: 1.15 }}>{p.name}</div>
               <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 2 }}>{p.pos}{p.detail ? ` · ${p.detail}` : ''}</div>
             </div>
             {badge(p.status)}

@@ -76,11 +76,15 @@ export default function FilmRoom() {
       <Section kicker="The film room" title="How it unfolded">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
           <label htmlFor="film-game" style={{ fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700 }}>Game</label>
+          {/* The one native control on the page, and the page's most-used one — left alone it
+              ships the platform's chrome into an otherwise drawn interface. .field draws the
+              border, the house focus ring and the chevron (see styles.css). */}
           <select
             id="film-game"
+            className="field"
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
-            style={{ fontFamily: theme.sans, fontSize: 13, color: theme.ink, background: '#fff', border: `1px solid ${theme.rule}`, borderRadius: 6, padding: '7px 10px', maxWidth: '100%' }}
+            style={{ fontFamily: theme.sans, fontSize: 13, color: theme.ink, maxWidth: '100%' }}
           >
             {games.map((g) => <option key={g.id} value={g.id}>{optionLabel(g)}</option>)}
           </select>

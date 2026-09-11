@@ -36,7 +36,7 @@ export default function NextAtLambeau() {
 
   return (
     <Section kicker="Circle the date" title="Next at Lambeau">
-      <div style={{ border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 8, background: theme.wash, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+      <div style={{ border: `1px solid ${theme.rule}`, borderTop: `3px solid ${theme.gold}`, borderRadius: 8, background: theme.wash, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
         <TeamLogo id={game.oppId} size={46} />
         <div style={{ minWidth: 0, flex: '1 1 220px' }}>
           <div style={{ fontFamily: theme.serif, fontSize: 20, color: theme.ink }}>

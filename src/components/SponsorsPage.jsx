@@ -114,7 +114,7 @@ export default function SponsorsPage() {
         {/* Why it works */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, margin: '30px 0' }}>
           {WHY.map(([num, text]) => (
-            <div key={num} style={{ border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 8, padding: '14px 16px' }}>
+            <div key={num} style={{ border: `1px solid ${theme.rule}`, borderTop: `3px solid ${theme.gold}`, borderRadius: 8, padding: '14px 16px' }}>
               <div style={{ fontFamily: theme.serif, fontSize: 26, fontWeight: 700, color: theme.green, lineHeight: 1 }}>{num}</div>
               <div style={{ fontFamily: theme.sans, fontSize: 11.5, color: theme.muted, marginTop: 7, lineHeight: 1.45 }}>{text}</div>
             </div>
@@ -163,7 +163,7 @@ export default function SponsorsPage() {
         </div>
 
         {/* Reporting promise */}
-        <div style={{ marginTop: 30, border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 8, background: theme.wash, padding: '16px 20px' }}>
+        <div style={{ marginTop: 30, border: `1px solid ${theme.rule}`, borderTop: `3px solid ${theme.gold}`, borderRadius: 8, background: theme.wash, padding: '16px 20px' }}>
           <div style={{ fontFamily: theme.serif, fontSize: 17, color: theme.ink, fontWeight: 600 }}>Provable, not promised</div>
           <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 5, lineHeight: 1.55 }}>
             Every placement reports its own numbers — impressions and per-slot click-throughs,

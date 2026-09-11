@@ -34,7 +34,7 @@ export default function GameFlow({ flow, oppName }) {
         <span>100 = a sure Packers win</span>
       </div>
       {biggest?.text && (
-        <div style={{ marginTop: 14, border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 6, background: theme.wash, padding: '11px 14px' }}>
+        <div style={{ marginTop: 14, border: `1px solid ${theme.rule}`, borderTop: `3px solid ${theme.gold}`, borderRadius: 6, background: theme.wash, padding: '11px 14px' }}>
           <div style={{ fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>
             The turning point{biggest.period ? ` · ${periodLabel(biggest.period)} ${biggest.clock || ''}` : ''}
           </div>

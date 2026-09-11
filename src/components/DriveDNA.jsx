@@ -4,6 +4,7 @@ import { SEASON } from '../config.js'
 import { fetchSeasonSummaries } from '../api.js'
 import { driveDNA } from '../games.js'
 import Section from './Section.jsx'
+import Figures from './Figures.jsx'
 
 // "Drive DNA" — the season, possession by possession: points per drive, three-and-out rate,
 // average starting field position, and a how-drives-end bar, for the offense AND the defense
@@ -14,10 +15,10 @@ const fmtStart = (v) => (v == null ? '—' : v <= 50 ? `Own ${v}` : `Opp ${100 -
 
 function SideBlock({ label, sub, s }) {
   if (!s) return null
-  const tiles = [
-    [s.pointsPerDrive.toFixed(2), 'Points per drive'],
-    [`${Math.round(s.threeOutPct)}%`, 'Three-and-outs'],
-    [fmtStart(s.avgStart), 'Avg starting spot'],
+  const figures = [
+    { value: s.pointsPerDrive.toFixed(2), label: 'Points per drive' },
+    { value: `${Math.round(s.threeOutPct)}%`, label: 'Three-and-outs' },
+    { value: fmtStart(s.avgStart), label: 'Avg starting spot' },
   ]
   const total = Object.values(s.ends).reduce((x, y) => x + y, 0) || 1
   return (
@@ -26,16 +27,9 @@ function SideBlock({ label, sub, s }) {
         <span style={{ fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>{label}</span>
         <span style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted }}>{sub} · {s.drives} drives</span>
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
-        {tiles.map(([v, l]) => (
-          <div key={l} style={{ flex: '1 1 110px', minWidth: 104, border: `1px solid ${theme.rule}`, borderRadius: 8, padding: '10px 12px' }}>
-            <div style={{ fontFamily: theme.serif, fontSize: 24, color: theme.ink, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{v}</div>
-            <div style={{ fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: theme.muted, marginTop: 6 }}>{l}</div>
-          </div>
-        ))}
-      </div>
+      <Figures items={figures} size="sm" />
       {/* How the drives end — one bar, share by outcome. */}
-      <div style={{ display: 'flex', height: 14, borderRadius: 7, overflow: 'hidden' }} aria-hidden="true">
+      <div style={{ display: 'flex', height: 14, borderRadius: 7, overflow: 'hidden', marginTop: 14 }} aria-hidden="true">
         {Object.entries(s.ends).map(([k, n]) => n > 0 && (
           <div key={k} style={{ width: `${(n / total) * 100}%`, background: END_COLORS[k] }} />
         ))}

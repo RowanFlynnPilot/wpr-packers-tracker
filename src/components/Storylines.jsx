@@ -143,7 +143,7 @@ export default function Storylines() {
 
   return (
     <Section kicker="The storylines" title={offseason ? 'Where the story picks up' : 'This week in Packerland'}>
-      <div style={{ border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 8, background: theme.wash, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ border: `1px solid ${theme.rule}`, borderTop: `3px solid ${theme.gold}`, borderRadius: 8, background: theme.wash, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {lines.map((l, i) => (
           <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'baseline' }}>
             <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: '50%', background: theme.gold, flexShrink: 0, position: 'relative', top: -2 }} />

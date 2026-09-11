@@ -3,8 +3,8 @@ import { theme } from '../theme.js'
 import { TEAM_ID, FRANCHISE_BEST, SEASON, DIVISION_NAME, CONFERENCE, GAMES_IN_SEASON } from '../config.js'
 import { paceWins } from '../games.js'
 import { shareStatCard } from '../share-card.js'
-import { useIsNarrow } from '../useIsNarrow.js'
 import { Loading, ErrorState } from './Status.jsx'
+import Figures from './Figures.jsx'
 
 const DASH = '–'
 const ord = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]) }
@@ -43,7 +43,6 @@ const gb = (leader, team) => ((effW(leader) - effW(team)) + (effL(team) - effL(l
 // and opener are derived in App. Phase-aware: before Week 1 the tiles read last season's final
 // figures (labeled), with a kickoff countdown chip; in season it's the live pulse.
 export default function Pulse({ bundle, lastGame, opener, error }) {
-  const narrow = useIsNarrow()
   const [shared, setShared] = useState(false)
   const animate = !pulseAnimated && typeof window !== 'undefined' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
   useEffect(() => { if (bundle) pulseAnimated = true }, [bundle])
@@ -57,13 +56,11 @@ export default function Pulse({ bundle, lastGame, opener, error }) {
   const lead = rank === 1 && standings[1] ? gb(me, standings[1]) : standings[0] ? gb(standings[0], me) : null
   const rec = (t) => `${t.wins}${DASH}${t.losses}${t.ties ? `${DASH}${t.ties}` : ''}`
 
-  // Marquee stats — boxed stat tiles. Point diff / streak / lead are color-coded (green good, red bad).
-  const cell = (value, label, color = theme.ink) => (
-    <div key={label} style={{ flex: '1 1 120px', minWidth: 104, border: `1px solid ${theme.rule}`, borderRadius: 8, padding: narrow ? '12px 13px' : '14px 16px' }}>
-      <div style={{ fontFamily: theme.serif, fontSize: narrow ? 28 : 34, color, lineHeight: 1 }}><CountUp text={String(value)} animate={animate} /></div>
-      <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.muted, marginTop: 8 }}>{label}</div>
-    </div>
-  )
+  // Marquee stats — the framed figure strip. Point diff / streak / lead are color-coded
+  // (green good, red bad); the numbers tick up on first paint.
+  const cell = (value, label, color = theme.ink) => ({
+    label, color, value: <CountUp text={String(value)} animate={animate} />,
+  })
   const pd = me.pointDiff
   const pdColor = pd > 0 ? theme.green : pd < 0 ? theme.red : theme.ink
   const sc = me.streak || ''
@@ -141,7 +138,7 @@ export default function Pulse({ bundle, lastGame, opener, error }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>{tiles.filter(Boolean)}</div>
+      <Figures items={tiles} />
 
       {minis.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginTop: 18 }}>
@@ -186,8 +183,9 @@ export default function Pulse({ bundle, lastGame, opener, error }) {
             <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.muted, marginBottom: 7 }}>
               Win pace vs franchise best
             </div>
-            <div style={{ position: 'relative', height: 10, borderRadius: 5, background: theme.rule }}>
-              <div style={{ width: pct(pace), height: '100%', borderRadius: 5, background: chasing ? theme.gold : theme.green, transition: 'width 0.6s ease' }} />
+            <div style={{ position: 'relative', height: 10, borderRadius: 5, background: theme.rule, overflow: 'hidden' }}>
+              {/* Scaled, not widened: animating width relayouts the bar on every frame. */}
+              <div style={{ width: '100%', height: '100%', borderRadius: 5, background: chasing ? theme.gold : theme.green, transformOrigin: 'left', transform: `scaleX(${pace / scaleMax})`, transition: 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)' }} />
               <div style={{ position: 'absolute', left: pct(best.wins), top: -4, width: 2, height: 18, background: theme.ink }} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: theme.sans, fontSize: 11.5, marginTop: 5 }}>

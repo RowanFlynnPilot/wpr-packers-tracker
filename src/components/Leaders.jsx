@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
 import { headshot, SEASON } from '../config.js'
-import { fetchTeamLeaders, fetchLeagueLeaders, fetchAthleteOverviews } from '../api.js'
+import { fetchTeamLeaders, fetchLeagueLeaders, fetchAthleteSeasonStatsMany } from '../api.js'
 import { Loading, ErrorState } from './Status.jsx'
 import { openPlayerCard } from './PlayerCard.jsx'
 
@@ -28,31 +28,30 @@ function rankNote(league, id) {
   return best.rank === 1 ? `Leads the NFL · ${label}` : `${ord(best.rank)} in the NFL · ${label}`
 }
 
-// The supporting line under each board row, from the athlete overview feed — the stats that
-// give the headline number its shape (a back's yards mean more next to his per-carry average).
-// Keyed by the board's leader category; zeros stay only where zero IS the story (TD, INT).
+// The supporting line under each board row — the stats that give the headline number its shape
+// (a back's yards mean more next to his per-carry average). Keyed by the board's leader
+// category, and each pick names a season-stat key (`category.stat`); zeros stay only where zero
+// IS the story (TD, INT).
 const DETAILS = {
-  passingYards: [['Passing Touchdowns', 'TD'], ['Interceptions', 'INT'], ['Completion Percentage', 'cmp%']],
-  rushingYards: [['Rushing Touchdowns', 'TD'], ['Yards Per Rush Attempt', 'yds/carry'], ['Rushing Attempts', 'carries']],
-  receivingYards: [['Receiving Touchdowns', 'TD'], ['Receptions', 'catches'], ['Yards Per Reception', 'yds/catch']],
-  totalTackles: [['Solo Tackles', 'solo'], ['Sacks', 'sacks'], ['Passes Defended', 'passes def.']],
-  sacks: [['Total Tackles', 'tackles'], ['Stuffs', 'TFL'], ['Forced Fumbles', 'FF']],
-  interceptions: [['Passes Defended', 'passes def.'], ['Interception Touchdowns', 'pick-six'], ['Total Tackles', 'tackles']],
+  passingYards: [['passing.passingTouchdowns', 'TD'], ['passing.interceptions', 'INT'], ['passing.completionPct', 'cmp%']],
+  rushingYards: [['rushing.rushingTouchdowns', 'TD'], ['rushing.yardsPerRushAttempt', 'yds/carry'], ['rushing.rushingAttempts', 'carries']],
+  receivingYards: [['receiving.receivingTouchdowns', 'TD'], ['receiving.receptions', 'catches'], ['receiving.yardsPerReception', 'yds/catch']],
+  totalTackles: [['defensive.soloTackles', 'solo'], ['defensive.sacks', 'sacks'], ['defensive.passesDefended', 'passes def.']],
+  sacks: [['defensive.totalTackles', 'tackles'], ['defensive.stuffs', 'TFL'], ['general.fumblesForced', 'FF']],
+  interceptions: [['defensive.passesDefended', 'passes def.'], ['defensiveInterceptions.interceptionTouchdowns', 'pick-six'], ['defensive.totalTackles', 'tackles']],
 }
 const KEEP_ZERO = new Set(['TD', 'INT'])
 // Units that read wrong at exactly one — "1 sacks" is a typo in print.
 const SINGULAR = { carries: 'carry', catches: 'catch', sacks: 'sack', 'passes def.': 'pass def.', tackles: 'tackle' }
-function detailLine(overview, picks) {
-  if (!overview || !picks) return null
-  const stats = overview.splits?.['Regular Season']
-  if (!stats) return null
+function detailLine(stats, picks) {
+  if (!stats || !picks) return null
   const parts = []
-  for (const [displayName, short] of picks) {
-    const i = overview.displayNames.indexOf(displayName)
-    if (i === -1) continue
-    const v = stats[i]
+  for (const [key, short] of picks) {
+    const v = stats[key]
     if (v == null || v === '') continue
+    // A non-numeric value is the feed's placeholder, never a stat — "- TD" is not a line.
     const n = parseFloat(String(v).replace(/,/g, ''))
+    if (!Number.isFinite(n)) continue
     if (!n && !KEEP_ZERO.has(short)) continue
     parts.push(`${v} ${n === 1 ? SINGULAR[short] || short : short}`)
   }
@@ -81,7 +80,7 @@ function Spotlight({ qb, def, league }) {
   }
   if (!qb?.name && !def?.name) return null
   return (
-    <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', border: `1px solid ${theme.rule}`, borderLeft: `3px solid ${theme.gold}`, borderRadius: 8, padding: '16px 18px', marginBottom: 26, background: theme.wash }}>
+    <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', border: `1px solid ${theme.rule}`, borderTop: `3px solid ${theme.gold}`, borderRadius: 8, padding: '16px 18px', marginBottom: 26, background: theme.wash }}>
       <Item p={qb} role="Running the offense" />
       <Item p={def} role="Anchoring the defense" />
     </div>
@@ -91,15 +90,17 @@ function Spotlight({ qb, def, league }) {
 // One leader board. The top player reads as the headline — bigger headshot, gold ring, bold
 // value — and every row carries a proportional bar so the gaps are visible at a glance, not
 // just legible in the numbers.
-function LeaderTable({ title, rows, league, overviews, picks }) {
+function LeaderTable({ title, rows, league, seasonStats, picks }) {
   if (!rows?.length) return null
   const max = Math.max(...rows.map((r) => r.value || 0)) || 1
   return (
-    <div>
+    // The boards flow down newspaper columns (see .stat-boards), so a board must never be split
+    // across the break — a headline in one column and its rows in the next is unreadable.
+    <div style={{ breakInside: 'avoid', marginBottom: 30 }}>
       <div style={{ fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.goldText, marginBottom: 10, fontWeight: 700 }}>{title}</div>
       {rows.map((r, i) => {
         const note = rankNote(league, r.id)
-        const detail = detailLine(overviews?.[r.id], picks)
+        const detail = detailLine(seasonStats?.[r.id], picks)
         const lead = i === 0
         return (
           <div key={r.id} className="hover-row" onClick={() => openPlayerCard(r.id)} role="button" tabIndex={0}
@@ -133,7 +134,7 @@ function LeaderTable({ title, rows, league, overviews, picks }) {
 export default function Leaders({ side }) {
   const [data, setData] = useState(null)
   const [league, setLeague] = useState(null)
-  const [overviews, setOverviews] = useState(null) // id → overview, for the per-row detail lines
+  const [seasonStats, setSeasonStats] = useState(null) // id → season stats, for the per-row detail lines
   const [error, setError] = useState(false)
 
   useEffect(() => {
@@ -141,14 +142,14 @@ export default function Leaders({ side }) {
     fetchLeagueLeaders().then(setLeague).catch(() => {})
   }, [])
 
-  // One small overview read per boarded player (pooled in the API layer, cached + shared with
-  // the player cards), so each row can carry its supporting stats. Fail-soft per player — a
-  // miss just means no line.
+  // One small stats read per boarded player (pooled in the API layer, cached + shared with the
+  // player cards), pinned to the SAME season the board describes, so each row can carry its
+  // supporting stats. Fail-soft per player — a miss just means no line.
   useEffect(() => {
     if (!data) return
     let alive = true
     const ids = [...new Set(Object.values(data.categories).flat().map((l) => l.id).filter(Boolean))]
-    fetchAthleteOverviews(ids).then((map) => { if (alive) setOverviews(map) }).catch(() => {})
+    fetchAthleteSeasonStatsMany(ids, data.season).then((map) => { if (alive) setSeasonStats(map) }).catch(() => {})
     return () => { alive = false }
   }, [data])
 
@@ -187,8 +188,11 @@ export default function Leaders({ side }) {
           : null}
         def={offense ? null : (() => { const t = top('totalTackles', 1)[0]; return t && { ...t, display: `${t.display} tackles` } })()}
       />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 32 }}>
-        {tables.map(([title, rows, cat]) => <LeaderTable key={title} title={title} rows={rows} league={league} overviews={overviews} picks={DETAILS[cat]} />)}
+      {/* Newspaper columns, not a grid: the boards are uneven (three passers, five receivers),
+          and a grid row sizes to its tallest cell — which left a hole under the short board and
+          an empty half-page beside the third. Columns balance the flow instead. */}
+      <div className="stat-boards">
+        {tables.map(([title, rows, cat]) => <LeaderTable key={title} title={title} rows={rows} league={league} seasonStats={seasonStats} picks={DETAILS[cat]} />)}
       </div>
       {data.season < SEASON && (
         <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 16 }}>

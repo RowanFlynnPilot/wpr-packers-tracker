@@ -55,7 +55,10 @@ export default function Coverage() {
 
   return wrap(
     <div>
-      <div style={{ display: 'grid', gridTemplateColumns: narrow ? '1fr' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
+      {/* Two fixed columns, not auto-fill: four posts in an auto-fill grid resolve to three
+          across at this width and leave a two-thirds-empty second row. A 2×2 block is always
+          full, and the bigger cards give WPR's own reporting the space it's worth. */}
+      <div style={{ display: 'grid', gridTemplateColumns: narrow ? '1fr' : 'repeat(2, 1fr)', gap: 16 }}>
         {posts.map((p) => (
           <a
             key={p.link}
@@ -71,10 +74,10 @@ export default function Coverage() {
                   onError={(e) => { e.currentTarget.parentElement.style.display = 'none' }} />
               </div>
             )}
-            <div style={{ padding: '11px 13px 13px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <div style={{ padding: '13px 15px 15px', display: 'flex', flexDirection: 'column', gap: 6 }}>
               <div style={{ fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>{date(p.date)}</div>
-              <div style={{ fontFamily: theme.serif, fontSize: 16, lineHeight: 1.22, color: theme.ink }}>{p.title}</div>
-              <div style={{ fontFamily: theme.sans, fontSize: 12, lineHeight: 1.5, color: theme.muted }}>{p.excerpt}</div>
+              <div style={{ fontFamily: theme.serif, fontSize: narrow ? 17 : 19, lineHeight: 1.2, color: theme.ink }}>{p.title}</div>
+              <div style={{ fontFamily: theme.sans, fontSize: 12.5, lineHeight: 1.5, color: theme.muted }}>{p.excerpt}</div>
             </div>
           </a>
         ))}

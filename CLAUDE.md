@@ -89,6 +89,10 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   so the host scrolls the widget's top back into view (snippet in README). No-op standalone.
 - `src/components/` — one file per concern (separation of concerns):
   - `Masthead`, `PackersBanner`, `Section`, `TabBar` — chrome.
+  - `Figures` — the house treatment for a set of headline numbers: a rule-framed strip
+    (2px green above, hairline below), values in the serif, labels beneath. Used by `Pulse` and
+    `DriveDNA`. It replaced rows of identically bordered tiles — the dashboard default, which
+    also left an orphan in the last row on a phone. Reach for this before inventing stat boxes.
   - `BookmarkButton` — stickiness nudge pinned in the top bar (⌘/Ctrl+D + copy-link).
   - `Pulse`, `Standings` — consume the shared standings bundle fetched once in `App`.
   - `Race` — games back of the division lead, week by week, from the four division teams'
@@ -144,6 +148,14 @@ mode simply wait. This is one deterministic source per phase — NOT a fallback 
   who left the club get one pooled athlete read each).
 - League leaders (rank chips): `sports.core.api…/seasons/YYYY/types/2/leaders?limit=5`.
 - Team statistics (+NFL ranks!): `sports.core.api…/seasons/YYYY/types/2/teams/ID/statistics`.
+- Athlete statistics, SEASON-PINNED: `sports.core.api…/seasons/YYYY/types/2/athletes/ID/statistics`
+  — the source for the leader boards' supporting lines and the player card's season tiles
+  (`fetchAthleteSeasonStats`, keyed `category.stat` because names collide: a QB's
+  `passing.sacks` is sacks TAKEN, `defensive.sacks` is sacks made). Use THIS, not the overview
+  feed's "Regular Season" split: that split follows the LEAGUE clock rather than the season the
+  page is describing, so all offseason it returns a row of `-` for most of the roster (it
+  rendered "- TD · - INT" under the boards and emptied the player card until Sept 2026). The
+  overview feed is still correct for the CAREER split, which is what the card's career line uses.
 - FPI pregame projection: `sports.core.api…/events/ID/competitions/ID/predictor` —
   `homeTeam/awayTeam.statistics` carry `gameProjection` (win %). Regular/postseason only;
   labeled as ESPN's model wherever shown, never blended with the house Monte Carlo.
@@ -171,6 +183,19 @@ mode simply wait. This is one deterministic source per phase — NOT a fallback 
 
 Surgical changes; one correct path, no fallbacks; fail fast; clarity over compatibility;
 each component one responsibility; don't overengineer. Match these when editing.
+
+House conventions, so a new surface doesn't invent a fourth grammar:
+
+- **Gold accents sit on TOP.** Every card, callout and modal marks itself with
+  `borderTop: 3–4px solid gold` (hero, sponsor lockups, storylines, this-day, next-at-Lambeau,
+  the turning point, player/box-score modals, the minis). There is no gold side border. A
+  colored LEFT border is reserved for encoding data, not for decoration — `Schedule` uses a
+  green left edge to mark home games, and that is the only one.
+- **Numbers are tabular.** `body { font-variant-numeric: tabular-nums }` in styles.css; don't
+  fight it, and don't re-declare it per component.
+- **The browser's own surfaces are themed** in styles.css — selection, scrollbar, focus ring,
+  underline offset, and `.field` for the one native `<select>`. A new native control gets
+  `.field`, not a fresh inline border.
 
 ## Dev / deploy
 
