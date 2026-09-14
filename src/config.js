@@ -56,7 +56,12 @@ export const headshot = (athleteId) => `https://a.espncdn.com/i/headshots/nfl/pl
 // WPR brand assets (the publication's own logo). The typewriter badge is the press seal used
 // across WPR's tools (wpr-water etc.) — served from OUR public/ copy, never hot-linked from a
 // sibling repo's hashed assets.
-export const WPR_LOGO = 'https://wausaupilotandreview.com/wp-content/uploads/2024/04/WausauPilotandReviewLogo.png'
+// WPR brand assets — SELF-HOSTED from public/ (like the typewriter badge). WPR migrated its
+// media library to cdn.wausaupilotandreview.com in Sept 2026 and old wp-content URLs began
+// 404ing (the Ho-Chunk logo and favicon broke live on the Brewers tracker; same URLs here).
+// Never hot-link brand/sponsor art from WordPress uploads; copy into public/ instead.
+// Wordmark source: wausaupilotandreview.com/wp-content/uploads/2024/04/WausauPilotandReviewLogo.png
+export const WPR_LOGO = `${import.meta.env.BASE_URL}wpr-wordmark.png`
 export const WPR_BADGE = `${import.meta.env.BASE_URL}wpr-typewriter-badge.png`
 export const WPR_TAGLINE = 'Where Locals Look First For News'
 export const WPR_URL = 'https://wausaupilotandreview.com/'
@@ -99,7 +104,10 @@ export const SPONSORS = {
   // tracker (same treatment: logo from WPR's own WordPress uploads, UTM-tagged destination).
   header: {
     name: 'Ho-Chunk Gaming Wittenberg',
-    logo: 'https://wausaupilotandreview.com/wp-content/uploads/2025/07/HCG-W-Logo-1-336x115.jpg',
+    // Self-hosted (see the WPR brand assets note above — the WordPress upload URL 404'd
+    // after the Sept 2026 media migration).
+    // Source: cdn.wausaupilotandreview.com/wp-content/uploads/2025/07/HCG-W-Logo-1-336x115.jpg
+    logo: `${import.meta.env.BASE_URL}hcg-wittenberg-logo.jpg`,
     url: 'https://www.ho-chunkgaming.com/wittenberg/?utm_source=wausaupilotandreview&utm_medium=widget&utm_campaign=packers_tracker',
     tagline: '800+ slots · Hotel · Dining — Wittenberg, WI',
     // Street address powers the banner's "Directions" button (Apple Maps on Apple devices,

@@ -14,6 +14,10 @@ import { useInquiry } from '../useInquiry.js'
 // the deadline real.
 export default function Sponsor({ sponsor, variant = 'light', compact = false, fullWidth = false, slot }) {
   const dark = variant === 'dark'
+  // If the logo file ever 404s (a WPR media migration broke a hot-linked one in Sept 2026),
+  // fall back to the sponsor's name in serif — a paid placement must never show a broken image.
+  const [logoFailed, setLogoFailed] = useState(false)
+  const showLogo = sponsor?.logo && !logoFailed
   const [daysToKickoff, setDaysToKickoff] = useState(null)
   const inquiry = useInquiry(slot || 'unknown')
   useEffect(() => {
@@ -135,8 +139,8 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, f
       >
         <div style={{ fontFamily: theme.sans, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>Presented by</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', marginTop: 6 }}>
-          {sponsor.logo ? (
-            <img src={sponsor.logo} alt={sponsor.name} style={{ display: 'block', height: 50, objectFit: 'contain' }} />
+          {showLogo ? (
+            <img src={sponsor.logo} alt={sponsor.name} style={{ display: 'block', height: 50, objectFit: 'contain' }} onError={() => setLogoFailed(true)} />
           ) : (
             <div style={{ fontFamily: theme.serif, fontSize: 20, color: theme.ink }}>{sponsor.name}</div>
           )}
@@ -171,8 +175,8 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, f
       }}
     >
       <div style={{ fontFamily: theme.sans, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>Presented by</div>
-      {sponsor.logo ? (
-        <img src={sponsor.logo} alt={sponsor.name} style={{ display: 'block', height: 50, objectFit: 'contain', margin: '8px 0 2px' }} />
+      {showLogo ? (
+        <img src={sponsor.logo} alt={sponsor.name} style={{ display: 'block', height: 50, objectFit: 'contain', margin: '8px 0 2px' }} onError={() => setLogoFailed(true)} />
       ) : (
         <div style={{ fontFamily: theme.serif, fontSize: 20, color: theme.ink, margin: '6px 0 2px' }}>{sponsor.name}</div>
       )}
