@@ -34,7 +34,7 @@ const INVENTORY = [
   },
   {
     key: 'pickem', name: 'Weekly pick’em',
-    desc: 'Your lockup over the pick’em — readers call every NFL game each week and come back to see how they did. The stickiest surface on the tracker.',
+    desc: 'Your lockup over the pick’em — readers call every NFL game each week, race ESPN’s model, post their card, and come back to see how they did. The stickiest surface on the tracker.',
     sold: () => !!SPONSORS.pickem, demo: './?demo&tab=pickem',
   },
   {

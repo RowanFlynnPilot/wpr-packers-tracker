@@ -289,6 +289,10 @@ export function rankThisDay(items) {
   return scored
 }
 
+// The winner of a completed game (null while it's on, or on a tie).
+export const winnerOf = (g) =>
+  !g.completed ? null : g.home.score > g.away.score ? g.home.id : g.away.score > g.home.score ? g.away.id : null
+
 // Grade one week of pick'em picks against that week's scoreboard (normalizeLeagueGame shape).
 // A tie grades as a miss — pick'em convention is win-or-nothing. Picks on games still to play
 // count as pending, so a week only settles when every picked game is final.
@@ -298,11 +302,50 @@ export function gradePicks(games, picks) {
     const pick = picks[g.id]
     if (!pick) return
     if (!g.completed) { pending++; return }
-    const winner = g.home.score > g.away.score ? g.home.id : g.away.score > g.home.score ? g.away.id : null
-    if (winner === pick) correct++
+    if (winnerOf(g) === pick) correct++
     else wrong++
   })
   return { correct, wrong, pending, decided: correct + wrong }
+}
+
+// ESPN FPI's side of every game it projects (`proj` from fetchWeekProjections) — the home
+// team on a dead-even 50.
+export function modelPicks(games, proj) {
+  const picks = {}
+  games.forEach((g) => {
+    const p = proj[g.id]
+    if (p) picks[g.id] = p.home >= p.away ? g.home.id : g.away.id
+  })
+  return picks
+}
+
+// The model graded on the reader's games only — a head-to-head is on the same calls, so a
+// reader who skipped the Thursday game isn't racing a model that didn't. `mine` is the
+// reader's correct count on that same set (a game with no projection drops out of both).
+export function gradeModel(games, picks, proj) {
+  const model = modelPicks(games, proj)
+  const shared = games.filter((g) => picks[g.id] && model[g.id])
+  return { ...gradePicks(shared, model), mine: gradePicks(shared, picks).correct }
+}
+
+// The reader's boldest correct call of the week: the winner they took that the model liked
+// least. Null until one of their calls has actually won.
+export function bestCall(games, picks, proj) {
+  let best = null
+  games.forEach((g) => {
+    const pick = picks[g.id]
+    const p = proj[g.id]
+    if (!pick || !p || winnerOf(g) !== pick) return
+    const home = pick === g.home.id
+    const pct = home ? p.home : p.away
+    if (!best || pct < best.pct) best = { game: g, team: home ? g.home : g.away, over: home ? g.away : g.home, pct: Math.round(pct) }
+  })
+  return best
+}
+
+// The tiebreaker game — total points in the Packers' game, or the week's last kickoff on a bye.
+export function tiebreakGame(games) {
+  return games.find((g) => g.home.id === TEAM_ID || g.away.id === TEAM_ID) || games[games.length - 1] || null
 }
 
 // A win-percentage record projected across a full season, for the pace bar.

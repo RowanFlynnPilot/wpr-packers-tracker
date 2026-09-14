@@ -75,8 +75,12 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   offense/defense boards + team profile), Film room (per-game win probability + scoring
   plays + chunk plays + season chunk board + drive DNA), Pick'em (the week's full NFL
   slate — picks in localStorage only, NO backend/accounts by design; graded from the
-  scoreboard feed; past weeks settle into stored results so the season tally never
-  re-fans-out; sponsorable slot `pickem`). Tab labels carry `short` variants for phones. `sponsors.html` is the hosted
+  scoreboard feed; the reader's opponent is ESPN's FPI model, scored head-to-head on the
+  same calls; a week rail opens any regular-season week (past to review, next to call
+  early); a tiebreaker on the Packers game; two canvas share cards; past weeks settle
+  into stored results so the season tally never re-fans-out — store + season math in
+  `src/pickem.js`; sponsorable slot `pickem`). Tab labels carry `short` variants for
+  phones. `sponsors.html` is the hosted
   media-kit page
   (config-driven inventory status + live mini embeds). Only the active tab renders, and
   `api.js`
@@ -109,6 +113,10 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   - `PlayerCard` — tap-any-player modal. One `<PlayerCardHost/>` mounts in App; any
     surface calls the exported `openPlayerCard(id)` (module-level hook, no prop
     threading). Card = roster bio + last-5 game log.
+  - `Pickem` (the tab: week resolution, store writes, the sheet, share cards) +
+    `PickemLedger` (week rail + season figures + the FPI head-to-head sentence) +
+    `PickRow` (one game: two sides w/ record + win %, kickoff/live/final column, the
+    tiebreaker input on the Packers game). Store, settling and season math: `src/pickem.js`.
   - `FilmRoom` — game picker; hands one cached summary to `GameFlow` (win-probability
     chart), `ScoringPlays`, `BigPlays`.
   - `PlayoffOdds` runs a 4,000-sim rest-of-season Monte Carlo IN THE BROWSER (regressed
@@ -159,13 +167,21 @@ mode simply wait. This is one deterministic source per phase — NOT a fallback 
 - FPI pregame projection: `sports.core.api…/events/ID/competitions/ID/predictor` —
   `homeTeam/awayTeam.statistics` carry `gameProjection` (win %). Regular/postseason only;
   labeled as ESPN's model wherever shown, never blended with the house Monte Carlo.
+  `fetchProjection` caches BOTH sides per game (the hero's `fetchPredictor` derives the
+  Packers side from it); `fetchWeekProjections` pools a whole slate for the pick'em. The
+  pregame figure STAYS published after the final (verified Sep 2026), so a finished week
+  grades against the model with no stored copy.
   (The sibling `…/odds` endpoint works too — spread/O-U from DraftKings — but is UNUSED
   pending WPR's editorial call on betting content.)
 - League scoreboard: `site.api…/scoreboard` — bare call reports where the league clock
   stands (`season.type` 1/2/3 + `week.number`); `?seasontype=2&week=N&dates=YYYY` pins one
   regular-season week (16ish events, both competitors inline). Feeds the pick'em via
   `normalizeLeagueGame` (neutral, both sides — NOT normalizeEvent's one-team perspective).
-  Scheduled games carry placeholder "0" scores — normalize them to null.
+  Scheduled games carry placeholder "0" scores — normalize them to null. While a game is
+  on, `competitions[0].situation.lastPlay.probability.homeWinPercentage` is the live win
+  probability (`homeWinPct` on the normalized game — the pick rows show it in place of
+  FPI). Future weeks' slates (and their FPI projections) are published all season, which
+  is what lets the pick'em open the next week early.
 - Roster: `site.api…/teams/9/roster` — bios + in-season injury tags ride along (that's the
   injury report's source; the dedicated injuries endpoints are ref-soup or 404).
 - Game logs: `site.web.api…/athletes/ID/gamelog?season=YYYY` — parallel `names`/`labels`
@@ -269,7 +285,11 @@ deep-linkable tabs (`?tab=`), three minis + the email digest PNG.)
 
 - Betting line on the hero/matchup (the odds endpoint is probed and works — DraftKings via
   ESPN) — needs WPR's editorial sign-off on gambling content first.
-  (The pick'em shipped Aug 2026 as its own tab — full weekly NFL slate, WPR-approved.)
+  (The pick'em shipped Aug 2026 as its own tab — full weekly NFL slate, WPR-approved;
+  Sep 2026 added the FPI head-to-head, week rail, tiebreaker and share cards.)
+- Pick'em extensions, each small: confidence points (rank the calls 1–16); an
+  against-the-spread mode (the scoreboard's `odds` carries the DraftKings line — same
+  editorial sign-off as above); a `?week=` deep link into the rail.
 - Plausible public dashboard links per sponsor once the account is live.
 
 Keep each as a small, self-contained addition.

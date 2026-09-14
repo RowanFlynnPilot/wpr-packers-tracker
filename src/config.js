@@ -6,6 +6,7 @@ export const TEAM_ABBR = 'GB'
 export const CONFERENCE = 'NFC'
 export const DIVISION_NAME = 'NFC North'
 export const GAMES_IN_SEASON = 17
+export const REGULAR_SEASON_WEEKS = 18   // the pick'em's week rail runs 1..18
 
 // NFC North, used by the standings + division-race modules.
 export const DIVISION = { 9: 'Packers', 3: 'Bears', 8: 'Lions', 16: 'Vikings' }

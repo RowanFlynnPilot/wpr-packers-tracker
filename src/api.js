@@ -136,23 +136,29 @@ export function normalizeLeagueGame(e) {
   const awayC = comp.competitors.find((c) => c.homeAway === 'away')
   if (!homeC || !awayC) return null
   const st = comp.status?.type || {}
+  const state = st.state || 'pre'
   const side = (c) => ({
     id: Number(c.team.id),
     abbr: c.team.abbreviation,
     name: c.team.shortDisplayName || c.team.displayName,
     // A scheduled game has no score — the feed's "0" placeholder would render as a real 0.
-    score: (st.state || 'pre') === 'pre' ? null : scoreOf(c.score),
+    score: state === 'pre' ? null : scoreOf(c.score),
     record: (c.records || [])[0]?.summary || '',
   })
+  // While a game is on, the scoreboard's situation carries the live win probability (home,
+  // 0–1) — the pick rows show it in place of the pregame projection.
+  const liveProb = state === 'in' ? comp.situation?.lastPlay?.probability?.homeWinPercentage : null
   return {
     id: e.id,
     date: e.date,
     timeValid: e.timeValid !== false,
-    state: st.state || 'pre',
+    state,
     completed: !!st.completed,
     detail: st.shortDetail || '',
+    neutral: !!comp.neutralSite,
     home: side(homeC),
     away: side(awayC),
+    homeWinPct: Number.isFinite(liveProb) ? Math.round(liveProb * 100) : null,
     tv: comp.broadcasts?.[0]?.names?.[0] || comp.broadcasts?.[0]?.media?.shortName || '',
   }
 }
@@ -338,17 +344,38 @@ export function fetchSeasonSummaries() {
   })
 }
 
-// ESPN's FPI pregame projection for one event → the Packers' win chance (0–100 %), or null
-// when the model hasn't published one. This is ESPN's model, surfaced under its own name —
-// it never blends with the house Monte Carlo in PlayoffOdds.
-export function fetchPredictor(eventId, packersHome) {
+// ESPN's FPI pregame projection for one game — both sides' win % (they don't sum to 100; the
+// remainder is the tie chance). Labeled as ESPN's model wherever it's shown. Cached per game;
+// the pregame figure stays published after the final, so a finished week grades against the
+// model with no stored copy.
+export function fetchProjection(eventId) {
   return cached(`predictor:${eventId}`, 600000, async () => {
     const data = await getJSON(`${CORE}/events/${eventId}/competitions/${eventId}/predictor`)
-    const side = packersHome ? data.homeTeam : data.awayTeam
-    const stat = (side?.statistics || []).find((s) => s.name === 'gameProjection')
-    const v = Number(stat?.value ?? parseFloat(stat?.displayValue))
-    return Number.isFinite(v) ? Math.round(v) : null
+    const pct = (team) => {
+      const stat = (team?.statistics || []).find((s) => s.name === 'gameProjection')
+      const v = Number(stat?.value ?? parseFloat(stat?.displayValue))
+      return Number.isFinite(v) ? v : null
+    }
+    return { home: pct(data.homeTeam), away: pct(data.awayTeam) }
   })
+}
+
+// The Packers' side of it, rounded — the figure the hero prints. Regular/postseason only
+// (callers skip preseason games).
+export function fetchPredictor(eventId, packersHome) {
+  return fetchProjection(eventId).then((p) => {
+    const v = packersHome ? p.home : p.away
+    return v == null ? null : Math.round(v)
+  })
+}
+
+// Projections for a whole slate, keyed by game id — the pick sheet's per-row lean and the
+// "beat the model" grading. Pooled fan-out; a game whose projection fails is simply absent.
+export async function fetchWeekProjections(games) {
+  const out = await pooled(games, 6, (g) => fetchProjection(g.id))
+  const map = {}
+  games.forEach((g, i) => { if (out[i]?.home != null && out[i]?.away != null) map[g.id] = out[i] })
+  return map
 }
 
 // The pieces of a summary the LIVE hero/mini need, distilled: the score, the Packers' win

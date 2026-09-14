@@ -28,6 +28,28 @@ clearly labeled**, the hero counts down to kickoff, and everything flips to the 
 automatically once Week 1 has a final. No hand-holding at season rollover — `SEASON` in
 `src/config.js` is the only dial.
 
+## The pick'em
+
+The Pick'em tab is a full weekly NFL pick sheet with **no sign-up**: tap a side on every
+game, call a tiebreaker (total points in the Packers game), and picks lock game by game at
+kickoff. Picks live in the reader's browser (localStorage) — no accounts, no backend, by
+design — and are graded live from ESPN's scoreboard as the finals land. What makes it a
+contest rather than a form:
+
+- **An opponent.** Every row carries ESPN's FPI pregame win probability (the live win
+  probability once a game is on), and each week is scored head-to-head against FPI on the
+  same games — "you're 2 up on the model" — plus a "best call" line for the boldest upset
+  the reader got right.
+- **A season.** A week rail (Weeks 1–18) carries each week's record; tap any week to review
+  it, or the next one to call it early. A figures strip keeps the season record, accuracy,
+  the FPI head-to-head, best week, and how often the reader backed the Pack.
+- **Share cards.** "Post your card" renders the sheet as a branded 1200×630 image (the
+  picks as team chips, tiebreaker, season record); "Share your week" does the same for
+  the result. Both carry the WPR masthead, the Packers page URL and the title sponsor.
+
+`?tab=pickem` deep-links to it (a newsletter CTA: "make your picks"). Sponsorable slot:
+`SPONSORS.pickem` in `src/config.js`.
+
 ## Develop
 
 ```bash
