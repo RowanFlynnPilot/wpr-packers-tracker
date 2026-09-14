@@ -35,6 +35,19 @@ Email clients strip iframes and can't run JS, so the digest is snapshotted to a 
 still fetches the API live in the browser. Don't delete the schedule thinking it's drift,
 and don't extend it to caching data.
 
+A SECOND sanctioned exception: the pick'em **contest backend** in `worker/` — a Cloudflare
+Worker + D1 holding contest entries, picks and the contest's own copy of the schedule and
+results, deployed by `.github/workflows/deploy-worker.yml`. It exists because a PRIZE
+contest needs identity, server-enforced kickoff locks and a shared leaderboard, none of
+which a browser can provide. And it comes with the one scheduled data job in the repo:
+`.github/workflows/sync-contest.yml` runs `scripts/sync-contest.mjs` (every 15 min on game
+days) to copy each week's kickoffs and finals from ESPN into the Worker's `games` table —
+because ESPN's edge (Akamai) answers 403 to the Workers runtime whatever the headers
+(verified Sep 2026), so the Worker can't read ESPN itself, and a contest's locks and
+grading must not hang on a feed that refuses the server. Neither piece feeds the widget: the
+tracker still reads ESPN live in the browser, and with `CONTEST.api` unset the tab runs as
+bragging rights only. Don't extend the Worker or the sync into a general data layer.
+
 ## Architecture
 
 ```
@@ -60,6 +73,13 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   chunk plays, this-day ranking). No fetching.
 - `src/analytics.js` — opt-in, cookieless Plausible loader + `track()` for sponsor ROI.
   Off by default until `ANALYTICS.domain` is set. Analytics only — NOT the forbidden cache.
+- `src/contest.js` — the only file that talks to the contest API (`worker/`): the entry
+  token in localStorage, enter/resume, mirroring picks, the leaderboard. Fails fast like
+  the ESPN client. `CONTEST` in config.js (API URL, prizes, eligibility, contact, the
+  rules-approved flag) is the switch — `api: null` and none of it renders.
+- `rules.html` + `src/rules.jsx` → `RulesPage` — the contest's official rules, generated
+  from `CONTEST` so the prize and eligibility live in one place; wears a draft ribbon until
+  `rulesApproved` is flipped.
 - `mini*.html` + `src/mini*.jsx` — extra Vite entries: compact sidebar/in-article embeds,
   each its own page so they stay lightweight. `MiniGame.jsx` (featured-game scoreboard w/
   kickoff countdown, live situation + win probability, player of the game),
@@ -117,6 +137,9 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
     `PickemLedger` (week rail + season figures + the FPI head-to-head sentence) +
     `PickRow` (one game: two sides w/ record + win %, kickoff/live/final column, the
     tiebreaker input on the Packers game). Store, settling and season math: `src/pickem.js`.
+    `ContestEntry` (the contest's front door: four fields + a PIN, or resume) and
+    `Leaderboard` (week/season standings, top 25 + the reader's own row, the winner once a
+    week is final; fail-soft, owns its Section) render only when `CONTEST.api` is set.
   - `FilmRoom` — game picker; hands one cached summary to `GameFlow` (win-probability
     chart), `ScoringPlays`, `BigPlays`.
   - `PlayoffOdds` runs a 4,000-sim rest-of-season Monte Carlo IN THE BROWSER (regressed
@@ -222,6 +245,14 @@ npm run build
 ```
 Push to `main` → auto-deploys via `.github/workflows/deploy.yml`. Set Pages source to
 "GitHub Actions" once in repo Settings.
+
+Contest backend (only when working on the contest):
+```bash
+cd worker && npm install && npm run migrate:local && npm run dev   # http://localhost:8787
+```
+`VITE_CONTEST_API=http://localhost:8787` in `.env.local` points the tracker at it. Pushes
+touching `worker/` deploy via `.github/workflows/deploy-worker.yml` (needs the two Cloudflare
+repo secrets — setup in `worker/README.md`).
 
 ## Windows (rpfly machine) reminders
 

@@ -1,0 +1,15 @@
+{
+  "name": "wpr-packers-pickem-api",
+  "private": true,
+  "type": "module",
+  "description": "The pick'em contest API — a Cloudflare Worker + D1. See README.md.",
+  "scripts": {
+    "dev": "wrangler dev --port 8787",
+    "migrate:local": "wrangler d1 migrations apply wpr-packers-pickem --local",
+    "migrate:remote": "wrangler d1 migrations apply wpr-packers-pickem --remote",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

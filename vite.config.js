@@ -17,6 +17,8 @@ export default defineConfig({
         miniDigest: resolve(__dirname, 'mini-digest.html'),
         // The hosted media kit — config-driven inventory + live previews for WPR sales.
         sponsors: resolve(__dirname, 'sponsors.html'),
+        // The pick'em contest's official rules (config-driven).
+        rules: resolve(__dirname, 'rules.html'),
       },
     },
   },

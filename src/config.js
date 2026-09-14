@@ -128,6 +128,25 @@ export const SPONSORS = {
 // Where to send sponsorship inquiries (shown on empty slots — the upsell).
 export const SPONSOR_INQUIRY = 'weber.chris@wausaupilotandreview.com'
 
+// THE CONTEST — the pick'em's prize layer, and the one server in this repo (worker/: a
+// Cloudflare Worker + D1). The tracker stays client-side; the Worker holds entries, picks and
+// the leaderboard, because a prize needs identity and kickoff locks a browser can't enforce.
+// `api: null` runs the pick'em as bragging-rights only (no entry card, no leaderboard) — the
+// mode the tab shipped in. Dev: VITE_CONTEST_API in .env.local points at `npm run dev` inside
+// worker/ (http://localhost:8787). Production: paste the Worker's URL here after the first
+// deploy (worker/README.md) — and set the prizes, eligibility and contact for real first.
+export const CONTEST = {
+  api: import.meta.env.VITE_CONTEST_API || null,
+  // What's on the line, in the words the entry card and the rules use. PLACEHOLDERS — WPR
+  // sets these with the sponsor before the contest goes live.
+  prizes: { weekly: 'a $100 gift card', season: 'the $1,000 grand prize' },
+  eligibility: 'Open to Wisconsin residents 18 and older.',
+  contact: 'contests@wausaupilotandreview.com',
+  rules: 'rules.html',
+  // The rules page wears a "draft" ribbon until WPR (and counsel) sign off — flip to true then.
+  rulesApproved: false,
+}
+
 // Home-game ticket links. The ESPN schedule feed carries a per-game resale deep link (Vivid
 // Seats — ESPN's ticketing partner) with a live "from $X" price; that's the one source used.
 // The Packers don't run their own affiliate program, so if WPR joins a marketplace program

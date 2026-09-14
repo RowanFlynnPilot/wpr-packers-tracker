@@ -4,6 +4,7 @@ import { SEASON, TEAM_ID, SPONSORS, REGULAR_SEASON_WEEKS, WPR_EMBED_URL } from '
 import { fetchPickemWeek, fetchScoreboardWeek, fetchWeekProjections } from '../api.js'
 import { tiebreakGame, bestCall } from '../games.js'
 import { readStore, writeStore, settlePastWeeks, weekResult, seasonTally } from '../pickem.js'
+import { contestOn, readEntry, writeEntry, fetchServerPicks, savePicks } from '../contest.js'
 import { shareStatCard } from '../share-card.js'
 import { track } from '../analytics.js'
 import { useIsNarrow } from '../useIsNarrow.js'
@@ -11,16 +12,23 @@ import { Loading } from './Status.jsx'
 import Section from './Section.jsx'
 import PickemLedger from './PickemLedger.jsx'
 import PickRow from './PickRow.jsx'
+import ContestEntry from './ContestEntry.jsx'
+import Leaderboard from './Leaderboard.jsx'
 
 // The weekly NFL pick'em: every game on the slate, tap a side, graded as the finals land — with
-// the reader's season kept alongside. No accounts and no backend by design: picks live in THIS
-// browser (src/pickem.js), so the opponent is ESPN's FPI model, graded on the same calls, and
-// the reader's own record — and that's said out loud on the card. Week resolution and grading
-// ride the scoreboard feed; each row's percentages are FPI's pregame projection, or the live
-// win probability once a game is on. Any regular-season week is one tap away on the rail —
-// past weeks to review, the next one to call early. Past weeks settle into stored results the
-// first time the card loads after their last game (one fetch each, once). A tiebreaker (total
-// points in the Packers game) and two share cards round out a contest-grade sheet.
+// the reader's season kept alongside. Picks live in THIS browser (src/pickem.js) and grade
+// themselves, so the sheet works with no account at all: the opponent is ESPN's FPI model,
+// scored on the same calls, plus the reader's own record. Week resolution and grading ride the
+// scoreboard feed; each row's percentages are FPI's pregame projection, or the live win
+// probability once a game is on. Any regular-season week is one tap away on the rail — past
+// weeks to review, the next one to call early. Past weeks settle into stored results the first
+// time the card loads after their last game (one fetch each, once). A tiebreaker (total points
+// in the Packers game) and two share cards round out the sheet.
+//
+// THE CONTEST layer (config CONTEST.api; src/contest.js) sits on top of all that: an entry card
+// attaches a name to the sheet, every change mirrors to the contest server (which enforces the
+// kickoff locks), and a leaderboard ranks the field. With no API configured, none of it renders
+// and the sheet is bragging rights only — the mode it shipped in.
 
 const fmtDay = (iso) => new Date(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 const fmtShort = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -60,6 +68,16 @@ export default function Pickem() {
   viewRef.current = view
   const narrow = useIsNarrow()
 
+  // Contest state: the entry token (this browser's identity), the sync status of the sheet
+  // with the server, and the reader's rank as the leaderboard reports it.
+  const contest = contestOn()
+  const [entry, setEntry] = useState(readEntry)
+  const [sync, setSync] = useState('idle')      // idle | saving | saved | error | locked
+  const [lockedCount, setLockedCount] = useState(0)
+  const [you, setYou] = useState(null)          // { rank, playing } for the viewed week
+  const [saves, setSaves] = useState(0)         // successful server saves — the leaderboard refetches on each
+  const syncTimer = useRef(null)
+
   const loadSlate = useCallback((wk) => {
     if (wk == null) return
     fetchScoreboardWeek(wk).then((games) => {
@@ -94,7 +112,60 @@ export default function Pickem() {
 
   useEffect(() => { setFailed(false); loadSlate(view) }, [view, loadSlate])
 
-  // Every write goes through the store fresh (another tab may have picked too), then re-renders.
+  // Mirror the viewed week's sheet to the contest server — only the games still open (the
+  // server enforces the locks; anything it reports as locked was a race with a kickoff).
+  // Debounced: a reader tapping down the sheet sends one save, not sixteen.
+  const push = useCallback((wk) => {
+    if (!contest || !entry) return
+    const slate = slates[wk]
+    if (!slate) return
+    const e = readStore()[wk] || {}
+    const open = slate.filter(pickable)
+    const tb = tiebreakGame(slate)
+    if (!open.length) return
+    const picks = {}
+    open.forEach((g) => { if (e.picks?.[g.id]) picks[g.id] = e.picks[g.id] })
+    clearTimeout(syncTimer.current)
+    setSync('saving')
+    syncTimer.current = setTimeout(async () => {
+      try {
+        const r = await savePicks(entry.token, wk, picks, tb && pickable(tb) ? e.tiebreak ?? null : null)
+        if (r.locked.length) { setLockedCount(r.locked.length); setSync('locked'); loadSlate(wk) }
+        else setSync('saved')
+        setSaves((n) => n + 1)
+      } catch (err) {
+        if (err.status === 401) { writeEntry(null); setEntry(null); setSync('idle') }
+        else setSync('error')
+      }
+    }, 500)
+  }, [contest, entry, slates, loadSlate])
+
+  // With an entry, the viewed week's sheet is the union of this browser and the server: server
+  // picks fill in what another device made, local picks win where both exist, then the merged
+  // sheet goes back up so both sides match.
+  useEffect(() => {
+    if (!contest || !entry || view == null || !slates[view]) return
+    let alive = true
+    fetchServerPicks(entry.token, view).then((srv) => {
+      if (!alive) return
+      const s = readStore()
+      const e = s[view] || (s[view] = { picks: {} })
+      e.picks = { ...srv.picks, ...(e.picks || {}) }
+      if (e.tiebreak == null && srv.tiebreak != null) e.tiebreak = srv.tiebreak
+      writeStore(s)
+      setStore(s)
+      push(view)
+    }).catch((err) => {
+      if (!alive) return
+      if (err.status === 401) { writeEntry(null); setEntry(null) }
+      else setSync('error')
+    })
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contest, entry?.token, view, !!slates[view]])
+
+  // Every write goes through the store fresh (another tab may have picked too), then re-renders
+  // and mirrors up.
   const update = (fn) => {
     const s = readStore()
     const e = s[view] || (s[view] = { picks: {} })
@@ -102,6 +173,7 @@ export default function Pickem() {
     fn(e)
     writeStore(s)
     setStore(s)
+    push(view)
   }
   const pick = (g, teamId) => {
     update((e) => { if (e.picks[g.id] === teamId) delete e.picks[g.id]; else e.picks[g.id] = teamId })
@@ -117,14 +189,28 @@ export default function Pickem() {
     touched.current = true
     setView(wk)
     setShared(null)
+    setYou(null)
     track('Pickem Week', { week: wk })
   }
 
+  // A new entry: picks already on games that kicked off can't count for the contest — say so
+  // once, up front, rather than let the leaderboard quietly disagree with the sheet.
+  const onEntered = (r) => {
+    writeEntry(r)
+    setEntry(r)
+    const slate = slates[view] || []
+    const mine = store[view]?.picks || {}
+    const late = slate.filter((g) => mine[g.id] && !pickable(g)).length
+    if (late) { setLockedCount(late); setSync('locked') } else setSync('saved')
+  }
+  const switchEntry = () => { writeEntry(null); setEntry(null); setSync('idle'); setYou(null) }
+  const onYou = useCallback((y, playing) => setYou(y ? { rank: y.rank, playing } : null), [])
+
   const games = view != null ? slates[view] : null
-  const entry = store[view] || {}
-  const picks = entry.picks || {}
+  const entryData = store[view] || {}
+  const picks = entryData.picks || {}
   const viewProj = proj[view] || {}
-  const result = games ? weekResult(games, entry, viewProj) : null
+  const result = games ? weekResult(games, entryData, viewProj) : null
   // The league week's live result feeds the season tally even while another week is open.
   const liveResult = week == null ? null
     : week === view ? result
@@ -178,9 +264,15 @@ export default function Pickem() {
   const best = games && result?.total ? bestCall(games, picks, viewProj) : null
   const bestLine = best && best.pct < 50 ? `Best call: ${best.team.name} over the ${best.over.name} — FPI had them at ${best.pct}%.` : null
 
+  // The contest line under the status: who's entered, whether the sheet is saved, where it ranks.
+  const syncText = {
+    idle: '', saving: 'saving…', saved: 'picks saved', error: 'couldn’t save — it retries on your next pick',
+    locked: `${lockedCount} pick${lockedCount === 1 ? ' was' : 's were'} on games that had already kicked off — ${lockedCount === 1 ? 'it doesn’t' : 'they don’t'} count for the contest`,
+  }[sync]
+
   const tb = games ? tiebreakGame(games) : null
   const tiebreak = tb ? {
-    value: entry.tiebreak ?? null, onChange: setTiebreak,
+    value: entryData.tiebreak ?? null, onChange: setTiebreak,
     locked: !pickable(tb), actual: tb.completed ? tb.home.score + tb.away.score : null,
   } : null
 
@@ -196,7 +288,7 @@ export default function Pickem() {
       }),
       stats: [
         { value: `${pickedCount}/${games.length}`, label: 'Called' },
-        entry.tiebreak != null && { value: entry.tiebreak, label: 'Tiebreaker' },
+        entryData.tiebreak != null && { value: entryData.tiebreak, label: 'Tiebreaker' },
         tally.total > 0 && { value: rec(tally), label: 'Season' },
       ].filter(Boolean),
       footnote: site,
@@ -206,9 +298,10 @@ export default function Pickem() {
       headline: result.pending ? `${result.correct} of ${result.total} so far in Week ${view}` : `I called ${result.correct} of ${result.total} in Week ${view}`,
       stats: [
         { value: rec(result), label: 'This week' },
+        you && { value: `#${you.rank}`, label: `Of ${you.playing} playing` },
         m?.total > 0 && { value: `${m.correct}–${m.total - m.correct}`, label: "ESPN's FPI" },
         tally.total > result.total && { value: rec(tally), label: 'Season' },
-        tally.total > 0 && { value: `${Math.round((tally.correct / tally.total) * 100)}%`, label: 'Accuracy' },
+        !you && tally.total > 0 && { value: `${Math.round((tally.correct / tally.total) * 100)}%`, label: 'Accuracy' },
       ].filter(Boolean),
       footnote: site,
     })
@@ -222,74 +315,95 @@ export default function Pickem() {
   )
 
   let lastDay = ''
-  return shell(
-    <div>
-      <PickemLedger tally={tally} store={store} liveWeek={week} view={view} onView={openWeek} />
+  return (
+    <>
+      {shell(
+        <div>
+          <PickemLedger tally={tally} store={store} liveWeek={week} view={view} onView={openWeek} />
 
-      {failed ? note('The slate isn’t loading right now — it usually clears on the next refresh.')
-        : !games ? <div style={{ marginTop: 22 }}><Loading lines={4} /></div>
-        : !games.length ? note(`Week ${view}’s slate isn’t posted yet.`)
-        : (
-          <>
-            {/* The reader's card. Always visible, from an empty sheet onward: a pick'em with no
-                running score is a form, and a form is not a habit. The bar makes "you have four
-                left" a glance instead of a count; the lock countdown makes the deadline real. */}
-            <div style={{ borderTop: `2px solid ${theme.green}`, borderBottom: `1px solid ${theme.rule}`, padding: '12px 0 14px', margin: '22px 0 6px' }}>
-              <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700, marginBottom: 6 }}>
-                Week {view} · {weekRange(games)}{early ? ' · open early' : ''}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-                <div style={{ fontFamily: theme.serif, fontSize: 22, color: theme.ink, lineHeight: 1 }}>
-                  {pickedCount} <span style={{ fontSize: 15, color: theme.muted }}>of {games.length} called</span>
-                </div>
-                {result.total > 0 && (
-                  <div style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted }}>
-                    This week <strong style={{ color: result.correct * 2 >= result.total ? theme.green : theme.red, fontSize: 13 }}>{rec(result)}</strong>
-                    {result.pending > 0 && <span> · {result.pending} to play</span>}
+          {contest && !entry && games?.length > 0 && <ContestEntry onEntered={onEntered} />}
+
+          {failed ? note('The slate isn’t loading right now — it usually clears on the next refresh.')
+            : !games ? <div style={{ marginTop: 22 }}><Loading lines={4} /></div>
+            : !games.length ? note(`Week ${view}’s slate isn’t posted yet.`)
+            : (
+              <>
+                {/* The reader's card. Always visible, from an empty sheet onward: a pick'em with no
+                    running score is a form, and a form is not a habit. The bar makes "you have four
+                    left" a glance instead of a count; the lock countdown makes the deadline real. */}
+                <div style={{ borderTop: `2px solid ${theme.green}`, borderBottom: `1px solid ${theme.rule}`, padding: '12px 0 14px', margin: '22px 0 6px' }}>
+                  <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700, marginBottom: 6 }}>
+                    Week {view} · {weekRange(games)}{early ? ' · open early' : ''}
                   </div>
-                )}
-              </div>
-              <div style={{ height: 4, borderRadius: 2, background: theme.rule, marginTop: 10, overflow: 'hidden' }} aria-hidden="true">
-                {/* Scaled, not widened: animating width relayouts the bar on every frame. */}
-                <div style={{ width: '100%', height: '100%', borderRadius: 2, background: theme.gold, transformOrigin: 'left', transform: `scaleX(${pickedCount / games.length})`, transition: 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)' }} />
-              </div>
-              <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, marginTop: 9 }}>{status}</div>
-              {(modelLine || bestLine) && (
-                <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.ink, marginTop: 5, lineHeight: 1.5 }}>
-                  {modelLine}{modelLine && bestLine ? ' ' : ''}{bestLine}
-                </div>
-              )}
-            </div>
-
-            {games.map((g) => {
-              const day = fmtDay(g.date)
-              const dayLabel = day !== lastDay ? (lastDay = day) : null
-              return (
-                <div key={g.id}>
-                  {dayLabel && (
-                    <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700, margin: '16px 0 6px' }}>
-                      {dayLabel}
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+                    <div style={{ fontFamily: theme.serif, fontSize: 22, color: theme.ink, lineHeight: 1 }}>
+                      {pickedCount} <span style={{ fontSize: 15, color: theme.muted }}>of {games.length} called</span>
+                    </div>
+                    {result.total > 0 && (
+                      <div style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted }}>
+                        This week <strong style={{ color: result.correct * 2 >= result.total ? theme.green : theme.red, fontSize: 13 }}>{rec(result)}</strong>
+                        {result.pending > 0 && <span> · {result.pending} to play</span>}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ height: 4, borderRadius: 2, background: theme.rule, marginTop: 10, overflow: 'hidden' }} aria-hidden="true">
+                    {/* Scaled, not widened: animating width relayouts the bar on every frame. */}
+                    <div style={{ width: '100%', height: '100%', borderRadius: 2, background: theme.gold, transformOrigin: 'left', transform: `scaleX(${pickedCount / games.length})`, transition: 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)' }} />
+                  </div>
+                  <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, marginTop: 9 }}>{status}</div>
+                  {(modelLine || bestLine) && (
+                    <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.ink, marginTop: 5, lineHeight: 1.5 }}>
+                      {modelLine}{modelLine && bestLine ? ' ' : ''}{bestLine}
                     </div>
                   )}
-                  <PickRow game={g} pick={picks[g.id]} pct={pctFor(g)} pickable={pickable(g)} onPick={(id) => pick(g, id)}
-                    packers={g.home.id === TEAM_ID || g.away.id === TEAM_ID} tiebreak={tb?.id === g.id ? tiebreak : null} narrow={narrow} />
+                  {contest && entry && (
+                    <div style={{ fontFamily: theme.sans, fontSize: 12, color: sync === 'error' || sync === 'locked' ? theme.red : theme.muted, marginTop: 6, lineHeight: 1.5 }}>
+                      Entered as <strong style={{ color: theme.ink }}>{entry.name}</strong>
+                      {you ? ` · #${you.rank} of ${you.playing} this week` : ''}
+                      {syncText ? ` · ${syncText}` : ''}
+                      {' · '}
+                      <button onClick={switchEntry} className="link-hover"
+                        style={{ background: 'transparent', border: 'none', padding: 0, fontFamily: theme.sans, fontSize: 12, color: theme.muted, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2 }}>
+                        Not you?
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )
-            })}
 
-            {((pickedCount > 0 && open.length > 0) || result.total > 0) && (
-              <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginTop: 14 }}>
-                {pickedCount > 0 && open.length > 0 && shareButton('card', 'Post your card')}
-                {result.total > 0 && shareButton('week', 'Share your week')}
-              </div>
+                {games.map((g) => {
+                  const day = fmtDay(g.date)
+                  const dayLabel = day !== lastDay ? (lastDay = day) : null
+                  return (
+                    <div key={g.id}>
+                      {dayLabel && (
+                        <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700, margin: '16px 0 6px' }}>
+                          {dayLabel}
+                        </div>
+                      )}
+                      <PickRow game={g} pick={picks[g.id]} pct={pctFor(g)} pickable={pickable(g)} onPick={(id) => pick(g, id)}
+                        packers={g.home.id === TEAM_ID || g.away.id === TEAM_ID} tiebreak={tb?.id === g.id ? tiebreak : null} narrow={narrow} />
+                    </div>
+                  )
+                })}
+
+                {((pickedCount > 0 && open.length > 0) || result.total > 0) && (
+                  <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginTop: 14 }}>
+                    {pickedCount > 0 && open.length > 0 && shareButton('card', 'Post your card')}
+                    {result.total > 0 && shareButton('week', 'Share your week')}
+                  </div>
+                )}
+
+                <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 10, lineHeight: 1.5 }}>
+                  {contest
+                    ? 'Picks lock at kickoff and are graded as the finals land; entered picks count toward the contest. '
+                    : 'Bragging rights only — picks live in this browser and lock at kickoff, graded as the finals land. '}
+                  Percentages are ESPN’s FPI pregame projection (the live win probability while a game is on). Week {view} of {SEASON}.
+                </div>
+              </>
             )}
-
-            <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 10, lineHeight: 1.5 }}>
-              Bragging rights only — picks live in this browser and lock at kickoff, graded as the finals land.
-              Percentages are ESPN’s FPI pregame projection (the live win probability while a game is on). Week {view} of {SEASON}.
-            </div>
-          </>
-        )}
-    </div>
+        </div>,
+      )}
+      {contest && games?.length > 0 && <Leaderboard week={view} token={entry?.token} saves={saves} onYou={onYou} />}
+    </>
   )
 }

@@ -1,0 +1,44 @@
+name: Sync the pick'em contest schedule
+
+# Feeds the contest Worker its copy of the NFL schedule and results (scripts/sync-contest.mjs).
+# This IS a scheduled data job — the only one in this repo — and it exists because ESPN's edge
+# refuses requests from the Cloudflare Workers runtime, so the contest's kickoff locks and
+# grading can't read ESPN directly. It feeds the contest ledger, not the widget: the tracker
+# still reads ESPN live in the browser. Every 15 minutes on game days (Thu–Mon), hourly on
+# Tue/Wed. Needs repo secrets CONTEST_API (the Worker URL) and CONTEST_ADMIN_KEY; without
+# them the script exits quietly.
+
+on:
+  schedule:
+    - cron: '*/15 * * * 0,1,4,5,6'
+    - cron: '0 * * * 2,3'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write # keep-alive below
+
+concurrency:
+  group: sync-contest
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # GitHub auto-disables `schedule` triggers on public repos after 60 days without repo
+      # activity. Re-enabling via the API resets that timer; once an hour (the Tue/Wed cron)
+      # is plenty.
+      - name: Reset GitHub's 60-day schedule auto-disable timer
+        if: github.event_name == 'schedule' && github.event.schedule == '0 * * * 2,3'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT repos/${{ github.repository }}/actions/workflows/sync-contest.yml/enable
+      - run: node scripts/sync-contest.mjs
+        env:
+          CONTEST_API: ${{ secrets.CONTEST_API }}
+          CONTEST_ADMIN_KEY: ${{ secrets.CONTEST_ADMIN_KEY }}

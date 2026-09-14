@@ -1,0 +1,3 @@
+# Copy to .dev.vars for `npm run dev` (gitignored). Production values are Worker secrets.
+PIN_SALT=local-dev-salt-change-in-production
+ADMIN_KEY=local-admin-key

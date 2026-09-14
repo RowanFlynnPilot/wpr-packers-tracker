@@ -50,6 +50,30 @@ contest rather than a form:
 `?tab=pickem` deep-links to it (a newsletter CTA: "make your picks"). Sponsorable slot:
 `SPONSORS.pickem` in `src/config.js`.
 
+### The contest
+
+With a prize on the line the pick'em becomes a contest — and that is the one place this repo
+runs a server: `worker/`, a small Cloudflare Worker + D1 database (free tier) holding
+entries, picks and a ledger of finished weeks. Readers still pick first, with no sign-up; the
+entry card (first name, last name, email, a 4-digit PIN for resuming on another device, ZIP
+optional) attaches a name to the sheet. Every change mirrors to the server, which enforces
+the kickoff locks; a leaderboard ranks the field by week and by season (most correct, closest
+tiebreaker, earliest entry) and names the winner once a week is final. WPR pulls the entrant
+list and each week's ranked standings, with emails, as CSV from two admin links
+(`worker/README.md`). `rules.html` is the official-rules page, generated from `CONTEST` in
+`src/config.js`; it wears a draft ribbon until `rulesApproved` is flipped.
+
+The Worker never reads ESPN (ESPN's edge refuses the Workers runtime): a scheduled GitHub
+Action, `sync-contest.yml`, copies each week's kickoffs and finals into it every 15 minutes
+on game days, which is what the kickoff locks and the grading run on. It is the one
+scheduled data job in the repo and it feeds the contest ledger only — the tracker still
+reads ESPN live.
+
+Turning it on: deploy the Worker once (`worker/README.md`), paste its URL into
+`CONTEST.api`, add the `CONTEST_API` and `CONTEST_ADMIN_KEY` repo secrets so the sync runs,
+set the real prizes, eligibility and contact, and get the rules reviewed. Until then the tab
+is the no-account version above.
+
 ## Develop
 
 ```bash
@@ -230,6 +254,11 @@ Code-side items ship with the repo; these need a human:
    slot sells (`USE_TEAM_LOGO = false` is the colors-only fallback).
 5. **Embed + newsletter**: paste the iframe snippets below into the WP page and the
    `digest.png` image block into the newsletter template.
+6. **Contest**: deploy the Worker (`worker/README.md`), set `CONTEST` in `src/config.js`
+   (API URL, prizes, eligibility, contact), have counsel review `rules.html` and flip
+   `rulesApproved`, add the `CLOUDFLARE_*` repo secrets so `worker/` pushes auto-deploy, and
+   the `CONTEST_API` + `CONTEST_ADMIN_KEY` secrets so the schedule sync runs (then run it
+   once by hand from the Actions tab to seed the current week).
 
 ## Trademark note
 

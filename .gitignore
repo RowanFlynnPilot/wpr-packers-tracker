@@ -4,3 +4,5 @@ dist
 *.local
 .vite
 .claude/settings.local.json
+.wrangler
+worker/.dev.vars

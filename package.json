@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "render:digest": "node scripts/render-digest.mjs"
+    "render:digest": "node scripts/render-digest.mjs",
+    "sync:contest": "node scripts/sync-contest.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
