@@ -99,7 +99,9 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   same calls; a week rail opens any regular-season week (past to review, next to call
   early); a tiebreaker on the Packers game; two canvas share cards; past weeks settle
   into stored results so the season tally never re-fans-out — store + season math in
-  `src/pickem.js`; sponsorable slot `pickem`). Tab labels carry `short` variants for
+  `src/pickem.js`; sponsorable slot `pickem`; the whole tab is HIDDEN from readers while
+  `PICKEM_TAB` in config.js is false — WPR's call until the contest is live — except in
+  `?demo` mode for the media kit). Tab labels carry `short` variants for
   phones. `sponsors.html` is the hosted
   media-kit page
   (config-driven inventory status + live mini embeds). Only the active tab renders, and

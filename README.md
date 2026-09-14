@@ -48,7 +48,9 @@ contest rather than a form:
   the result. Both carry the WPR masthead, the Packers page URL and the title sponsor.
 
 `?tab=pickem` deep-links to it (a newsletter CTA: "make your picks"). Sponsorable slot:
-`SPONSORS.pickem` in `src/config.js`.
+`SPONSORS.pickem` in `src/config.js`. **The tab is hidden from readers until `PICKEM_TAB`
+in `src/config.js` is flipped to true** (WPR's call while the contest is stood up); the
+deep link lands on the Season tab meanwhile, and only sales demo mode (`?demo`) shows it.
 
 ### The contest
 

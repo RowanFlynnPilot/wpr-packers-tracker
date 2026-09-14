@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { theme } from './theme.js'
-import { SPONSOR_DISCLAIMER, WPR_NEWS, SPONSORS, SEASON, SPONSOR_INQUIRY, WPR_BADGE } from './config.js'
+import { SPONSOR_DISCLAIMER, WPR_NEWS, SPONSORS, SEASON, SPONSOR_INQUIRY, WPR_BADGE, PICKEM_TAB } from './config.js'
 import { fetchStandingsBundle, fetchDivisionSchedules, fetchSeasonGames } from './api.js'
 import { lastFinalGame } from './games.js'
 import { initAnalytics, track } from './analytics.js'
@@ -55,6 +55,13 @@ const TABS = [
   { id: 'pickem', label: "Pick'em" },
 ]
 
+// The tabs a visitor can see: the Pick'em tab stays hidden until PICKEM_TAB flips (config.js),
+// except in sales demo mode, where the media kit previews the placement.
+const visibleTabs = () => {
+  const demo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('demo')
+  return PICKEM_TAB || demo ? TABS : TABS.filter((t) => t.id !== 'pickem')
+}
+
 // Subtle "Updated Xm ago" stamp; re-renders every 30s so the relative time stays current.
 function UpdatedStamp({ at }) {
   const [, setTick] = useState(0)
@@ -88,7 +95,7 @@ export default function App() {
   // a section), and switching tabs rewrites the param via replaceState — no history spam.
   const [tab, setTab] = useState(() => {
     const t = new URLSearchParams(window.location.search).get('tab')
-    return TABS.some((x) => x.id === t) ? t : 'season'
+    return visibleTabs().some((x) => x.id === t) ? t : 'season'
   })
 
   // Refresh on a gentle interval (and on tab focus) so the whole page — not just the hero — stays live.
@@ -165,7 +172,7 @@ export default function App() {
           <BookmarkButton />
           <UpdatedStamp at={updatedAt} />
         </div>
-        <TabBar tabs={TABS} active={tab} onChange={changeTab} />
+        <TabBar tabs={visibleTabs()} active={tab} onChange={changeTab} />
 
         {tab === 'season' && (
           <div role="tabpanel" id="panel-season" aria-labelledby="tab-season">

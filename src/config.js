@@ -135,6 +135,13 @@ export const SPONSOR_INQUIRY = 'weber.chris@wausaupilotandreview.com'
 // mode the tab shipped in. Dev: VITE_CONTEST_API in .env.local points at `npm run dev` inside
 // worker/ (http://localhost:8787). Production: paste the Worker's URL here after the first
 // deploy (worker/README.md) — and set the prizes, eligibility and contact for real first.
+// The Pick'em tab is hidden from readers until the contest is live (WPR's call, Sep 2026,
+// while the backend is stood up). Flip to true to show it. The tab itself works either way
+// (bragging rights with CONTEST.api unset, the contest with it set), and sales demo mode
+// (?demo) still shows it so the media kit can preview the placement. Hidden also means the
+// ?tab=pickem deep link lands on the Season tab.
+export const PICKEM_TAB = false
+
 export const CONTEST = {
   api: import.meta.env.VITE_CONTEST_API || null,
   // What's on the line, in the words the entry card and the rules use. PLACEHOLDERS — WPR
