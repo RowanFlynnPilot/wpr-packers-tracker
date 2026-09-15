@@ -212,7 +212,10 @@ mode simply wait. This is one deterministic source per phase — NOT a fallback 
 - Game logs: `site.web.api…/athletes/ID/gamelog?season=YYYY` — parallel `names`/`labels`
   arrays; columns are primary-category-first per player.
 - Logos: `https://a.espncdn.com/i/teamlogos/nfl/500/{abbr}.png` (abbr map in config).
-  Headshots: `https://a.espncdn.com/i/headshots/nfl/players/full/{id}.png`.
+  Headshots: `https://a.espncdn.com/i/headshots/nfl/players/full/{id}.png` — ~270 KB each, so
+  never render it small. `headshot(id, size)` in config.js takes the CSS size the image draws
+  at and returns ESPN's image-combiner copy (`/combiner/i?img=…&w=96|180|280&h=…`, ~8/26/60 KB)
+  whose height covers that size at 2×. Every call site passes its size (verified Sep 2026).
 - `timeValid: false` on an event = kickoff not set yet (late-season flex) → render "TBD",
   never a fake midnight time.
 - Do NOT read `/teams/9/transactions` (returns `{}`) or the core injuries list (70 refs =

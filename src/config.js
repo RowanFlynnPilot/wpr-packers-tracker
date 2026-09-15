@@ -51,11 +51,20 @@ export const USE_TEAM_LOGO = true
 export const teamLogo = (teamId) =>
   `https://a.espncdn.com/i/teamlogos/nfl/500/${(TEAM_ABBRS[teamId] || 'gb').toLowerCase()}.png`
 export const TEAM_LOGO = teamLogo(TEAM_ID)
-// Headshots. The full file is ~270 KB (350×254); pass `width` for a resized copy from ESPN's
-// image combiner (~8 KB at 96 wide), same aspect — use it wherever faces render small and many.
-export const headshot = (athleteId, width) => width
-  ? `https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/${athleteId}.png&w=${width}&h=${Math.round((width * 254) / 350)}&cb=1`
-  : `https://a.espncdn.com/i/headshots/nfl/players/full/${athleteId}.png`
+// Headshots. ESPN's full file is ~270 KB (350×254) — far too heavy for the 22–76px circles the
+// tracker draws, often dozens at once. Pass `size`, the CSS pixels the image renders at, and
+// this returns a resized copy from ESPN's image combiner, picked from three fixed widths so the
+// same face is one cached URL across surfaces. The rule: the returned HEIGHT covers the size at
+// 2× (object-fit: cover on a landscape source fills by height), so circles stay sharp on
+// high-density screens and in the 2× digest render. ~8 KB / ~26 KB / ~60 KB. No size → full file.
+const HEADSHOT_WIDTHS = [96, 180, 280]
+export const headshot = (athleteId, size) => {
+  const full = `https://a.espncdn.com/i/headshots/nfl/players/full/${athleteId}.png`
+  const width = size && HEADSHOT_WIDTHS.find((w) => Math.round((w * 254) / 350) >= size * 2)
+  return width
+    ? `https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/${athleteId}.png&w=${width}&h=${Math.round((width * 254) / 350)}&cb=1`
+    : full
+}
 
 // WPR brand assets (the publication's own logo). The typewriter badge is the press seal used
 // across WPR's tools (wpr-water etc.) — served from OUR public/ copy, never hot-linked from a

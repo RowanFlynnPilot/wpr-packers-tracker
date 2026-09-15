@@ -66,7 +66,7 @@ function Spotlight({ qb, def, league }) {
     return (
       <div role="button" tabIndex={0} onClick={() => openPlayerCard(p.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayerCard(p.id) } }}
         style={{ display: 'flex', alignItems: 'center', gap: 14, flex: '1 1 240px', cursor: 'pointer' }}>
-        <img src={headshot(p.id)} alt="" width={64} height={64} loading="lazy" decoding="async" style={{ borderRadius: '50%', background: '#fff', objectFit: 'cover', flexShrink: 0, boxShadow: `0 0 0 2px ${theme.gold}` }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
+        <img src={headshot(p.id, 64)} alt="" width={64} height={64} loading="lazy" decoding="async" style={{ borderRadius: '50%', background: '#fff', objectFit: 'cover', flexShrink: 0, boxShadow: `0 0 0 2px ${theme.gold}` }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
         <div style={{ minWidth: 0 }}>
           <div style={{ fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>{role}</div>
           <div style={{ fontFamily: theme.serif, fontSize: 19, color: theme.ink }}>{p.name}</div>
@@ -106,7 +106,7 @@ function LeaderTable({ title, rows, league, seasonStats, picks }) {
           <div key={r.id} className="hover-row" onClick={() => openPlayerCard(r.id)} role="button" tabIndex={0}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayerCard(r.id) } }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: lead ? '9px 6px' : '7px 6px', borderTop: i ? `1px solid ${theme.rule}` : 'none', cursor: 'pointer' }}>
-            <img src={headshot(r.id)} alt="" width={lead ? 40 : 30} height={lead ? 40 : 30} loading="lazy" decoding="async"
+            <img src={headshot(r.id, lead ? 40 : 30)} alt="" width={lead ? 40 : 30} height={lead ? 40 : 30} loading="lazy" decoding="async"
               style={{ borderRadius: '50%', background: theme.wash, objectFit: 'cover', flexShrink: 0, boxShadow: lead ? `0 0 0 2px ${theme.gold}` : undefined }}
               onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
             <div style={{ minWidth: 0, flex: 1 }}>

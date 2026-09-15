@@ -147,7 +147,7 @@ function PlayerGroup({ sides, narrow }) {
                         {/* The wash circle holds the row's shape when a player has no photo. */}
                         <span style={{ width: avatar, height: avatar, borderRadius: '50%', background: theme.wash, overflow: 'hidden', flexShrink: 0, display: 'inline-block' }}>
                           {a.athlete?.id && a.athlete?.headshot && (
-                            <img src={headshot(a.athlete.id, 96)} alt="" width={avatar} height={avatar} loading="lazy" decoding="async"
+                            <img src={headshot(a.athlete.id, avatar)} alt="" width={avatar} height={avatar} loading="lazy" decoding="async"
                               style={{ display: 'block', width: avatar, height: avatar, objectFit: 'cover' }}
                               onError={(e) => { e.currentTarget.style.display = 'none' }} />
                           )}
