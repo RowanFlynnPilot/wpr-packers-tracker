@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { theme } from '../theme.js'
-import { TEAM_ID } from '../config.js'
+import { TEAM_ID, TEAM_NAMES, teamLogo, headshot } from '../config.js'
 import { fetchGameSummary } from '../api.js'
 import { track } from '../analytics.js'
 import { useModalFocus } from '../useModalFocus.js'
+import { useIsNarrow } from '../useIsNarrow.js'
 import { Loading } from './Status.jsx'
 
 // Box-score modal for a completed (or live) game, from one cached summary read: the quarter
-// linescore, the team-stat comparison, and each side's passing/rushing/receiving lines.
-// Fail-soft: a failed fetch just closes the modal.
+// linescore, the team-stat comparison, and both teams' passing/rushing/receiving lines with
+// headshots. Fail-soft: a failed fetch just closes the modal.
 
 const label = { fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700 }
 
@@ -88,18 +89,31 @@ function TeamCompare({ summary }) {
   )
 }
 
-// One stat group ("passing") for one team: a small table of player lines.
-function PlayerGroup({ group }) {
-  const athletes = (group.athletes || []).filter((a) => a.stats?.length)
-  if (!athletes.length) return null
-  const labels = group.labels || []
+// "J. Love" on phones, where a headshot plus a full name would push the numbers off-screen.
+const playerName = (athlete, narrow) =>
+  narrow && athlete.firstName && athlete.lastName ? `${athlete.firstName[0]}. ${athlete.lastName}` : athlete.displayName
+
+// One stat group ("passing") for both teams: one table, so the columns line up QB against QB,
+// with the Packers' rows first under a team label and the opponent's beneath. `sides` is
+// [{ team, group }] in that order. Columns come from the first side's keys and are matched by
+// key on the other, so the table can't misalign if the feed ever orders them differently.
+function PlayerGroup({ sides, narrow }) {
+  const rows = sides
+    .map((s) => ({ ...s, athletes: (s.group?.athletes || []).filter((a) => a.stats?.length) }))
+    .filter((s) => s.athletes.length)
+  if (!rows.length) return null
+  const lead = rows[0].group
   // Keep tables phone-friendly: the first 5 stat columns carry the story (YDS, TD, …).
-  const keep = Math.min(5, labels.length)
-  const th = { fontFamily: theme.sans, fontSize: 9.5, letterSpacing: '0.04em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700, textAlign: 'right', padding: '4px 6px' }
-  const td = { fontFamily: theme.sans, fontSize: 12, color: theme.ink, textAlign: 'right', padding: '5px 6px', borderTop: `1px solid ${theme.rule}`, whiteSpace: 'nowrap' }
+  const keys = (lead.keys || []).slice(0, 5)
+  const labels = (lead.labels || []).slice(0, keys.length)
+  const avatar = narrow ? 22 : 26
+  const pad = narrow ? '5px 4px' : '5px 6px'
+  const th = { fontFamily: theme.sans, fontSize: 9.5, letterSpacing: '0.04em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700, textAlign: 'right', padding: narrow ? '4px 4px' : '4px 6px' }
+  const td = { fontFamily: theme.sans, fontSize: 12, color: theme.ink, textAlign: 'right', padding: pad, borderTop: `1px solid ${theme.rule}`, whiteSpace: 'nowrap', verticalAlign: 'middle' }
   return (
-    <div style={{ marginTop: 12 }}>
-      <div style={{ ...label, marginBottom: 4 }}>{group.text || group.name}</div>
+    <div style={{ marginTop: 16 }}>
+      {/* The feed's own `text` is per team ("Green Bay Passing"); this table holds both. */}
+      <div style={{ ...label, marginBottom: 4 }}>{lead.name.charAt(0).toUpperCase() + lead.name.slice(1)}</div>
       {/* The table scrolls inside its own wrapper on narrow phones — otherwise the whole
           modal pans sideways and drags the linescore with it. */}
       <div style={{ overflowX: 'auto' }}>
@@ -107,17 +121,46 @@ function PlayerGroup({ group }) {
           <thead>
             <tr>
               <th style={{ ...th, textAlign: 'left' }}>Player</th>
-              {labels.slice(0, keep).map((l) => <th key={l} style={th}>{l}</th>)}
+              {labels.map((l) => <th key={l} style={th}>{l}</th>)}
             </tr>
           </thead>
-          <tbody>
-            {athletes.map((a) => (
-              <tr key={a.athlete?.id || a.athlete?.displayName}>
-                <td style={{ ...td, textAlign: 'left', fontFamily: theme.serif, fontSize: 13 }}>{a.athlete?.shortName || a.athlete?.displayName}</td>
-                {a.stats.slice(0, keep).map((v, i) => <td key={i} style={td}>{v}</td>)}
-              </tr>
-            ))}
-          </tbody>
+          {rows.map(({ team, group, athletes }, t) => {
+            const id = Number(team.id)
+            const isMe = id === TEAM_ID
+            const col = keys.map((k) => (group.keys || []).indexOf(k))
+            return (
+              <tbody key={id}>
+                <tr>
+                  <th colSpan={keys.length + 1} scope="rowgroup"
+                    style={{ ...label, textAlign: 'left', padding: `${t ? 12 : 6}px 0 4px`, color: isMe ? theme.green : theme.ink }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <img src={teamLogo(id)} alt="" width={14} height={14} loading="lazy" decoding="async" style={{ objectFit: 'contain' }}
+                        onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                      {TEAM_NAMES[id] || team.abbreviation}
+                    </span>
+                  </th>
+                </tr>
+                {athletes.map((a) => (
+                  <tr key={a.athlete?.id || a.athlete?.displayName}>
+                    <td style={{ ...td, textAlign: 'left' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: narrow ? 6 : 8 }}>
+                        {/* The wash circle holds the row's shape when a player has no photo. */}
+                        <span style={{ width: avatar, height: avatar, borderRadius: '50%', background: theme.wash, overflow: 'hidden', flexShrink: 0, display: 'inline-block' }}>
+                          {a.athlete?.id && a.athlete?.headshot && (
+                            <img src={headshot(a.athlete.id, 96)} alt="" width={avatar} height={avatar} loading="lazy" decoding="async"
+                              style={{ display: 'block', width: avatar, height: avatar, objectFit: 'cover' }}
+                              onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                          )}
+                        </span>
+                        <span style={{ fontFamily: theme.serif, fontSize: 13, fontWeight: isMe ? 600 : 400 }}>{playerName(a.athlete || {}, narrow)}</span>
+                      </span>
+                    </td>
+                    {col.map((i, c) => <td key={keys[c]} style={td}>{i >= 0 ? a.stats[i] : ''}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            )
+          })}
         </table>
       </div>
     </div>
@@ -127,6 +170,7 @@ function PlayerGroup({ group }) {
 export default function BoxScore({ eventId, dateLabel, onClose }) {
   const [summary, setSummary] = useState(null)
   const dialogRef = useRef(null)
+  const narrow = useIsNarrow()
   useModalFocus(dialogRef)
 
   // Keyed on eventId ONLY: `onClose` is an inline closure in the caller, so including it would
@@ -146,8 +190,13 @@ export default function BoxScore({ eventId, dateLabel, onClose }) {
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const packersSide = (summary?.boxscore?.players || []).find((p) => Number(p.team?.id) === TEAM_ID)
-  const groups = (packersSide?.statistics || []).filter((g) => ['passing', 'rushing', 'receiving'].includes(g.name))
+  // Both teams, Packers first — the tracker's side leads every comparison in the modal.
+  const teamsPlayers = [...(summary?.boxscore?.players || [])]
+    .sort((a, b) => (Number(b.team?.id) === TEAM_ID) - (Number(a.team?.id) === TEAM_ID))
+  const groups = ['passing', 'rushing', 'receiving'].map((name) => ({
+    name,
+    sides: teamsPlayers.map((p) => ({ team: p.team, group: (p.statistics || []).find((g) => g.name === name) })),
+  }))
 
   return (
     <div ref={dialogRef} onClick={onClose} role="dialog" aria-modal="true" aria-label="Box score"
@@ -162,7 +211,7 @@ export default function BoxScore({ eventId, dateLabel, onClose }) {
           <>
             <Linescore summary={summary} />
             <TeamCompare summary={summary} />
-            {groups.map((g) => <PlayerGroup key={g.name} group={g} />)}
+            {groups.map((g) => <PlayerGroup key={g.name} sides={g.sides} narrow={narrow} />)}
           </>
         )}
       </div>
