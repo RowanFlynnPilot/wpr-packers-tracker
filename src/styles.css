@@ -103,6 +103,16 @@ body { font-variant-numeric: tabular-nums; }
   .score-pop { animation: none; }
 }
 
+/* Box-score player names open the player card: the name takes a gold underline on hover and
+   keyboard focus (the global focus ring still draws around the button). */
+.player-link:hover .player-name,
+.player-link:focus-visible .player-name {
+  text-decoration: underline;
+  text-decoration-color: var(--gold);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
 /* Schedule game rows. Every row gets a quiet hover (the list feels alive); rows that open a
    box score (.is-open) get the stronger lift + gold border below. */
 .game-card { border: 1px solid #e3ddd0; border-radius: 6px; padding: 12px; background: #fff; transition: border-color 0.15s ease, background 0.15s ease; }

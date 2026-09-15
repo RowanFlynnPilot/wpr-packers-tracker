@@ -6,10 +6,12 @@ import { track } from '../analytics.js'
 import { useModalFocus } from '../useModalFocus.js'
 import { useIsNarrow } from '../useIsNarrow.js'
 import { Loading } from './Status.jsx'
+import { openPlayerCard } from './PlayerCard.jsx'
 
 // Box-score modal for a completed (or live) game, from one cached summary read: the quarter
 // linescore, the team-stat comparison, and both teams' passing/rushing/receiving lines with
-// headshots. Fail-soft: a failed fetch just closes the modal.
+// headshots — each name opens that player's card on top. Fail-soft: a failed fetch just
+// closes the modal.
 
 const label = { fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700 }
 
@@ -140,24 +142,37 @@ function PlayerGroup({ sides, narrow }) {
                     </span>
                   </th>
                 </tr>
-                {athletes.map((a) => (
-                  <tr key={a.athlete?.id || a.athlete?.displayName}>
-                    <td style={{ ...td, textAlign: 'left' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: narrow ? 6 : 8 }}>
-                        {/* The wash circle holds the row's shape when a player has no photo. */}
-                        <span style={{ width: avatar, height: avatar, borderRadius: '50%', background: theme.wash, overflow: 'hidden', flexShrink: 0, display: 'inline-block' }}>
-                          {a.athlete?.id && a.athlete?.headshot && (
-                            <img src={headshot(a.athlete.id, avatar)} alt="" width={avatar} height={avatar} loading="lazy" decoding="async"
-                              style={{ display: 'block', width: avatar, height: avatar, objectFit: 'cover' }}
-                              onError={(e) => { e.currentTarget.style.display = 'none' }} />
-                          )}
-                        </span>
-                        <span style={{ fontFamily: theme.serif, fontSize: 13, fontWeight: isMe ? 600 : 400 }}>{playerName(a.athlete || {}, narrow)}</span>
+                {athletes.map((a) => {
+                  const face = (
+                    <>
+                      {/* The wash circle holds the row's shape when a player has no photo. */}
+                      <span style={{ width: avatar, height: avatar, borderRadius: '50%', background: theme.wash, overflow: 'hidden', flexShrink: 0, display: 'inline-block' }}>
+                        {a.athlete?.id && a.athlete?.headshot && (
+                          <img src={headshot(a.athlete.id, avatar)} alt="" width={avatar} height={avatar} loading="lazy" decoding="async"
+                            style={{ display: 'block', width: avatar, height: avatar, objectFit: 'cover' }}
+                            onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                        )}
                       </span>
-                    </td>
-                    {col.map((i, c) => <td key={keys[c]} style={td}>{i >= 0 ? a.stats[i] : ''}</td>)}
-                  </tr>
-                ))}
+                      <span className="player-name" style={{ fontFamily: theme.serif, fontSize: 13, fontWeight: isMe ? 600 : 400 }}>{playerName(a.athlete || {}, narrow)}</span>
+                    </>
+                  )
+                  const cell = { display: 'inline-flex', alignItems: 'center', gap: narrow ? 6 : 8 }
+                  return (
+                    <tr key={a.athlete?.id || a.athlete?.displayName}>
+                      <td style={{ ...td, textAlign: 'left' }}>
+                        {/* The whole face + name is the tap target; the visible name stays the
+                            button's accessible name. */}
+                        {a.athlete?.id ? (
+                          <button type="button" className="player-link" aria-haspopup="dialog" onClick={() => openPlayerCard(Number(a.athlete.id))}
+                            style={{ ...cell, background: 'transparent', border: 'none', padding: 0, margin: 0, cursor: 'pointer', color: theme.ink, textAlign: 'left', font: 'inherit' }}>
+                            {face}
+                          </button>
+                        ) : <span style={cell}>{face}</span>}
+                      </td>
+                      {col.map((i, c) => <td key={keys[c]} style={td}>{i >= 0 ? a.stats[i] : ''}</td>)}
+                    </tr>
+                  )
+                })}
               </tbody>
             )
           })}
@@ -171,7 +186,8 @@ export default function BoxScore({ eventId, dateLabel, onClose }) {
   const [summary, setSummary] = useState(null)
   const dialogRef = useRef(null)
   const narrow = useIsNarrow()
-  useModalFocus(dialogRef)
+  // Escape rides the shared hook, so with a player card open on top only the card closes.
+  useModalFocus(dialogRef, true, onClose)
 
   // Keyed on eventId ONLY: `onClose` is an inline closure in the caller, so including it would
   // re-run this effect (and re-fire the Box Score analytics event) on every refresh tick of the
@@ -183,12 +199,6 @@ export default function BoxScore({ eventId, dateLabel, onClose }) {
     return () => { alive = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- eventId pins the fetch + the one tracking event
   }, [eventId])
-
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
 
   // Both teams, Packers first — the tracker's side leads every comparison in the modal.
   const teamsPlayers = [...(summary?.boxscore?.players || [])]

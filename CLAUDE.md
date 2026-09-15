@@ -134,7 +134,11 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
     (parses runner/receiver from GSIS play text — games.js `chunkLeaders`).
   - `PlayerCard` — tap-any-player modal. One `<PlayerCardHost/>` mounts in App; any
     surface calls the exported `openPlayerCard(id)` (module-level hook, no prop
-    threading). Card = roster bio + last-5 game log.
+    threading). Card = roster bio + last-5 game log. Works for ANY NFL player: box-score names
+    for both teams open it, and non-roster players resolve through `fetchAthlete`, whose
+    `teamId` puts the club's name on an opponent's card. It opens ON TOP of the box score, so
+    `useModalFocus` keeps a stack of open dialogs and only the top one answers Tab and Escape
+    (pass `onClose` to the hook; don't add per-dialog Escape listeners).
   - `Pickem` (the tab: week resolution, store writes, the sheet, share cards) +
     `PickemLedger` (week rail + season figures + the FPI head-to-head sentence) +
     `PickRow` (one game: two sides w/ record + win %, kickoff/live/final column, the

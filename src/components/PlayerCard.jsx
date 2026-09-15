@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { theme } from '../theme.js'
-import { headshot } from '../config.js'
+import { headshot, TEAM_ID, TEAM_NAMES } from '../config.js'
 import { fetchRoster, fetchAthlete, fetchAthleteOverview, fetchAthleteSeasonStats, fetchGamelog } from '../api.js'
 import { track } from '../analytics.js'
 import { useModalFocus } from '../useModalFocus.js'
 import { Loading } from './Status.jsx'
 
 // Tap-any-player modal. One host mounts in App; every roster surface (leader tables,
-// injuries, spotlights) calls openPlayerCard(id) — a module-level hook so callers don't
-// thread props through the tree. The card is a small player profile: green header band with
+// injuries, spotlights, box-score names — both teams') calls openPlayerCard(id) — a
+// module-level hook so callers don't thread props through the tree. Opponents resolve through
+// the athlete read, which carries their club, so their card names the team. The card is a small player profile: green header band with
 // the headshot and bio, "season at a glance" stat tiles + a career line (overview feed), and
 // the game log — last five by default, expandable to the full season (regular + playoffs;
 // preseason is excluded at the API layer). Fail-soft: a failed fetch just closes the card.
@@ -61,8 +62,13 @@ const SEASON_PICKS = [
 ]
 function pickSeason(stats, n) {
   if (!stats) return []
+  // The zero-guard alone isn't enough for passing: the passer-rating formula gives 39.6 at zero
+  // attempts, so every receiver and back carried a phantom "39.6 Rating" tile. The passing
+  // block only counts for players who actually threw.
+  const threw = parseFloat(String(stats['passing.passingAttempts'] ?? '').replace(/,/g, '')) > 0
   const out = []
   for (const [key, short] of SEASON_PICKS) {
+    if (!threw && key.startsWith('passing.')) continue
     const v = stats[key]
     if (v == null || v === '') continue
     const num = parseFloat(String(v).replace(/,/g, ''))
@@ -148,7 +154,7 @@ export default function PlayerCardHost() {
   const [seasonStats, setSeasonStats] = useState(null)
   const [showAll, setShowAll] = useState(false)
   const dialogRef = useRef(null)
-  useModalFocus(dialogRef, !!id)
+  useModalFocus(dialogRef, !!id, () => setId(null))
 
   useEffect(() => {
     listener = (pid) => { setId(pid); track('Player Card') }
@@ -175,13 +181,6 @@ export default function PlayerCardHost() {
     return () => { alive = false }
   }, [id])
 
-  useEffect(() => {
-    if (!id) return
-    const onKey = (e) => { if (e.key === 'Escape') setId(null) }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [id])
-
   if (!id) return null
 
   const day = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -190,10 +189,14 @@ export default function PlayerCardHost() {
   const season = pickSeason(seasonStats, 6)
   const career = pickCareer(overview, 3)
   const resultColor = (r) => (r === 'W' ? theme.green : r === 'L' ? theme.red : theme.muted)
+  // Roster players carry no teamId (they're Packers); anyone else is named by club, so an
+  // opponent's card on Packers green can't read as a Packer's.
+  const otherTeam = bio?.teamId && bio.teamId !== TEAM_ID ? TEAM_NAMES[bio.teamId] : null
 
   return (
+    // z-index above the box score's: the card opens on top of it from a player's name.
     <div ref={dialogRef} onClick={() => setId(null)} role="dialog" aria-modal="true" aria-label="Player card"
-      style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(32,55,49,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(32,55,49,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, borderTop: `4px solid ${theme.gold}`, maxWidth: 460, width: '100%', maxHeight: '86vh', overflowY: 'auto', fontFamily: theme.sans, position: 'relative' }}>
 
         {!bio ? (
@@ -217,7 +220,7 @@ export default function PlayerCardHost() {
               <div style={{ minWidth: 0, position: 'relative' }}>
                 <div style={{ fontFamily: theme.serif, fontSize: 24, color: '#fff', lineHeight: 1.1 }}>{bio.name || 'Player'}</div>
                 <div style={{ fontSize: 12, color: '#cfd8d3', marginTop: 4 }}>
-                  {[bio.pos, bio.jersey && `#${bio.jersey}`, bio.age && `Age ${bio.age}`,
+                  {[otherTeam, bio.pos, bio.jersey && `#${bio.jersey}`, bio.age && `Age ${bio.age}`,
                     bio.exp != null && (bio.exp === 0 ? 'Rookie' : `Year ${bio.exp + 1}`)].filter(Boolean).join(' · ')}
                 </div>
                 {(bio.college || bio.height) && (

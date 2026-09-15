@@ -450,6 +450,8 @@ export function fetchAthlete(athleteId) {
     const a = await getJSON(`${CORE}/seasons/${season}/athletes/${athleteId}`)
     return {
       id: athleteId,
+      // The club, parsed from the team $ref — lets the player card name an opponent's team.
+      teamId: Number(/\/teams\/(\d+)/.exec(a.team?.$ref || '')?.[1]) || null,
       name: a.displayName,
       jersey: a.jersey || '',
       pos: a.position?.abbreviation || '',
