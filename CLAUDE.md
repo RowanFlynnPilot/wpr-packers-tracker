@@ -40,13 +40,22 @@ Worker + D1 holding contest entries, picks and the contest's own copy of the sch
 results, deployed by `.github/workflows/deploy-worker.yml`. It exists because a PRIZE
 contest needs identity, server-enforced kickoff locks and a shared leaderboard, none of
 which a browser can provide. And it comes with the one scheduled data job in the repo:
-`.github/workflows/sync-contest.yml` runs `scripts/sync-contest.mjs` (every 15 min on game
-days) to copy each week's kickoffs and finals from ESPN into the Worker's `games` table —
+`.github/workflows/sync-contest.yml` runs `scripts/sync-contest.mjs --watch` to copy each
+week's kickoffs and finals from ESPN into the Worker's `games` table —
 because ESPN's edge (Akamai) answers 403 to the Workers runtime whatever the headers
 (verified Sep 2026), so the Worker can't read ESPN itself, and a contest's locks and
 grading must not hang on a feed that refuses the server. Neither piece feeds the widget: the
 tracker still reads ESPN live in the browser, and with `CONTEST.api` unset the tab runs as
 bragging rights only. Don't extend the Worker or the sync into a general data layer.
+
+The sync's crons are WAKE-UPS, not its rate: GitHub throttles scheduled runs, and the `*/15`
+fired every 2–5 hours on game days (Sep 2026) — finals would have reached the leaderboard
+hours late. So a wake-up that finds a game on, or one kicking off within 8 hours, becomes a
+WATCHER: it syncs every 5 minutes through the game window and, just under GitHub's 6-hour job
+limit, dispatches its own successor (`workflow_dispatch` isn't throttled, and a workflow may
+dispatch itself with GITHUB_TOKEN). Outside game windows a run syncs once and exits. The
+policy is the pure `nextStep()` in the script. Locks never depended on the cadence — the
+Worker also locks on the server clock at the stored kickoff.
 
 ## Architecture
 

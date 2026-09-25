@@ -4,9 +4,16 @@ name: Sync the pick'em contest schedule
 # This IS a scheduled data job — the only one in this repo — and it exists because ESPN's edge
 # refuses requests from the Cloudflare Workers runtime, so the contest's kickoff locks and
 # grading can't read ESPN directly. It feeds the contest ledger, not the widget: the tracker
-# still reads ESPN live in the browser. Every 15 minutes on game days (Thu–Mon), hourly on
-# Tue/Wed. Needs repo secrets CONTEST_API (the Worker URL) and CONTEST_ADMIN_KEY; without
-# them the script exits quietly.
+# still reads ESPN live in the browser. Needs repo secrets CONTEST_API (the Worker URL) and
+# CONTEST_ADMIN_KEY; without them the script exits quietly.
+#
+# Cadence. The crons below are WAKE-UPS, not the sync rate: GitHub throttles scheduled runs,
+# and the `*/15` below actually fired every 2–5 hours on game days in Sep 2026. So the script
+# runs with --watch: a wake-up that finds a game on, or one kicking off within 8 hours, stays
+# up and syncs every 5 minutes through the game window. Near GitHub's 6-hour job limit it asks
+# for a successor, dispatched below — workflow_dispatch runs aren't throttled, and a workflow
+# may dispatch itself with its own token. Outside game windows a run syncs once and exits.
+# Public repo: the watch's runner time is free.
 
 on:
   schedule:
@@ -16,8 +23,10 @@ on:
 
 permissions:
   contents: read
-  actions: write # keep-alive below
+  actions: write # keep-alive + the watch's successor dispatch
 
+# One run at a time. A wake-up that arrives while a watch is running waits (only the newest
+# waiting run is kept) and syncs once when the watch ends — harmless.
 concurrency:
   group: sync-contest
   cancel-in-progress: false
@@ -25,6 +34,7 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 350 # hard ceiling; the script hands off at 5h20m
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -38,7 +48,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh api -X PUT repos/${{ github.repository }}/actions/workflows/sync-contest.yml/enable
-      - run: node scripts/sync-contest.mjs
+      - name: Sync (and watch through any game window)
+        id: sync
+        run: node scripts/sync-contest.mjs --watch
         env:
           CONTEST_API: ${{ secrets.CONTEST_API }}
           CONTEST_ADMIN_KEY: ${{ secrets.CONTEST_ADMIN_KEY }}
+      - name: Hand off to a successor watch
+        if: steps.sync.outputs.handoff == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run sync-contest.yml --repo ${{ github.repository }} --ref ${{ github.ref_name }}

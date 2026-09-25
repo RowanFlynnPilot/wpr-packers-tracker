@@ -8,7 +8,7 @@ Routes are documented at the top of `src/index.js`.
 
 The Worker never calls ESPN: ESPN's edge (Akamai) answers 403 to the Workers runtime whatever
 the headers (verified Sep 2026). `scripts/sync-contest.mjs` — run by the
-`sync-contest.yml` GitHub Action every 15 minutes on game days — reads ESPN and POSTs each
+`sync-contest.yml` GitHub Action, every 5 minutes through each game window — reads ESPN and POSTs each
 week's games to `/admin/games`. Locks use the kickoff times it stored; grading uses the
 finals it stored. Until the first sync lands, the Worker has no slate and says so.
 
@@ -66,8 +66,8 @@ Treat a link with the key in it as a password: anyone holding it can download th
 
 - Picks lock per game at kickoff, server-side. A save that arrives after a kickoff comes back
   with that game in `locked`, and the tracker tells the reader it didn't count.
-- The leaderboard and the winner card follow the sync: finals show up within the sync's
-  cadence (15 minutes on game days). A week counts as complete when every game is final — or,
+- The leaderboard and the winner card follow the sync: finals show up within about five
+  minutes of the final whistle (the sync watches each game window — see the workflow header). A week counts as complete when every game is final — or,
   two weeks behind the league clock, once anything has finished, so a postponed game never
   holds a week open.
 - Computed leaderboards sit in the edge cache for 30 seconds and are dropped when the sync

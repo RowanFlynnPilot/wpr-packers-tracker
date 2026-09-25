@@ -66,8 +66,10 @@ list and each week's ranked standings, with emails, as CSV from two admin links
 `src/config.js`; it wears a draft ribbon until `rulesApproved` is flipped.
 
 The Worker never reads ESPN (ESPN's edge refuses the Workers runtime): a scheduled GitHub
-Action, `sync-contest.yml`, copies each week's kickoffs and finals into it every 15 minutes
-on game days, which is what the kickoff locks and the grading run on. It is the one
+Action, `sync-contest.yml`, copies each week's kickoffs and finals into it — every 5 minutes
+while games are on (a watcher that hands itself off before GitHub's 6-hour job limit, since
+GitHub's scheduled triggers alone fire only every few hours) — which is what the kickoff
+locks and the grading run on. It is the one
 scheduled data job in the repo and it feeds the contest ledger only — the tracker still
 reads ESPN live.
 
