@@ -122,7 +122,11 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   - `BookmarkButton` — stickiness nudge pinned in the top bar (⌘/Ctrl+D + copy-link).
   - `Pulse`, `Standings` — consume the shared standings bundle fetched once in `App`.
   - `Race` — games back of the division lead, week by week, from the four division teams'
-    schedules; direct end-of-line labels (logo + GB) instead of a legend.
+    schedules; direct end-of-line labels (logo + GB) instead of a legend, a hover readout, and
+    an aria-label that states the standings in words. PLAIN SVG, bundled with the page: it was
+    a recharts LineChart, and recharts (105 KB gz) was half the JavaScript the default Season
+    tab shipped for one four-line chart. Recharts now loads only in the Film room (`GameFlow`,
+    lazy). Don't add a recharts import anywhere the Season tab renders.
   - `Matchup`, `NextAtLambeau`, `InjuryReport`, `VsNorth`, `PlayoffOdds`, `RoadAhead`,
     `Coverage`, `ThisDay`, `TeamProfile`, `Storylines`, `MilestoneWatch`, `ChunkLeaders`,
     `DriveDNA` —

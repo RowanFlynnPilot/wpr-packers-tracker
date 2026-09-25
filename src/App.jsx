@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { theme } from './theme.js'
 import { SPONSOR_DISCLAIMER, WPR_NEWS, SPONSORS, SEASON, SPONSOR_INQUIRY, WPR_BADGE, PICKEM_TAB } from './config.js'
 import { fetchStandingsBundle, fetchDivisionSchedules, fetchSeasonGames } from './api.js'
@@ -36,10 +36,8 @@ import Pickem from './components/Pickem.jsx'
 import ChunkLeaders from './components/ChunkLeaders.jsx'
 import DriveDNA from './components/DriveDNA.jsx'
 import PlayerCardHost from './components/PlayerCard.jsx'
-import { Loading } from './components/Status.jsx'
-
-// Recharts is the heaviest dependency — load the race chart in its own chunk.
-const Race = lazy(() => import('./components/Race.jsx'))
+// Plain SVG, bundled with the page — recharts (film room only) stays out of the default tab.
+import Race from './components/Race.jsx'
 
 // The sections grouped into tabs (the page is too tall as one scroll). The featured-game hero
 // lives on the default "Season" tab. Each tab renders only when active, so its heavier fetches
@@ -183,7 +181,7 @@ export default function App() {
             <PreseasonSlate />
             <Section kicker="NFC North" title="The standings"><Standings bundle={bundle} schedules={schedules} error={errors.standings} /><VsNorth /></Section>
             <Section kicker="The division race" title="NFC North, week by week" sponsor={SPONSORS.race} slot="race">
-              <Suspense fallback={<Loading block />}><Race schedules={schedules} season={raceSeason} error={errors.schedules} /></Suspense>
+              <Race schedules={schedules} season={raceSeason} error={errors.schedules} />
             </Section>
             <PlayoffOdds />
             <RoadAhead />
