@@ -83,6 +83,7 @@ export function normalizeEvent(e, teamId = TEAM_ID) {
     oppScore,
     won: st.completed && meScore != null && oppScore != null ? meScore > oppScore : null,
     tied: st.completed && meScore != null && meScore === oppScore,
+    ot: !!st.completed && /OT/.test(st.shortDetail || ''), // "Final/OT" (and "Final/2OT" in the playoffs)
     venue: comp.venue?.fullName || '',
     city: comp.venue?.address?.city || '',
     tv: comp.broadcasts?.[0]?.media?.shortName || '',
@@ -119,11 +120,31 @@ export function fetchSeasonGames() {
       fetchTeamSchedule(TEAM_ID, SEASON, 1).catch(() => ({ games: [] })),
       fetchTeamSchedule(TEAM_ID, SEASON, 3).catch(() => ({ games: [] })),
     ])
-    return {
-      byeWeek: reg.byeWeek,
-      games: [...pre.games, ...reg.games, ...post.games].sort((a, b) => new Date(a.date) - new Date(b.date)),
-    }
+    const games = [...pre.games, ...reg.games, ...post.games].sort((a, b) => new Date(a.date) - new Date(b.date))
+    return { byeWeek: reg.byeWeek, games: await withLiveScore(games) }
   })
+}
+
+// The schedule feed carries NO score for a game in progress (the competitors come back with no
+// `score` field at all — verified live, Sep 2026) and its clock runs ~45s behind, so the
+// schedule's LIVE row read "LIVE · 12:33 – 1st  –" all game. While a game is on, its live
+// fields come from the scoreboard instead — one extra read, only during a game. Enrichment:
+// if the scoreboard misses, the schedule's own copy stands.
+const LIVE_FIELDS = ['state', 'detail', 'completed', 'meScore', 'oppScore', 'won', 'tied', 'ot']
+async function withLiveScore(games) {
+  const i = games.findIndex((g) => g.state === 'in')
+  if (i === -1) return games
+  try {
+    const board = await cached('liveBoard', 15000, () => getJSON(`${SITE}/scoreboard`))
+    const ev = (board.events || []).find((e) => e.id === games[i].id)
+    const fresh = ev && normalizeEvent(ev)
+    if (!fresh) return games
+    const out = [...games]
+    out[i] = { ...games[i], ...Object.fromEntries(LIVE_FIELDS.map((k) => [k, fresh[k]])) }
+    return out
+  } catch {
+    return games
+  }
 }
 
 // One scoreboard event normalized NEUTRALLY — both sides, no team perspective — for surfaces
@@ -390,8 +411,15 @@ export function liveExtras(summary, packersHome) {
   const lastWp = wp[wp.length - 1]
   const homePct = lastWp ? lastWp.homeWinPercentage * 100 : null
   const drives = summary.drives || {}
-  const allPlays = [...(drives.previous || []), ...(drives.current ? [drives.current] : [])]
+  // Mid-game, ESPN lists the drive in progress in BOTH `previous` and `current` (same drive id —
+  // verified live, Sep 2026), so concatenating them printed the latest play twice in the hero.
+  // Take `current` only when `previous` doesn't already carry it, and dedupe plays by id.
+  const prev = drives.previous || []
+  const cur = drives.current && !prev.some((d) => d.id === drives.current.id) ? [drives.current] : []
+  const seen = new Set()
+  const allPlays = [...prev, ...cur]
     .flatMap((d) => d.plays || [])
+    .filter((p) => !seen.has(p.id) && seen.add(p.id))
   const last = allPlays[allPlays.length - 1]
   return {
     meScore: scoreOf((packersHome ? homeC : awayC)?.score),

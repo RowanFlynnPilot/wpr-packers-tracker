@@ -103,13 +103,23 @@ export function gameFlow(summary, packersHome) {
 // numbers, but a 55-yard missed field goal is nobody's explosive play — and turnover returns
 // ("Pass Interception Return", fumble returns) carry the OPPONENT's return yardage on a
 // Packers drive, which is nobody's Packers gain either.
+// ESPN play types that are yards the offense actually gained: a run, a catch, or either for a
+// touchdown. Everything else with statYardage (kick returns, interception returns, penalties,
+// incompletions carrying flag yardage) is somebody else's yards or nobody's.
+const SCRIMMAGE_GAIN = /^(rush|pass reception|rushing touchdown|passing touchdown)$/i
+
 export function bigPlays(summary, packersId = TEAM_ID) {
   const plays = []
   ;(summary.drives?.previous || []).forEach((d) => {
     if (Number(d.team?.id) !== packersId) return
     ;(d.plays || []).forEach((p) => {
-      const type = p.type?.text || ''
-      if (!/pass|rush|touchdown/i.test(type) || /punt|kick|field goal|intercept|fumble/i.test(type)) return
+      // An ALLOW-list of gains from scrimmage, not a deny-list of kicking/turnover words. The
+      // deny-list matched "Pass Incompletion" on /pass/, and an incompletion's statYardage is
+      // the penalty yardage when a flag flew — two defensive-pass-interference calls at the
+      // Jets (Sep 2026) ranked as the game's biggest "chunk plays" and were credited to the
+      // intended receiver on the season board. DPI is field position, not a play the offense
+      // made.
+      if (!SCRIMMAGE_GAIN.test(p.type?.text || '')) return
       if ((p.statYardage || 0) >= 20) {
         plays.push({
           id: p.id,

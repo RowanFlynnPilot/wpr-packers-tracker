@@ -43,7 +43,11 @@ export default function Schedule() {
   // their place without reading dates.
   const nextId = data.games.find((g) => g.state === 'pre')?.id ?? null
 
-  const Row = ({ g }) => {
+  // A render FUNCTION, called as renderRow(g) — not a <Row/> component. Declared in render as a
+  // component, every re-render (opening a box score, the 2-minute refresh) minted a new type
+  // and React rebuilt every row: the row that opened the box score was destroyed, keyboard
+  // focus fell to <body>, and closing the box score had nowhere to hand it back to.
+  const renderRow = (g) => {
     const final = g.state === 'post'
     const live = g.state === 'in'
     const openable = final || live
@@ -53,6 +57,7 @@ export default function Schedule() {
     const ticketHref = g.state === 'pre' && g.home && (TICKETS_OVERRIDE_URL || g.tickets?.href)
     return (
       <div
+        key={g.id}
         className={`game-card${live ? ' is-live' : ''}${openable ? ' is-open' : ''}`}
         onClick={open}
         onKeyDown={(e) => { if (openable && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); open() } }}
@@ -85,6 +90,7 @@ export default function Schedule() {
             <span style={{ fontFamily: theme.serif, fontSize: 19, color: g.tied ? theme.muted : g.won ? theme.green : final ? theme.red : theme.ink }}>
               {final && <span style={{ fontWeight: 700 }}>{g.tied ? 'T' : g.won ? 'W' : 'L'} </span>}
               <span style={{ color: g.won ? theme.green : theme.ink }}>{g.meScore}–{g.oppScore}</span>
+              {g.ot && <span style={{ fontFamily: theme.sans, fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', color: theme.muted, marginLeft: 5 }}>OT</span>}
             </span>
             {final && <span style={{ fontFamily: theme.sans, fontSize: 11, fontWeight: 700, color: theme.goldText }}>Box score →</span>}
           </span>
@@ -105,8 +111,8 @@ export default function Schedule() {
     )
   }
 
-  const ByeRow = ({ week }) => (
-    <div className="game-card" style={{ display: 'flex', alignItems: 'center', gap: 12, background: theme.wash }}>
+  const renderBye = (week) => (
+    <div key="bye" className="game-card" style={{ display: 'flex', alignItems: 'center', gap: 12, background: theme.wash }}>
       <span style={{ fontFamily: theme.sans, fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: theme.muted, width: 74 }}>Wk {week}</span>
       <span style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 15, color: theme.muted }}>Bye week — feet up.</span>
     </div>
@@ -129,8 +135,8 @@ export default function Schedule() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {grp.games.flatMap((g) => {
               const rows = []
-              if (grp.key === 2 && data.byeWeek && g.week === data.byeWeek + 1) rows.push(<ByeRow key="bye" week={data.byeWeek} />)
-              rows.push(<Row key={g.id} g={g} />)
+              if (grp.key === 2 && data.byeWeek && g.week === data.byeWeek + 1) rows.push(renderBye(data.byeWeek))
+              rows.push(renderRow(g))
               return rows
             })}
           </div>

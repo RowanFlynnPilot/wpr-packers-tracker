@@ -16,7 +16,8 @@ export default function Race({ schedules, season, error }) {
   // space so teams bunched together don't overlap: greedy top-down pass, 17px apart.
   const last = data[data.length - 1] || {}
   const maxGB = Math.max(1, ...data.flatMap((r) => Object.keys(DIVISION).map((id) => r[id] ?? 0)))
-  const pxPerGB = 260 / maxGB // inner plot height ≈ 300 - top margin - x-axis
+  const yTop = Math.max(2, Math.ceil(maxGB)) // the y-axis domain below — the nudge must use the same scale
+  const pxPerGB = 260 / yTop // inner plot height ≈ 300 - top margin - x-axis
   const dyById = {}
   let prevY = -Infinity
   Object.keys(DIVISION)
@@ -53,8 +54,13 @@ export default function Race({ schedules, season, error }) {
         <ResponsiveContainer>
           <LineChart data={data} margin={{ top: 10, right: 62, bottom: 0, left: -18 }}>
             <CartesianGrid stroke={theme.rule} strokeDasharray="2 4" vertical={false} />
-            <XAxis dataKey="week" tick={{ fontFamily: theme.sans, fontSize: 10, fill: theme.muted }} interval={Math.ceil(data.length / 9)} stroke={theme.rule} />
-            <YAxis reversed tick={{ fontFamily: theme.sans, fontSize: 10, fill: theme.muted }} stroke={theme.rule} allowDecimals={false} />
+            {/* recharts' `interval` is the number of ticks SKIPPED between labels, so it must
+                be 0 until the axis is crowded — at 1 it hid every other week, which in
+                September meant the latest week had no label at all. */}
+            <XAxis dataKey="week" tick={{ fontFamily: theme.sans, fontSize: 10, fill: theme.muted }} interval={Math.max(0, Math.ceil(data.length / 9) - 1)} stroke={theme.rule} />
+            {/* Pinned to the race's real depth (min 2 games) — left to recharts, one game back
+                drew a 0–4 axis with three empty bands under the lines. */}
+            <YAxis reversed tick={{ fontFamily: theme.sans, fontSize: 10, fill: theme.muted }} stroke={theme.rule} allowDecimals={false} domain={[0, yTop]} />
             <ReferenceLine y={0} stroke={theme.ink} strokeWidth={1} />
             <Tooltip contentStyle={{ fontFamily: theme.sans, fontSize: 12, border: `1px solid ${theme.rule}`, background: theme.paper }} formatter={(v, n, item) => [v === 0 ? 'leads' : `${v} GB`, DIVISION_ABBR[item?.dataKey] || n]} />
             {/* Draw rivals first (muted), then the Packers on top (bold green). */}

@@ -60,11 +60,13 @@ function detailLine(stats, picks) {
 
 // "Player to watch" spotlight above the tables: the passing leader and the tackles leader.
 function Spotlight({ qb, def, league }) {
-  const Item = ({ p, role }) => {
+  // A render function (focusable rows must not be components declared in render — each
+  // re-render would remount them and drop keyboard focus).
+  const item = (p, role) => {
     if (!p?.name) return null
     const note = rankNote(league, p.id)
     return (
-      <div role="button" tabIndex={0} onClick={() => openPlayerCard(p.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayerCard(p.id) } }}
+      <div key={role} role="button" tabIndex={0} onClick={() => openPlayerCard(p.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayerCard(p.id) } }}
         style={{ display: 'flex', alignItems: 'center', gap: 14, flex: '1 1 240px', cursor: 'pointer' }}>
         <img src={headshot(p.id, 64)} alt="" width={64} height={64} loading="lazy" decoding="async" style={{ borderRadius: '50%', background: '#fff', objectFit: 'cover', flexShrink: 0, boxShadow: `0 0 0 2px ${theme.gold}` }} onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
         <div style={{ minWidth: 0 }}>
@@ -81,8 +83,8 @@ function Spotlight({ qb, def, league }) {
   if (!qb?.name && !def?.name) return null
   return (
     <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', border: `1px solid ${theme.rule}`, borderTop: `3px solid ${theme.gold}`, borderRadius: 8, padding: '16px 18px', marginBottom: 26, background: theme.wash }}>
-      <Item p={qb} role="Running the offense" />
-      <Item p={def} role="Anchoring the defense" />
+      {item(qb, 'Running the offense')}
+      {item(def, 'Anchoring the defense')}
     </div>
   )
 }
@@ -157,7 +159,9 @@ export default function Leaders({ side }) {
   if (!data) return <Loading />
 
   const c = data.categories
-  const top = (cat, n) => (c[cat] || []).filter((l) => l.name).slice(0, n)
+  // A leader board lists people who DID the thing: ESPN's top-five pads thin early-season
+  // categories with zeros (Jordan Love, 0 rushing yards on one kneel-down, as the #4 rusher).
+  const top = (cat, n) => (c[cat] || []).filter((l) => l.name && l.value > 0).slice(0, n)
   const offense = side === 'offense'
 
   const tables = offense

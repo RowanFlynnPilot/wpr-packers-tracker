@@ -193,8 +193,10 @@ export default function MiniGame() {
     }
   }
 
-  const TeamCol = ({ id, name, rec, bold }) => (
-    <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 3, width: 92 }}>
+  // A render function, not a component declared in render (which remounted both logos on
+  // every live poll).
+  const teamCol = (id, name, rec, bold) => (
+    <span key={id} style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 3, width: 92 }}>
       <TeamLogo id={id} size={30} />
       <span style={{ fontFamily: theme.serif, fontSize: 13, color: bold ? theme.green : theme.ink, fontWeight: bold ? 700 : 400, lineHeight: 1.1 }}>{name}</span>
       {rec && <span style={{ fontSize: 9.5, color: theme.muted }}>{rec}{records?.stale ? ` in ’${String(records.season).slice(-2)}` : ''}</span>}
@@ -222,7 +224,7 @@ export default function MiniGame() {
           </div>
         )}
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, margin: '7px 0 2px' }}>
-          <TeamCol id={TEAM_ID} name="Packers" rec={records?.me} bold={won} />
+          {teamCol(TEAM_ID, 'Packers', records?.me, won)}
           {live || final ? (
             <span className={pop ? 'score-pop' : undefined} style={{ display: 'inline-block', fontFamily: theme.serif, fontSize: 26, color: theme.ink, whiteSpace: 'nowrap' }}>
               <span style={{ fontWeight: won ? 700 : 400, color: won ? theme.green : theme.ink }}>{meScore}</span>
@@ -232,7 +234,7 @@ export default function MiniGame() {
           ) : (
             <span style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.muted }}>{game.home ? 'vs' : 'at'}</span>
           )}
-          <TeamCol id={game.oppId} name={game.oppName} rec={records?.opp} />
+          {teamCol(game.oppId, game.oppName, records?.opp)}
         </div>
 
         {live && extras?.situation && (

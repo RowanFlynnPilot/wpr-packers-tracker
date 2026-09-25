@@ -69,7 +69,7 @@ export default function FilmRoom() {
 
   const fmtDay = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   const optionLabel = (g) =>
-    `${g.seasonType === 3 ? (g.note || 'Playoffs') : `Wk ${g.week}`} · ${g.home ? 'vs' : '@'} ${g.oppName} · ${g.tied ? 'T' : g.won ? 'W' : 'L'} ${g.meScore}–${g.oppScore} · ${fmtDay(g.date)}`
+    `${g.seasonType === 3 ? (g.note || 'Playoffs') : `Wk ${g.week}`} · ${g.home ? 'vs' : '@'} ${g.oppName} · ${g.tied ? 'T' : g.won ? 'W' : 'L'} ${g.meScore}–${g.oppScore}${g.ot ? ' OT' : ''} · ${fmtDay(g.date)}`
 
   return (
     <>

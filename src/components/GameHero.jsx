@@ -257,8 +257,10 @@ export default function GameHero() {
   const scoreSize = narrow ? 40 : 52
   const matchupGap = narrow ? 12 : 22
 
-  const TeamBlock = ({ id, name }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flex: narrow ? '0 1 120px' : '0 1 190px' }}>
+  // Called as a function, not rendered as <TeamBlock/>: declared in render as a component, each
+  // live poll minted a new type and remounted both team logos on the page's busiest element.
+  const teamBlock = (id, name) => (
+    <div key={id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flex: narrow ? '0 1 120px' : '0 1 190px' }}>
       <TeamLogo id={id} size={logoSize} loading="eager" />
       <div style={{ fontFamily: theme.serif, fontSize: nameSize, color: theme.ink, lineHeight: 1.05 }}>{name}</div>
     </div>
@@ -298,7 +300,7 @@ export default function GameHero() {
 
       {/* Matchup */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: matchupGap, flexWrap: 'wrap', margin: '22px 0 18px' }}>
-        <TeamBlock id={TEAM_ID} name="Packers" />
+        {teamBlock(TEAM_ID, 'Packers')}
         {showScore ? (
           <div aria-live="polite" className={pop ? 'score-pop' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 14, fontFamily: theme.serif, fontSize: scoreSize, lineHeight: 1 }}>
             <span style={{ color: won ? theme.green : theme.ink, fontWeight: won ? 700 : 400 }}>{meScore}</span>
@@ -308,7 +310,7 @@ export default function GameHero() {
         ) : (
           <div style={{ fontFamily: theme.sans, fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', color: theme.muted }}>{game.home ? 'vs' : 'at'}</div>
         )}
-        <TeamBlock id={game.oppId} name={oppName} />
+        {teamBlock(game.oppId, oppName)}
       </div>
 
       {/* Matchup context: opponent form + last meeting (upcoming). Live hero stays lean. */}
@@ -434,7 +436,7 @@ export default function GameHero() {
         </button>
         {canAlert && (
           <button onClick={toggleAlerts} className="link-hover" style={{ cursor: 'pointer', background: 'transparent', border: 'none', fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.04em', color: alertsOn ? theme.green : theme.muted, fontWeight: alertsOn ? 700 : 400 }}>
-            {alertsOn ? 'Game alerts on (while this tab is open)' : final ? 'Alert me at the next kickoff' : 'Alert me at kickoff'}
+            {alertsOn ? 'Game alerts on (while this tab is open)' : final || live ? 'Alert me at the next kickoff' : 'Alert me at kickoff'}
           </button>
         )}
       </div>

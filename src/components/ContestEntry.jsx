@@ -13,6 +13,18 @@ import { track } from '../analytics.js'
 const input = { fontFamily: theme.sans, fontSize: 14, color: theme.ink, padding: '8px 11px', backgroundImage: 'none', width: '100%' }
 const label = { display: 'block', fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700, marginBottom: 4 }
 
+// Module scope on purpose. Declared inside ContestEntry, every keystroke's re-render minted a
+// NEW component type, React remounted the whole field — the <input> included — and focus fell
+// out of the box after each character. Wrappers around inputs must never be declared in render.
+function Field({ id, text, children }) {
+  return (
+    <div style={{ flex: '1 1 180px', minWidth: 0 }}>
+      <label htmlFor={id} style={label}>{text}</label>
+      {children}
+    </div>
+  )
+}
+
 export default function ContestEntry({ onEntered }) {
   const [mode, setMode] = useState('enter')
   const [form, setForm] = useState({ first: '', last: '', email: '', zip: '', pin: '', agree: false })
@@ -36,13 +48,6 @@ export default function ContestEntry({ onEntered }) {
       setBusy(false)
     }
   }
-
-  const Field = ({ id, text, children }) => (
-    <div style={{ flex: '1 1 180px', minWidth: 0 }}>
-      <label htmlFor={id} style={label}>{text}</label>
-      {children}
-    </div>
-  )
 
   return (
     <form onSubmit={submit} noValidate

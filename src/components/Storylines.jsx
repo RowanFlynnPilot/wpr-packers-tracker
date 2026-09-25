@@ -14,6 +14,27 @@ import Section from './Section.jsx'
 const ord = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]) }
 const fmtDate = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
 const fmtWhen = (iso) => new Date(iso).toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit' })
+const fmtTime = (iso) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+
+// Calendar days from today to a date, in the reader's time zone: 0 today, 1 tomorrow. Counted
+// by midnights, not by elapsed milliseconds — Math.ceil over milliseconds called a kickoff
+// fifty minutes away "tomorrow". (Math.round absorbs the 23/25-hour DST days.)
+function daysUntil(iso) {
+  const a = new Date(); a.setHours(0, 0, 0, 0)
+  const b = new Date(iso); b.setHours(0, 0, 0, 0)
+  return Math.round((b - a) / 86400000)
+}
+// "tonight at 7:15 PM" / "today at noon" / "tomorrow at 3:25 PM", else the weekday — and the
+// date too once it's more than six days out, when a bare "Sunday" could mean either one.
+function kickoffPhrase(g) {
+  if (!g.timeValid) return `${fmtDate(g.date)}, kickoff TBD`
+  const d = daysUntil(g.date)
+  if (d === 0) return <><strong>{new Date(g.date).getHours() >= 17 ? 'tonight' : 'today'}</strong> at {fmtTime(g.date)}</>
+  if (d === 1) return <><strong>tomorrow</strong> at {fmtTime(g.date)}</>
+  return d > 6
+    ? `${new Date(g.date).toLocaleDateString('en-US', { weekday: 'long' })}, ${fmtDate(g.date)}, ${fmtTime(g.date)}`
+    : fmtWhen(g.date)
+}
 
 // Which day of training camp today is (day 1 = the first practice, CAMP_OPEN in config), or
 // null when unset, camp hasn't opened, or the count has gone stale — a forgotten config line
@@ -30,9 +51,12 @@ export default function Storylines() {
   const [lines, setLines] = useState(null)
   const [offseason, setOffseason] = useState(false)
 
+  // Re-written every two minutes while the page is visible, like the rest of the live page — a
+  // reader who opens the tab before kickoff and keeps it open through the final should see the
+  // lede move with the game. The reads underneath are the API layer's cached ones.
   useEffect(() => {
     let alive = true
-    ;(async () => {
+    const run = async () => {
       const [bundle, { games }] = await Promise.all([fetchStandingsBundle(), fetchSeasonGames()])
       const off = bundle.season < SEASON
       const me = bundle.standings.find((t) => t.id === TEAM_ID)
@@ -52,9 +76,9 @@ export default function Storylines() {
           const preFinals = games.filter((g) => g.seasonType === 1 && g.state === 'post')
           const regNext = games.find((g) => g.seasonType === 2 && g.state === 'pre')
           const countdown = (g) => {
-            const days = Math.max(0, Math.ceil((new Date(g.date) - Date.now()) / 86400000))
+            const days = Math.max(0, daysUntil(g.date))
             const when = g.timeValid ? `${fmtWhen(g.date)}${g.tv ? ` · ${g.tv}` : ''}` : `${fmtDate(g.date)}, kickoff TBD`
-            return days === 0 ? <>is <strong>tonight</strong> ({when})</>
+            return days === 0 ? <>is <strong>{new Date(g.date).getHours() >= 17 ? 'tonight' : 'today'}</strong> ({when})</>
               : days === 1 ? <>is <strong>tomorrow</strong> ({when})</>
               : <>is <strong>{days} days out</strong> ({when})</>
           }
@@ -116,7 +140,8 @@ export default function Storylines() {
           try { star = teamGameLeaders(await fetchGameSummary(last.id))[0] || null } catch { /* sentence drops its clause */ }
           const score = last.won ? `${last.meScore}–${last.oppScore}` : `${last.oppScore}–${last.meScore}`
           const round = last.seasonType === 3 ? ` in the ${last.note || 'playoffs'}` : ''
-          out.push(<>The Packers {last.tied ? `played the ${last.oppName} to a ${last.meScore}–${last.oppScore} tie` : `${last.won ? 'beat' : 'fell to'} the ${last.oppName} ${score}`} {last.home ? 'at Lambeau' : 'on the road'}{round}{star ? <> behind <strong>{star.name}</strong>'s {star.line}</> : null}.</>)
+          const ot = last.ot ? ' in overtime' : ''
+          out.push(<>The Packers {last.tied ? `played the ${last.oppName} to a ${last.meScore}–${last.oppScore} tie${ot}` : `${last.won ? 'beat' : 'fell to'} the ${last.oppName} ${score}${ot}`} {last.home ? 'at Lambeau' : 'on the road'}{round}{star ? <> behind <strong>{star.name}</strong>'s {star.line}</> : null}.</>)
         }
         if (me) {
           const leader = bundle.standings[0]
@@ -126,17 +151,24 @@ export default function Storylines() {
           const note = scheduleNotes(regGames)[0]
           out.push(<>That leaves them <strong>{rec(me)}</strong>, {rank === 1 ? `on top of the ${DIVISION_NAME}${gb > 0 ? ` by ${gb}` : ''}` : `${ord(rank)} in the ${DIVISION_NAME}, ${gb} back`}{note ? ` — ${note.charAt(0).toLowerCase()}${note.slice(1)}` : ''}.</>)
         }
-        const next = regGames.find((g) => g.state === 'pre') || games.find((g) => g.seasonType === 3 && g.state === 'pre')
+        // While a game is being played, "Next:" would point PAST it at the following week —
+        // the hero above is the story then, so the line sits out (same rule as the offseason
+        // beat) and returns with the recap once the final lands.
+        const live = games.some((g) => g.state === 'in')
+        const next = live ? null : regGames.find((g) => g.state === 'pre') || games.find((g) => g.seasonType === 3 && g.state === 'pre')
         if (next) {
           let fpi = null
           try { fpi = await fetchPredictor(next.id, next.home) } catch { /* line renders without it */ }
-          out.push(<>Next: {next.home ? 'the' : 'at the'} <strong>{TEAM_NAMES[next.oppId] || next.oppName}</strong>{next.home ? ' at Lambeau' : ''}, {next.timeValid ? fmtWhen(next.date) : `${fmtDate(next.date)}, kickoff TBD`}{fpi != null ? <> — ESPN's FPI makes it a {fpi}% Packers game</> : null}.</>)
+          out.push(<>Next: {next.home ? 'the' : 'at the'} <strong>{TEAM_NAMES[next.oppId] || next.oppName}</strong>{next.home ? ' at Lambeau' : ''}, {kickoffPhrase(next)}{fpi != null ? <> — ESPN's FPI makes it a {fpi}% Packers game</> : null}.</>)
         }
       }
 
       if (alive && out.length) { setLines(out); setOffseason(off) }
-    })().catch(() => {})
-    return () => { alive = false }
+    }
+    const refresh = () => { run().catch(() => {}) }
+    refresh()
+    const id = setInterval(() => { if (!document.hidden) refresh() }, 120000)
+    return () => { alive = false; clearInterval(id) }
   }, [])
 
   if (!lines) return null

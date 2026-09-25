@@ -4,6 +4,7 @@ import { TEAM_ID, SEASON, GAMES_IN_SEASON, headshot } from '../config.js'
 import { fetchTeamLeaders, fetchTeamSchedule } from '../api.js'
 import { shareStatCard } from '../share-card.js'
 import { openPlayerCard } from './PlayerCard.jsx'
+import { useIsNarrow } from '../useIsNarrow.js'
 import Section from './Section.jsx'
 
 // "Milestone watch" — who's tracking toward the numbers fans actually talk about (a 4,000-yard
@@ -21,9 +22,16 @@ const MILESTONES = {
 }
 const fmt = (n) => n.toLocaleString('en-US')
 
+// Games before a PACE is worth printing. Two games in, one interception is "on pace for 9"
+// and a two-sack afternoon is "on pace for 21" — a hair off the NFL record, which is a claim
+// a sports desk would cut. A quarter of the season is the usual threshold. Milestones actually
+// REACHED show from the first game; only the extrapolations wait.
+const MIN_GAMES_FOR_PACE = 4
+
 export default function MilestoneWatch() {
   const [items, setItems] = useState(null)
   const [shared, setShared] = useState(false)
+  const narrow = useIsNarrow()
 
   useEffect(() => {
     let alive = true
@@ -41,7 +49,7 @@ export default function MilestoneWatch() {
           m.targets.forEach((target) => {
             if (l.value >= target) {
               out.push({ id: l.id, name: l.name, target, label: m.label, value: l.value, reached: true, progress: 1 })
-            } else if (pace >= target) {
+            } else if (played >= MIN_GAMES_FOR_PACE && pace >= target) {
               out.push({ id: l.id, name: l.name, target, label: m.label, value: l.value, reached: false, progress: l.value / target, pace: Math.round(pace) })
             }
           })
@@ -80,7 +88,9 @@ export default function MilestoneWatch() {
 
   return (
     <Section kicker="Milestone watch" title="Chasing the numbers">
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 12 }}>
+      {/* Columns follow the count so no row is left with one card: four read 2×2 (an
+          auto-fit grid set them 3+1 at this width), three sit in a row. */}
+      <div style={{ display: 'grid', gridTemplateColumns: narrow ? '1fr' : `repeat(${items.length === 3 ? 3 : Math.min(2, items.length)}, 1fr)`, gap: 12 }}>
         {items.map((m) => (
           <div key={`${m.id}-${m.target}`} role="button" tabIndex={0}
             onClick={() => openPlayerCard(m.id)}

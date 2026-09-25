@@ -77,7 +77,7 @@ export default function Pulse({ bundle, lastGame, opener, error }) {
       ]
     : [
         cell(rec(me), 'Record'),
-        cell(rank === 1 ? `+${lead}` : Number.isFinite(lead) ? `${lead}` : DASH, rank === 1 ? `${DIVISION_NAME} lead` : 'Games back', leadColor),
+        cell(rank === 1 ? `+${lead}` : Number.isFinite(lead) ? `${lead}` : DASH, rank === 1 ? `${DIVISION_NAME} lead` : lead === 1 ? 'Game back' : 'Games back', leadColor),
         cell(`${pd > 0 ? '+' : ''}${pd}`, 'Point diff', pdColor),
         cell(sc || DASH, 'Streak', streakColor),
         me.divRecord ? cell(me.divRecord, 'In the division') : null,
@@ -154,7 +154,7 @@ export default function Pulse({ bundle, lastGame, opener, error }) {
       {!offseason && lastGame && (
         <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 14 }}>
           <span style={{ fontWeight: 700, color: lastGame.tied ? theme.ink : lastGame.won ? theme.green : theme.red }}>{lastGame.tied ? 'T' : lastGame.won ? 'W' : 'L'}</span>
-          {' '}Latest: {lastGame.tied ? 'tied' : lastGame.won ? 'beat' : 'lost to'} the {lastGame.oppName} {lastGame.won || lastGame.tied ? `${lastGame.meScore}${DASH}${lastGame.oppScore}` : `${lastGame.oppScore}${DASH}${lastGame.meScore}`} {lastGame.home ? 'at Lambeau' : 'on the road'}.
+          {' '}Latest: {lastGame.tied ? 'tied' : lastGame.won ? 'beat' : 'lost to'} the {lastGame.oppName} {lastGame.won || lastGame.tied ? `${lastGame.meScore}${DASH}${lastGame.oppScore}` : `${lastGame.oppScore}${DASH}${lastGame.meScore}`}{lastGame.ot ? ' in overtime' : ''} {lastGame.home ? 'at Lambeau' : 'on the road'}.
         </div>
       )}
 

@@ -129,9 +129,15 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
     fail-soft sections that OWN their `Section` chrome: on error/empty the heading
     disappears with the content (never render an orphaned title over blank space — follow
     this pattern for any new fail-soft section). `Storylines` is the data-written editorial
-    lede (deterministic template sentences, phase-aware); `MilestoneWatch` waits for a live
-    season (paces need games remaining); `ChunkLeaders` aggregates the season's summaries
-    (parses runner/receiver from GSIS play text — games.js `chunkLeaders`).
+    lede (deterministic template sentences, phase-aware, re-written every 2 min so it tracks a
+    live game; while a game is on, its "Next:" line sits out — the hero is the story); 
+    `MilestoneWatch` waits for a live season (paces need games remaining) and prints PACES only
+    from 4 games played (`MIN_GAMES_FOR_PACE` — two games in, one INT is "on pace for 9");
+    reached milestones show from Week 1; `ChunkLeaders` aggregates the season's summaries
+    (parses runner/receiver from GSIS play text — games.js `chunkLeaders`). Chunk plays are an
+    ALLOW-list of scrimmage gains (`SCRIMMAGE_GAIN` in games.js: Rush / Pass Reception /
+    Rushing TD / Passing TD). Never widen it back to a /pass/ match: ESPN types a DPI on an
+    incompletion as "Pass Incompletion" with the flag yardage in `statYardage`.
   - `PlayerCard` — tap-any-player modal. One `<PlayerCardHost/>` mounts in App; any
     surface calls the exported `openPlayerCard(id)` (module-level hook, no prop
     threading). Card = roster bio + last-5 game log. Works for ANY NFL player: box-score names
@@ -148,10 +154,12 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
     week is final; fail-soft, owns its Section) render only when `CONTEST.api` is set.
   - `FilmRoom` — game picker; hands one cached summary to `GameFlow` (win-probability
     chart), `ScoringPlays`, `BigPlays`.
-  - `PlayoffOdds` runs a 4,000-sim rest-of-season Monte Carlo IN THE BROWSER (regressed
-    win%, normal-approx binomial, 4 division winners + 3 wild cards) — a deliberate house
-    model, labeled as such; not a data cron. It waits for Week 1 (a coin-flip preseason
-    sim would be noise).
+  - `PlayoffOdds` runs a 4,000-sim rest-of-season Monte Carlo IN THE BROWSER (win% regressed
+    toward .500 by `BALLAST` = 12 games — the NFL's regression constant; normal-approx
+    binomial; 4 division winners + 3 wild cards) — a deliberate house model, labeled as such;
+    not a data cron. It waits for Week 1 (a coin-flip preseason sim would be noise). The RNG is
+    SEEDED from the standings, so the same table always prints the same odds — don't swap
+    Math.random back in (unseeded, a refresh turned 32% into 31% with nothing having happened).
   - `Status` — `Loading` + `ErrorState`.
 
 ## Phase-awareness (the offseason is a first-class state)
@@ -185,6 +193,9 @@ mode simply wait. This is one deterministic source per phase — NOT a fallback 
   who left the club get one pooled athlete read each).
 - League leaders (rank chips): `sports.core.api…/seasons/YYYY/types/2/leaders?limit=5`.
 - Team statistics (+NFL ranks!): `sports.core.api…/seasons/YYYY/types/2/teams/ID/statistics`.
+  The ranks follow the RAW VALUE, not good/bad: `totalGiveaways` ranks most-first (seven
+  giveaways = #1, zero = #31 — verified Sep 2026). Anywhere a rank chip is shown, use a
+  higher-is-better stat (`turnOverDifferential`, `totalTakeaways`) so "#1" always means best.
 - Athlete statistics, SEASON-PINNED: `sports.core.api…/seasons/YYYY/types/2/athletes/ID/statistics`
   — the source for the leader boards' supporting lines and the player card's season tiles
   (`fetchAthleteSeasonStats`, keyed `category.stat` because names collide: a QB's
@@ -222,6 +233,12 @@ mode simply wait. This is one deterministic source per phase — NOT a fallback 
   whose height covers that size at 2×. Every call site passes its size (verified Sep 2026).
 - `timeValid: false` on an event = kickoff not set yet (late-season flex) → render "TBD",
   never a fake midnight time.
+- LIVE-GAME quirks (verified during GB–ATL, Sep 24 2026 — invisible outside a game window):
+  the SCHEDULE feed carries no `score` field at all for a game in progress and its clock runs
+  ~45s behind, so `fetchSeasonGames` overlays the in-progress game's live fields from the
+  scoreboard (`withLiveScore`). And the live SUMMARY lists the drive in progress in BOTH
+  `drives.previous` and `drives.current` (same drive id) — `liveExtras` dedupes, or the hero
+  prints the latest play twice. Finals are unaffected by either.
 - Do NOT read `/teams/9/transactions` (returns `{}`) or the core injuries list (70 refs =
   fan-out soup). The roster injuries field is the one correct source.
 - ESPN's schedule archive is solid back to 1999 — that's `ThisDay`'s range. Jan/Feb dates
@@ -320,7 +337,7 @@ season chunk-play leaderboard + drive-DNA panel, player cards w/ season tiles +
 game-by-game spark bars + full-season game logs, shareable canvas stat cards
 (src/share-card.js — Pulse + MilestoneWatch; carries the title sponsor into feeds),
 hero rivalry ledger on division games (fetchRecentMeetings),
-data-written storylines lede, milestone watch (activates Week 1), FPI line on the hero,
+data-written storylines lede, milestone watch (paces from Week 4), FPI line on the hero,
 deep-linkable tabs (`?tab=`), three minis + the email digest PNG.)
 
 - Betting line on the hero/matchup (the odds endpoint is probed and works — DraftKings via

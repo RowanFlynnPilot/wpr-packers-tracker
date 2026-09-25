@@ -6,16 +6,20 @@ import { useIsNarrow } from '../useIsNarrow.js'
 import Section from './Section.jsx'
 import TeamLogo from './TeamLogo.jsx'
 
-// "Sizing up the opponent" — ahead of the next game, the two offenses side by side: points,
-// passing, rushing, third downs, giveaways, each with its NFL rank. Renders only pre-game;
+// "Sizing up the opponent" — ahead of the next game, the two teams side by side: points,
+// passing, rushing, third downs, turnover margin, each with its NFL rank. Renders only pre-game;
 // fail-soft everywhere — any miss and the section simply doesn't exist. Before Week 1 the
 // comparison uses last season's numbers (the note says so).
+// Every row is higher-is-better, and ESPN's rank is 1 = best for each of them — so a #1 chip
+// always means the same thing. (The table used to close on Giveaways, which ESPN ranks
+// MOST-first: seven giveaways earned the Falcons a "#1" that read as best in the league.
+// Turnover margin carries the same story, both ways, in the direction every other row runs.)
 const ROWS = [
   { label: 'Points per game', cat: 'scoring', name: 'totalPointsPerGame' },
   { label: 'Passing yards per game', cat: 'passing', name: 'netPassingYardsPerGame' },
   { label: 'Rushing yards per game', cat: 'rushing', name: 'rushingYardsPerGame' },
-  { label: 'Third-down conversions', cat: 'miscellaneous', name: 'thirdDownConvPct' },
-  { label: 'Giveaways', cat: 'miscellaneous', name: 'totalGiveaways', lowerBetter: true },
+  { label: 'Third-down conversions', cat: 'miscellaneous', name: 'thirdDownConvPct', format: (v) => `${v.toFixed(1)}%` },
+  { label: 'Turnover margin', cat: 'miscellaneous', name: 'turnOverDifferential', format: (v) => (v > 0 ? `+${v}` : `${v}`) },
 ]
 
 const pick = (stats, cat, name) => stats?.cats?.[cat]?.[name] || null
@@ -54,10 +58,13 @@ export default function Matchup() {
     const a = pick(mine, r.cat, r.name)
     const b = pick(theirs, r.cat, r.name)
     if (!a || !b) return null
+    const text = (s) => (r.format && Number.isFinite(s.value) ? r.format(s.value) : s.display)
     return {
-      ...r, a, b,
-      edgeA: r.lowerBetter ? a.value < b.value : a.value > b.value,
-      edgeB: r.lowerBetter ? b.value < a.value : b.value > a.value,
+      ...r,
+      a: { ...a, display: text(a) },
+      b: { ...b, display: text(b) },
+      edgeA: a.value > b.value,
+      edgeB: b.value > a.value,
     }
   }).filter(Boolean)
   if (rows.length < 3) return null
