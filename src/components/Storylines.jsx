@@ -16,6 +16,38 @@ const fmtDate = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'lon
 const fmtWhen = (iso) => new Date(iso).toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit' })
 const fmtTime = (iso) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 
+// The game's top Packers performer, written as prose rather than pasted as ESPN's stat line
+// ("16/29, 145 YDS, 2 TD" read like a box score dropped into a sentence). A win credits him —
+// "behind Jordan Love's 145 passing yards and two touchdowns" — but a loss can't: "fell to the
+// Falcons behind Jordan Love's 312 yards" made him the reason they lost. Losses and ties get a
+// neutral sentence of their own instead. AP style: counts under ten spelled out, bare
+// apostrophe after a name ending in s. A line that won't parse drops the clause, never prints raw.
+const WORDS = ['no', 'a', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
+const count = (n, noun, plural = `${noun}s`, article = 'a') =>
+  n === 1 ? `${article} ${noun}` : `${n < 10 ? WORDS[n] : n} ${plural}`
+const possessive = (name) => (name.endsWith('s') ? `${name}’` : `${name}’s`)
+const andList = (parts) => (parts.length < 2 ? parts[0] || '' : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`)
+
+export function starProse(star, result) {
+  const line = star?.line || ''
+  const num = (re) => { const m = re.exec(line); return m ? Number(m[1].replace(/,/g, '')) : 0 }
+  const yds = num(/(-?[\d,]+) YDS/), td = num(/(\d+) TD/), int = num(/(\d+) INT/), rec = num(/(\d+) REC/)
+  if (!star?.name || !/YDS/.test(line)) return null
+  const kind = /\d+\/\d+/.test(line) ? 'pass' : /REC/.test(line) ? 'rec' : /CAR/.test(line) ? 'rush' : null
+  if (!kind) return null
+  const tds = td ? count(td, 'touchdown') : null
+  if (result === 'win') {
+    // After a possessive a single is "one", not "a" ("Doubs’ one catch", never "Doubs’ a catch").
+    const what = kind === 'rec'
+      ? `${count(rec, 'catch', 'catches', 'one')} for ${yds} yards`
+      : `${yds} ${kind === 'pass' ? 'passing' : 'rushing'} yards`
+    return { tail: <> behind <strong>{possessive(star.name)}</strong> {andList([what, tds].filter(Boolean))}</> }
+  }
+  const verb = kind === 'pass' ? 'threw for' : kind === 'rush' ? 'ran for' : `caught ${count(rec, 'pass', 'passes')} for`
+  const extras = [tds, kind === 'pass' && int ? count(int, 'interception', 'interceptions', 'an') : null].filter(Boolean)
+  return { after: <> <strong>{star.name}</strong> {verb} {andList([`${yds} yards`, ...extras])} in the {result}.</> }
+}
+
 // Calendar days from today to a date, in the reader's time zone: 0 today, 1 tomorrow. Counted
 // by midnights, not by elapsed milliseconds — Math.ceil over milliseconds called a kickoff
 // fifty minutes away "tomorrow". (Math.round absorbs the 23/25-hour DST days.)
@@ -141,7 +173,8 @@ export default function Storylines() {
           const score = last.won ? `${last.meScore}–${last.oppScore}` : `${last.oppScore}–${last.meScore}`
           const round = last.seasonType === 3 ? ` in the ${last.note || 'playoffs'}` : ''
           const ot = last.ot ? ' in overtime' : ''
-          out.push(<>The Packers {last.tied ? `played the ${last.oppName} to a ${last.meScore}–${last.oppScore} tie${ot}` : `${last.won ? 'beat' : 'fell to'} the ${last.oppName} ${score}${ot}`} {last.home ? 'at Lambeau' : 'on the road'}{round}{star ? <> behind <strong>{star.name}</strong>'s {star.line}</> : null}.</>)
+          const prose = starProse(star, last.tied ? 'tie' : last.won ? 'win' : 'loss')
+          out.push(<>The Packers {last.tied ? `played the ${last.oppName} to a ${last.meScore}–${last.oppScore} tie${ot}` : `${last.won ? 'beat' : 'fell to'} the ${last.oppName} ${score}${ot}`} {last.home ? 'at Lambeau' : 'on the road'}{round}{prose?.tail}.{prose?.after}</>)
         }
         if (me) {
           const leader = bundle.standings[0]
