@@ -173,6 +173,12 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
     not a data cron. It waits for Week 1 (a coin-flip preseason sim would be noise). The RNG is
     SEEDED from the standings, so the same table always prints the same odds — don't swap
     Math.random back in (unseeded, a refresh turned 32% into 31% with nothing having happened).
+  - `RoadAhead` rates each remaining opponent by its current record BLENDED with last season's,
+    the latter counting as `PRIOR_GAMES` = 6 games (a win% correlates ~⅓ year to year, which is
+    the reliability of six current games under the same 12-game constant). One formula for every
+    phase — with no games played it is exactly the classic preseason SOS. Don't go back to raw
+    current records: after Week 2 they rated a 2–0 Raiders team (3–14 the year before) as a
+    1.000 opponent and ranked the division's roads by who happened to win in September.
   - `Status` — `Loading` + `ErrorState`.
 
 ## Phase-awareness (the offseason is a first-class state)

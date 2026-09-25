@@ -1,44 +1,63 @@
 import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID, DIVISION, SEASON } from '../config.js'
-import { fetchDivisionSchedules, fetchStandingsBundle } from '../api.js'
+import { fetchDivisionSchedules, fetchStandings } from '../api.js'
 import Section from './Section.jsx'
 import TeamLogo from './TeamLogo.jsx'
 
-// "The road ahead" — how hard each NFC North team's remaining schedule is: the aggregate win%
-// of their unplayed opponents, weighted by games. Before Week 1 that's the classic preseason
-// strength-of-schedule read (opponents weighted by last season's records — the note says so).
-// Hardest road first; bars are stretched across the observed range so small differences still
-// read. Owns its Section; fail-soft.
+// How much last season's record counts, measured in games of this season. Six, because that's
+// what it's worth as a predictor: a team's win% correlates only about a third from one year to
+// the next, and six games of the current season carry that same reliability (6 / (6 + 12) —
+// 12 being the NFL regression constant the playoff model uses). So in Week 3 last season still
+// carries two-thirds of the weight, by Week 6 half, and by December this season has taken over.
+//
+// Before the blend, the section switched from last season's records to this season's the day
+// Week 1 ended — and rated schedules on two- and three-game records: a 2–0 opponent counted as
+// a 1.000 team. The noise ranked the division's roads by who happened to win in September.
+const PRIOR_GAMES = 6
+
+// Each opponent's strength: this season's record plus last season's, the latter counted as
+// PRIOR_GAMES games. With no games played it IS last season's win% — the classic preseason
+// strength-of-schedule number — so one formula serves every phase.
+function strength(cur, prev) {
+  const prevPct = prev ? (prev.wins + prev.ties / 2) / Math.max(1, prev.wins + prev.losses + prev.ties) : 0.5
+  const w = cur ? cur.wins + cur.ties / 2 : 0
+  const g = cur ? cur.wins + cur.losses + cur.ties : 0
+  return (w + PRIOR_GAMES * prevPct) / (g + PRIOR_GAMES)
+}
+
+// "The road ahead" — how hard each NFC North team's remaining schedule is: the blended strength
+// of their unplayed opponents, weighted by games (an opponent met twice counts twice). Hardest
+// road first; bars are stretched across the observed range so small differences still read.
+// Owns its Section; fail-soft.
 export default function RoadAhead() {
   const [data, setData] = useState(null)
 
   useEffect(() => {
     let alive = true
-    Promise.all([fetchDivisionSchedules(SEASON), fetchStandingsBundle()]).then(([schedules, bundle]) => {
+    Promise.all([
+      fetchDivisionSchedules(SEASON),
+      fetchStandings(SEASON).catch(() => []), // not published before the season exists
+      fetchStandings(SEASON - 1),
+    ]).then(([schedules, curRows, prevRows]) => {
       if (!alive) return
-      const table = {}
-      bundle.league.forEach((r) => { table[r.id] = r })
+      const cur = Object.fromEntries(curRows.map((r) => [r.id, r]))
+      const prev = Object.fromEntries(prevRows.map((r) => [r.id, r]))
       const out = schedules.map(({ id, games }) => {
-        let w = 0, g = 0, count = 0
-        games.forEach((game) => {
-          if (game.state === 'post') return
-          count++
-          const t = table[game.oppId]
-          if (!t || t.wins + t.losses + t.ties === 0) return
-          w += (t.wins + t.ties / 2) / (t.wins + t.losses + t.ties)
-          g++
-        })
-        return { id, games: count, oppPct: g ? w / g : null }
-      }).filter((r) => r.oppPct != null && r.games > 0)
+        const left = games.filter((game) => game.state !== 'post')
+        if (!left.length) return null
+        const total = left.reduce((sum, game) => sum + strength(cur[game.oppId], prev[game.oppId]), 0)
+        return { id, games: left.length, oppPct: total / left.length }
+      }).filter(Boolean)
       out.sort((a, b) => b.oppPct - a.oppPct)
-      setData({ rows: out, season: bundle.season })
+      const played = curRows.reduce((max, r) => Math.max(max, r.wins + r.losses + r.ties), 0)
+      setData({ rows: out, played })
     }).catch(() => {})
     return () => { alive = false }
   }, [])
 
   if (!data || data.rows.length < 2) return null
-  const { rows, season } = data
+  const { rows, played } = data
 
   const pcts = rows.map((r) => r.oppPct)
   const lo = Math.min(...pcts), hi = Math.max(...pcts)
@@ -80,11 +99,11 @@ export default function RoadAhead() {
         })}
       </div>
       {verdict && <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 14, lineHeight: 1.5 }}>{verdict}</div>}
-      {season < SEASON && (
-        <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 8 }}>
-          Opponent strength based on final {season} records until the new season has results.
-        </div>
-      )}
+      <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 8, lineHeight: 1.5 }}>
+        {played === 0
+          ? `Opponent strength based on final ${SEASON - 1} records until the new season has results.`
+          : `Opponents' ${SEASON} records are blended with their ${SEASON - 1} finals, which count as ${PRIOR_GAMES} games — early-season records are mostly noise, so this year's results take over as they add up.`}
+      </div>
     </Section>
   )
 }
