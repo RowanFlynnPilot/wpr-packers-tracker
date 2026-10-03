@@ -39,7 +39,7 @@ const INVENTORY = [
   },
   {
     key: 'where-to-watch', name: 'Game-day guide listings',
-    desc: 'Your bar or restaurant in the “Where to watch” guide: photos, amenity chips, game-day specials, and a tracked link. Sold per listing — multiple venues run side by side.',
+    desc: 'Your bar or restaurant in the “Where to watch” guide: photos, amenity chips, game-day specials, and a tracked link. Shown on the Season and Schedule tabs. Sold per listing — multiple venues share the guide.',
     sold: () => false, multi: true, demo: './?demo&tab=schedule',
   },
 ]

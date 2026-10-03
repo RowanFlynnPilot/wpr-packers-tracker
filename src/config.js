@@ -251,7 +251,7 @@ if (typeof window !== 'undefined' && new URLSearchParams(window.location.search)
         tagline: "Wausau's home for Packers football — this listing is available",
         images: [],
         url: null,
-        address: '', // the "Listing available" card beside it carries the inquiry
+        address: '', // no Directions chip to nowhere; the demo ribbon carries the inquiry
         phone: '',
         features: ['20 HDTVs', '10+ Wisconsin taps', 'Sound on for every snap'],
         specials: ['$3 game-day taps', 'Half-price wings while the Packers play'],

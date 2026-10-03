@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
-import { WATCH_VENUES, SPONSOR_INQUIRY, TEAM_NAMES } from '../config.js'
+import { WATCH_VENUES, TEAM_NAMES } from '../config.js'
 import { fetchSeasonGames } from '../api.js'
 import { track } from '../analytics.js'
-import { useInquiry } from '../useInquiry.js'
 import Section from './Section.jsx'
 import DirectionsChip from './DirectionsChip.jsx'
 import { useIsNarrow } from '../useIsNarrow.js'
@@ -118,12 +117,14 @@ function VenueCard({ venue, slot, wide = false }) {
   )
 }
 
-// `compact` is the Season-tab edition: the sold venues only, one full-width row each, reported
-// as their own slot. No intro line (the game hero above already names the kickoff) and no
-// open-listing pitch — the full guide on the Schedule tab sells the inventory.
+// One full-width row per venue, both tabs. `compact` is the Season-tab edition: no intro line
+// (the game hero above already names the kickoff), reported as its own slot.
+//
+// No "listing available" card beside a sold venue: a paying bar shouldn't share its placement
+// with an ad for its competitors (Oct 2026, the guide's first sale). The open inventory sells
+// from the media kit (sponsors.html) instead.
 export default function WhereToWatch({ compact = false }) {
   const [next, setNext] = useState(null)
-  const inquiry = useInquiry('where-to-watch')
 
   useEffect(() => {
     if (!WATCH_VENUES.length || compact) return
@@ -136,40 +137,15 @@ export default function WhereToWatch({ compact = false }) {
 
   if (!WATCH_VENUES.length) return null
 
-  if (compact) {
-    return (
-      <Section kicker="Where to watch" title="Catch the game this week">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {WATCH_VENUES.map((v) => <VenueCard key={v.name} venue={v} slot="where-to-watch-season" wide />)}
-        </div>
-        <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 12 }}>
-          Venue listings are paid placements.
-        </div>
-      </Section>
-    )
-  }
-
   return (
     <Section kicker="Where to watch" title="Catch the game this week">
-      {next && (
+      {!compact && next && (
         <p style={{ fontFamily: theme.serif, fontSize: 16, color: theme.muted, margin: '0 0 16px', maxWidth: 620, lineHeight: 1.5 }}>
           Packers {next.home ? 'vs' : 'at'} {TEAM_NAMES[next.oppId] || next.oppName}, {fmtWhen(next)} — here's where Wausau will be watching.
         </p>
       )}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: 14 }}>
-        {WATCH_VENUES.map((v) => <VenueCard key={v.name} venue={v} slot="where-to-watch" />)}
-        {/* Open inventory: the guide sells by the listing, so the next slot pitches itself. */}
-        <div style={{ border: `1px dashed ${theme.rule}`, borderRadius: 10, padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6, minHeight: 160 }}>
-          <div style={{ fontFamily: theme.sans, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700 }}>Listing available</div>
-          <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 16, color: theme.ink, lineHeight: 1.4 }}>
-            Your bar or restaurant, in front of every game-day reader — photos, specials, and what makes your room the place to watch.
-          </div>
-          <a href={`mailto:${SPONSOR_INQUIRY}?subject=${encodeURIComponent('Packers tracker — game-day guide listing')}`}
-            className="link-hover" onClick={inquiry.onClick}
-            style={{ fontFamily: theme.sans, fontSize: 11.5, fontWeight: 700, color: theme.green, textDecoration: 'none' }}>
-            {inquiry.copied ? '✓ Address copied — paste into any email' : <>{SPONSOR_INQUIRY} <span aria-hidden="true">→</span></>}
-          </a>
-        </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {WATCH_VENUES.map((v) => <VenueCard key={v.name} venue={v} slot={compact ? 'where-to-watch-season' : 'where-to-watch'} wide />)}
       </div>
       <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 12 }}>
         Venue listings are paid placements.
