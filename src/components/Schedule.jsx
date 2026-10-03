@@ -7,17 +7,21 @@ import { track } from '../analytics.js'
 import { Loading, ErrorState } from './Status.jsx'
 import TeamLogo from './TeamLogo.jsx'
 import BoxScore from './BoxScore.jsx'
+import GamePreview from './GamePreview.jsx'
 
 const fmtDay = (iso) => new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 const fmtTime = (iso) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 
 // The full season, one row per week — an NFL schedule is 17 games and reads best as a list.
-// Completed games open the box score; upcoming games show kickoff + TV; the bye week sits in
-// its own quiet row. Preseason and postseason get their own groups when they exist.
+// Completed games open the box score; upcoming games show kickoff + TV and expand into a
+// preview (both teams' season leaders + the last five meetings — GamePreview); the bye week
+// sits in its own quiet row. Postseason gets its own group when it exists; preseason does
+// until the regular season kicks off, then the exhibitions drop off the list.
 export default function Schedule() {
   const [data, setData] = useState(null)
   const [error, setError] = useState(false)
   const [openGame, setOpenGame] = useState(null) // { id, label } for the box-score modal
+  const [preview, setPreview] = useState(null)   // id of the upcoming game opened into a preview
 
   // Initial fetch + a gentle refresh so a live score on the row stays current (the hero polls
   // faster on its own). Refresh failures keep the prior data rather than blanking the list.
@@ -32,8 +36,9 @@ export default function Schedule() {
   if (error) return <ErrorState />
   if (!data) return <Loading />
 
+  const seasonStarted = data.games.some((g) => g.seasonType === 2 && g.state !== 'pre')
   const groups = [
-    { key: 1, label: 'Preseason', games: data.games.filter((g) => g.seasonType === 1) },
+    { key: 1, label: 'Preseason', games: seasonStarted ? [] : data.games.filter((g) => g.seasonType === 1) },
     { key: 2, label: 'Regular season', games: data.games.filter((g) => g.seasonType === 2) },
     { key: 3, label: 'Playoffs', games: data.games.filter((g) => g.seasonType === 3) },
   ].filter((grp) => grp.games.length)
@@ -51,20 +56,30 @@ export default function Schedule() {
     const final = g.state === 'post'
     const live = g.state === 'in'
     const openable = final || live
+    // Upcoming regular/postseason games expand into a preview (exhibitions have no leaders
+    // worth comparing). The row is a mouse target; the "Preview" button inside it is the real,
+    // keyboard-reachable control — the row can't be a button too, it holds the ticket link.
+    const previewable = g.state === 'pre' && g.seasonType !== 1
+    const expanded = previewable && preview === g.id
+    const toggle = () => setPreview(expanded ? null : g.id)
     const label = `${g.seasonType === 1 ? 'Pre ' : g.seasonType === 3 ? '' : 'Wk '}${g.seasonType === 3 ? (g.note || 'Playoff') : g.week ?? ''}`
     const open = () => openable && setOpenGame({ id: g.id, label: `${g.home ? 'vs' : '@'} ${g.oppName} · ${fmtDay(g.date)}` })
     const rival = g.seasonType !== 1 && g.oppId !== TEAM_ID && DIVISION[g.oppId]
     const ticketHref = g.state === 'pre' && g.home && (TICKETS_OVERRIDE_URL || g.tickets?.href)
-    return (
+    // Home dates carry a green left edge — the Lambeau rhythm of the season at a glance (and an
+    // open preview carries it down with the row it belongs to).
+    const homeEdge = g.home ? `3px solid ${theme.green}` : undefined
+    const row = (
       <div
-        key={g.id}
-        className={`game-card${live ? ' is-live' : ''}${openable ? ' is-open' : ''}`}
-        onClick={open}
+        className={`game-card${live ? ' is-live' : ''}${openable || previewable ? ' is-open' : ''}`}
+        onClick={openable ? open : previewable ? toggle : undefined}
         onKeyDown={(e) => { if (openable && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); open() } }}
         role={openable ? 'button' : undefined}
         tabIndex={openable ? 0 : undefined}
-        // Home dates carry a green left edge — the Lambeau rhythm of the season at a glance.
-        style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', borderLeft: g.home ? `3px solid ${theme.green}` : undefined }}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', borderLeft: homeEdge,
+          ...(expanded && { borderColor: theme.gold, borderLeft: homeEdge || `1px solid ${theme.gold}`, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, transform: 'none' }),
+        }}
       >
         <span style={{ fontFamily: theme.sans, fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: live ? theme.goldText : theme.muted, width: 74, flexShrink: 0 }}>
           {label}
@@ -105,7 +120,28 @@ export default function Schedule() {
                 Tickets{g.tickets?.price ? ` from $${Math.round(g.tickets.price)}` : ''} →
               </a>
             )}
+            {previewable && (
+              <button type="button" aria-expanded={expanded} aria-controls={`preview-${g.id}`}
+                onClick={(e) => { e.stopPropagation(); toggle() }}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto', marginTop: 3, background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', fontFamily: theme.sans, fontSize: 11, fontWeight: 700, color: theme.goldText }}>
+                {expanded ? 'Close preview' : 'Preview'}
+                <svg width="9" height="9" viewBox="0 0 10 10" aria-hidden="true" style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }}>
+                  <path d="M1.5 3.5 5 7l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
           </span>
+        )}
+      </div>
+    )
+    if (!previewable) return <div key={g.id}>{row}</div>
+    return (
+      <div key={g.id}>
+        {row}
+        {expanded && (
+          <div id={`preview-${g.id}`} style={{ border: `1px solid ${theme.gold}`, borderTop: 'none', borderLeft: homeEdge || `1px solid ${theme.gold}`, borderRadius: '0 0 6px 6px', background: '#fff', padding: '14px 14px 12px' }}>
+            <GamePreview game={g} onBoxScore={(id, label) => setOpenGame({ id, label })} />
+          </div>
         )}
       </div>
     )

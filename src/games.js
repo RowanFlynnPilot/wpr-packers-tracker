@@ -232,8 +232,10 @@ export function driveDNA(entries, packersId = TEAM_ID) {
   return { offense: rates(sides.offense), defense: rates(sides.defense) }
 }
 
-// The Packers' top performer lines from a summary's per-team leaders — e.g.
-// [{ cat: 'Passing', name: 'Jordan Love', line: '22/30, 268 YDS, 3 TD' }].
+// One team's top performer lines from a summary's per-team leaders — e.g.
+// [{ cat: 'Passing', name: 'Jordan Love', line: '22/30, 268 YDS, 3 TD' }]. A final's summary
+// carries GAME leaders; an upcoming game's carries both teams' SEASON leaders (the schedule's
+// game preview reads those).
 const CAT_LABELS = { passingYards: 'Passing', rushingYards: 'Rushing', receivingYards: 'Receiving', sacks: 'Sacks', totalTackles: 'Tackles' }
 export function teamGameLeaders(summary, teamId = TEAM_ID, cats = ['passingYards', 'rushingYards', 'receivingYards']) {
   const side = (summary.leaders || []).find((t) => Number(t.team?.id) === teamId)
@@ -244,10 +246,17 @@ export function teamGameLeaders(summary, teamId = TEAM_ID, cats = ['passingYards
     const l = c?.leaders?.[0]
     if (l?.athlete) {
       out.push({
+        key: cat,
         cat: CAT_LABELS[cat] || cat,
         id: Number(l.athlete.id),
         name: l.athlete.displayName,
+        pos: l.athlete.position?.abbreviation || '',
         line: l.displayValue || '',
+        // The headline number and the rest of the line, split: { value: '844', unit: 'YDS' } and
+        // '65/124, 6 TD, 2 INT' — so a card can set the number large and the detail small.
+        value: l.mainStat?.value ?? '',
+        unit: l.mainStat?.label ?? '',
+        detail: l.summary || '',
       })
     }
   })

@@ -101,8 +101,12 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   storylines + SOLD game-day venues — `<WhereToWatch compact />`, side-by-side rows, its own
   click slot `where-to-watch-season`, no upsell — + matchup + pulse + standings/vs-North +
   race + playoff odds + road ahead),
-  Schedule (game-day guide + full season list w/ box scores + next-at-Lambeau + injuries +
-  WPR coverage + sponsor band + this-day), Season stats (id `leaders`: milestone watch +
+  Schedule (game-day guide — sold venues only, NO open-listing upsell beside a paying bar;
+  inventory sells from sponsors.html — + full season list w/ box scores; upcoming games expand
+  into `GamePreview`: both teams' season leaders from the game's own pregame summary + the last
+  five meetings via `fetchRecentMeetings`, which sweeps back in 4-season batches until it has
+  five; preseason rows drop off once the regular season kicks off + next-at-Lambeau + injuries
+  + WPR coverage + sponsor band + this-day), Season stats (id `leaders`: milestone watch +
   offense/defense boards + team profile), Film room (per-game win probability + scoring
   plays + chunk plays + season chunk board + drive DNA), Pick'em (the week's full NFL
   slate — picks in localStorage only, NO backend/accounts by design; graded from the

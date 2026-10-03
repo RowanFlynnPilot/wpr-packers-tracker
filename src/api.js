@@ -302,23 +302,31 @@ export function fetchDivisionSchedules(season) {
   })
 }
 
-// The last n completed meetings (regular + postseason) with one opponent, newest first —
-// the hero's division-rivalry ledger. Sweeps back from the stats season across five years,
-// pooled; a missing season just contributes nothing.
+// The last n completed meetings (regular + postseason) with one opponent, newest first — the
+// hero's division-rivalry ledger and the schedule's game previews. Sweeps back from the stats
+// season four seasons at a time and stops once it has n: a division rival fills the first
+// batch, but a club the Packers meet every few years takes several (the Buccaneers' last five
+// reach back to 2017 — about 20 schedule reads, once per opponent per session). A missing
+// season just contributes nothing; the sweep ends at 1999, where ESPN's archive turns thin.
+const MEETINGS_FROM = 1999
 export function fetchRecentMeetings(oppId, n = 5) {
-  return cached(`meetings:${oppId}`, 600000, async () => {
+  return cached(`meetings:${oppId}:${n}`, 3600000, async () => {
     const season = await fetchStatsSeason()
-    const years = [season, season - 1, season - 2, season - 3, season - 4]
-    const per = await pooled(years, 4, async (y) => {
-      const [reg, post] = await Promise.all([
-        fetchTeamSchedule(TEAM_ID, y, 2),
-        fetchTeamSchedule(TEAM_ID, y, 3).catch(() => ({ games: [] })),
-      ])
-      return [...reg.games, ...post.games]
-        .filter((g) => g.state === 'post' && g.oppId === oppId)
-        .map((g) => ({ ...g, season: y }))
-    })
-    return per.filter(Boolean).flat()
+    const found = []
+    for (let top = season; top >= MEETINGS_FROM && found.length < n; top -= 4) {
+      const years = [top, top - 1, top - 2, top - 3].filter((y) => y >= MEETINGS_FROM)
+      const per = await pooled(years, 4, async (y) => {
+        const [reg, post] = await Promise.all([
+          fetchTeamSchedule(TEAM_ID, y, 2),
+          fetchTeamSchedule(TEAM_ID, y, 3).catch(() => ({ games: [] })),
+        ])
+        return [...reg.games, ...post.games]
+          .filter((g) => g.state === 'post' && g.oppId === oppId)
+          .map((g) => ({ ...g, season: y }))
+      })
+      per.forEach((list) => { if (list) found.push(...list) })
+    }
+    return found
       .sort((a, b) => new Date(b.date) - new Date(a.date))
       .slice(0, n)
   })
