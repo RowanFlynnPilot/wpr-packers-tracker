@@ -98,7 +98,9 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   `src/embed.js` `destination()`). Clicks fire a `Mini Click` event tagged with `widget`.
   Keep them tiny — no service worker, no recharts.
 - Sections are grouped into tabs in `App.jsx` (`TABS` + `TabBar.jsx`): Season (hero +
-  storylines + matchup + pulse + standings/vs-North + race + playoff odds + road ahead),
+  storylines + SOLD game-day venues — `<WhereToWatch compact />`, side-by-side rows, its own
+  click slot `where-to-watch-season`, no upsell — + matchup + pulse + standings/vs-North +
+  race + playoff odds + road ahead),
   Schedule (game-day guide + full season list w/ box scores + next-at-Lambeau + injuries +
   WPR coverage + sponsor band + this-day), Season stats (id `leaders`: milestone watch +
   offense/defense boards + team profile), Film room (per-game win probability + scoring

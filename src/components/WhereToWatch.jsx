@@ -5,6 +5,8 @@ import { fetchSeasonGames } from '../api.js'
 import { track } from '../analytics.js'
 import { useInquiry } from '../useInquiry.js'
 import Section from './Section.jsx'
+import DirectionsChip from './DirectionsChip.jsx'
+import { useIsNarrow } from '../useIsNarrow.js'
 
 // The game-day guide — bar/restaurant listings sold per listing (config WATCH_VENUES): photos,
 // amenity chips, game-day specials, and a tracked link per venue. The intro line ties the
@@ -23,40 +25,59 @@ function Photo({ src, alt, style }) {
   return <img src={src} alt={alt} loading="lazy" style={style} onError={() => setFailed(true)} />
 }
 
-function VenueCard({ venue }) {
+// `slot` labels the placement in click reporting. `wide` lays the card out side by side (photos
+// left, details right) for a full-width row; it falls back to the stacked card on narrow screens.
+function VenueCard({ venue, slot, wide = false }) {
   const [heroFailed, setHeroFailed] = useState(false)
+  const narrow = useIsNarrow(700)
+  const row = wide && !narrow
   const hero = venue.images?.[0]
   const thumbs = (venue.images || []).slice(1, 4)
   const linkProps = venue.url
-    ? { href: venue.url, target: '_blank', rel: 'noopener noreferrer sponsored', onClick: () => track('Sponsor Click', { sponsor: venue.name, slot: 'where-to-watch' }) }
+    ? { href: venue.url, target: '_blank', rel: 'noopener noreferrer sponsored', onClick: () => track('Sponsor Click', { sponsor: venue.name, slot }) }
     : {}
+  const heroImg = hero && !heroFailed && (
+    <img src={hero} alt={venue.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} onError={() => setHeroFailed(true)} />
+  )
   return (
-    <div style={{ border: `1px solid ${theme.rule}`, borderTop: `3px solid ${theme.gold}`, borderRadius: 10, background: '#fff', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      {/* Hero photo (venue-provided) or a quiet placeholder band */}
-      <div style={{ aspectRatio: '16 / 9', background: theme.green, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {hero && !heroFailed ? (
-          <img src={hero} alt={venue.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} onError={() => setHeroFailed(true)} />
-        ) : (
-          <span style={{ fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)' }}>Venue photo</span>
+    <div style={{ border: `1px solid ${theme.rule}`, borderTop: `3px solid ${theme.gold}`, borderRadius: 10, background: '#fff', overflow: 'hidden', display: 'flex', flexDirection: row ? 'row' : 'column' }}>
+      {/* Hero photo (venue-provided) or a quiet placeholder band. The photo — often the venue's
+          own ad art — taps through to the venue like the "Menu & info" link; it's a duplicate
+          of that link, so it stays out of the tab order and the accessibility tree. Side by
+          side, the photos inset beside the details instead of bleeding across the top. */}
+      <div style={row ? { flex: '0 0 320px', alignSelf: 'center', padding: '16px 0 16px 16px' } : undefined}>
+        <div style={{ aspectRatio: '16 / 9', background: theme.green, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: row ? 6 : 0, overflow: 'hidden' }}>
+          {heroImg && venue.url ? (
+            <a {...linkProps} tabIndex={-1} aria-hidden="true" style={{ display: 'block', width: '100%', height: '100%' }}>{heroImg}</a>
+          ) : heroImg || (
+            <span style={{ fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)' }}>Venue photo</span>
+          )}
+        </div>
+        {thumbs.length > 0 && (
+          <div style={{ display: 'flex', gap: 3, background: theme.green, marginTop: row ? 3 : 0 }}>
+            {thumbs.map((t, i) => (
+              <div key={i} style={{ flex: 1, aspectRatio: '4 / 3', overflow: 'hidden' }}>
+                <Photo src={t} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              </div>
+            ))}
+          </div>
         )}
       </div>
-      {thumbs.length > 0 && (
-        <div style={{ display: 'flex', gap: 3, background: theme.green }}>
-          {thumbs.map((t, i) => (
-            <div key={i} style={{ flex: 1, aspectRatio: '4 / 3', overflow: 'hidden' }}>
-              <Photo src={t} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-            </div>
-          ))}
-        </div>
-      )}
 
-      <div style={{ padding: '15px 18px 17px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+      <div style={{ padding: '15px 18px 17px', display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
         <div style={{ fontFamily: theme.sans, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>Game-day partner</div>
         <div style={{ fontFamily: theme.serif, fontSize: 21, color: theme.ink, lineHeight: 1.15, marginTop: 3 }}>{venue.name}</div>
         {venue.tagline && <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 14.5, color: theme.muted, marginTop: 2 }}>{venue.tagline}</div>}
         {(venue.address || venue.phone) && (
           <div style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted, marginTop: 5 }}>
-            {[venue.address, venue.phone].filter(Boolean).join(' · ')}
+            {venue.address}
+            {venue.address && venue.phone && ' · '}
+            {venue.phone && (
+              <a href={`tel:${venue.phone.replace(/[^\d+]/g, '')}`} className="link-hover" style={{ color: 'inherit', whiteSpace: 'nowrap' }}
+                onClick={() => track('Sponsor Click', { sponsor: venue.name, slot, action: 'call' })}>
+                {venue.phone}
+              </a>
+            )}
           </div>
         )}
 
@@ -82,30 +103,51 @@ function VenueCard({ venue }) {
           </div>
         )}
 
-        {venue.url && (
-          <a {...linkProps} className="link-hover" style={{ display: 'inline-block', marginTop: 'auto', paddingTop: 14, fontFamily: theme.sans, fontSize: 12, fontWeight: 700, color: theme.green, textDecoration: 'none' }}>
-            Menu &amp; info {'→'}
-          </a>
+        {(venue.url || venue.address) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginTop: 'auto', paddingTop: 14 }}>
+            {venue.url && (
+              <a {...linkProps} className="link-hover" style={{ fontFamily: theme.sans, fontSize: 12, fontWeight: 700, color: theme.green, textDecoration: 'none' }}>
+                Menu &amp; info {'→'}
+              </a>
+            )}
+            {venue.address && <DirectionsChip address={venue.address} sponsor={venue.name} slot={slot} />}
+          </div>
         )}
       </div>
     </div>
   )
 }
 
-export default function WhereToWatch() {
+// `compact` is the Season-tab edition: the sold venues only, one full-width row each, reported
+// as their own slot. No intro line (the game hero above already names the kickoff) and no
+// open-listing pitch — the full guide on the Schedule tab sells the inventory.
+export default function WhereToWatch({ compact = false }) {
   const [next, setNext] = useState(null)
   const inquiry = useInquiry('where-to-watch')
 
   useEffect(() => {
-    if (!WATCH_VENUES.length) return
+    if (!WATCH_VENUES.length || compact) return
     let alive = true
     fetchSeasonGames()
       .then(({ games }) => { if (alive) setNext(games.find((g) => g.state === 'pre') || null) })
       .catch(() => {})
     return () => { alive = false }
-  }, [])
+  }, [compact])
 
   if (!WATCH_VENUES.length) return null
+
+  if (compact) {
+    return (
+      <Section kicker="Where to watch" title="Catch the game this week">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {WATCH_VENUES.map((v) => <VenueCard key={v.name} venue={v} slot="where-to-watch-season" wide />)}
+        </div>
+        <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 12 }}>
+          Venue listings are paid placements.
+        </div>
+      </Section>
+    )
+  }
 
   return (
     <Section kicker="Where to watch" title="Catch the game this week">
@@ -115,7 +157,7 @@ export default function WhereToWatch() {
         </p>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: 14 }}>
-        {WATCH_VENUES.map((v) => <VenueCard key={v.name} venue={v} />)}
+        {WATCH_VENUES.map((v) => <VenueCard key={v.name} venue={v} slot="where-to-watch" />)}
         {/* Open inventory: the guide sells by the listing, so the next slot pitches itself. */}
         <div style={{ border: `1px dashed ${theme.rule}`, borderRadius: 10, padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6, minHeight: 160 }}>
           <div style={{ fontFamily: theme.sans, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700 }}>Listing available</div>

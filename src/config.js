@@ -191,7 +191,27 @@ export const TICKETS_OVERRIDE_URL = null
 //     specials: ['$3 game-day taps', 'Half-price wings while the Packers play'],
 //   }
 // (`let`, not `const`: sales demo mode below fills it with placeholder listings.)
-export let WATCH_VENUES = []
+// The address also powers the card's "Directions" chip, and the phone taps to call.
+// Self-host venue art in public/ (see the WPR brand assets note above); never hot-link it.
+export let WATCH_VENUES = [
+  // SOLD Oct 2026. The hero is the venue's own game-day ad (their flyer, padded to 16:9 so the
+  // card's crop can't cut its text). Its specials are dated — the creative and the specials
+  // below run THROUGH OCT. 25: swap in their next flyer (new file name, so no cache serves the
+  // old one) or drop the dated lines before then. Address, phone and hours from sunrisebar52.com.
+  {
+    name: 'Sunrise Bar & Grill',
+    tagline: 'Breakfast before the games — Saturdays 6 a.m. to noon, Sundays 7 a.m. to noon',
+    images: [`${import.meta.env.BASE_URL}sunrise-flyer-2026-10.webp`],
+    url: 'https://sunrisebar52.com/?utm_source=wausaupilotandreview&utm_medium=widget&utm_campaign=packers_tracker',
+    address: '167310 Highway 52, Wausau, WI 54403',
+    phone: '715-571-6733',
+    features: ['Est. 1903', 'Breakfast, lunch & dinner', 'Kitchen open until 10 p.m.'],
+    specials: [
+      'Ham and cheese omelet with hash browns, $12 — Oct. 4, 17 and 18',
+      'Biscuits and gravy with hash browns, $12 — Oct. 10, 11, 24 and 25',
+    ],
+  },
+]
 
 // Shown in the footer when a gaming brand is the title sponsor. Editable; set to '' to hide.
 export const SPONSOR_DISCLAIMER =
@@ -231,7 +251,7 @@ if (typeof window !== 'undefined' && new URLSearchParams(window.location.search)
         tagline: "Wausau's home for Packers football — this listing is available",
         images: [],
         url: null,
-        address: `Ask about this placement: ${SPONSOR_INQUIRY}`,
+        address: '', // the "Listing available" card beside it carries the inquiry
         phone: '',
         features: ['20 HDTVs', '10+ Wisconsin taps', 'Sound on for every snap'],
         specials: ['$3 game-day taps', 'Half-price wings while the Packers play'],
@@ -241,7 +261,7 @@ if (typeof window !== 'undefined' && new URLSearchParams(window.location.search)
         tagline: 'The family game-day headquarters — kitchen open through the 4th quarter',
         images: [],
         url: null,
-        address: `Ask about this placement: ${SPONSOR_INQUIRY}`,
+        address: '',
         phone: '',
         features: ['Big-screen wall', 'Kids eat free Sundays', 'Tailgate takeout packs'],
         specials: ['Tailgate platter for four, $29', 'Bloody Mary bar until kickoff'],

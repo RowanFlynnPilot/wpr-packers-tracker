@@ -4,6 +4,7 @@ import { SPONSOR_INQUIRY } from '../config.js'
 import { fetchSeasonGames } from '../api.js'
 import { track } from '../analytics.js'
 import { useInquiry } from '../useInquiry.js'
+import DirectionsChip from './DirectionsChip.jsx'
 
 // Sponsor lockup. One responsibility: render a paid sponsor, or an "available" upsell card.
 // `variant` adapts the chrome to the dark green banner vs. a light editorial section.
@@ -102,23 +103,9 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, f
   // frames it naturally.
   const Box = sponsor.url ? 'a' : 'div'
 
-  // Directions: the whole card is already an <a>, so this renders as a button-role span
-  // (nested anchors are invalid) that opens the platform's maps app — Apple Maps on Apple
-  // hardware, Google Maps everywhere else. Same treatment as the Brewers tracker.
-  const openDirections = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    const q = encodeURIComponent(sponsor.address)
-    const apple = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent)
-    track('Sponsor Click', { sponsor: sponsor.name, slot: slot || 'unknown', action: 'directions' })
-    window.open(apple ? `https://maps.apple.com/?daddr=${q}` : `https://www.google.com/maps/dir/?api=1&destination=${q}`, '_blank', 'noopener')
-  }
+  // Directions to the sponsor's door (same treatment as the Brewers tracker).
   const directionsChip = sponsor.address && (
-    <span role="button" tabIndex={0} onClick={openDirections} onKeyDown={(e) => e.key === 'Enter' && openDirections(e)} className="link-hover"
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1.5px solid ${theme.gold}`, borderRadius: 16, padding: '4px 12px', fontFamily: theme.sans, fontSize: 11.5, fontWeight: 700, color: theme.green, whiteSpace: 'nowrap', cursor: 'pointer' }}>
-      <svg width="11" height="14" viewBox="0 0 12 15" aria-hidden="true"><path d="M6 0C2.9 0 .5 2.4.5 5.4c0 3.9 4.9 9 5.1 9.2a.55.55 0 0 0 .8 0c.2-.2 5.1-5.3 5.1-9.2C11.5 2.4 9.1 0 6 0zm0 7.6a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4z" fill={theme.gold} /></svg>
-      Directions
-    </span>
+    <DirectionsChip address={sponsor.address} sponsor={sponsor.name} slot={slot || 'unknown'} />
   )
 
   // Full-width bar: eyebrow on top, then logo · big amenity line + location · actions.

@@ -176,6 +176,9 @@ export default function App() {
           <div role="tabpanel" id="panel-season" aria-labelledby="tab-season">
             <GameHero />
             <Storylines />
+            {/* Sold game-day venues ride on the default tab too, after the lede so the game card
+                and its story stay together; the full guide (and its upsell) is on Schedule. */}
+            <WhereToWatch compact />
             <Matchup />
             <Section kicker="Season pulse" title="Where things stand"><Pulse bundle={bundle} lastGame={lastGame} opener={opener} error={errors.standings} /></Section>
             <PreseasonSlate />
