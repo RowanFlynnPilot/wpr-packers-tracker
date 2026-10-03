@@ -15,13 +15,24 @@ const sharp = req("sharp");
 const pptxgen = req("pptxgenjs");
 const {
   FaBolt, FaTable, FaChartPie, FaCalendarAlt, FaCloudSun, FaVideo, FaMedal, FaBell,
-  FaCalendarCheck, FaMobileAlt, FaShareAlt, FaEnvelopeOpenText, FaChartBar, FaMousePointer, FaLink, FaTag,
+  FaImage, FaMobileAlt, FaShareAlt, FaEnvelopeOpenText, FaChartBar, FaMousePointer, FaLink, FaTag,
 } = req("react-icons/fa");
 
 const ROOT = path.resolve(__dirname, "..");
 const OUT = path.join(ROOT, "docs", "sponsor-deck.pptx");
 const OG_CARD = path.join(ROOT, "public", "og-card.png");
 const MEDIA = (f) => path.join(ROOT, "docs", "media", f);
+
+// Slot status comes from src/config.js, the same source the hosted media kit reads, so the deck
+// can't drift: it once listed the title sponsorship as OPEN weeks after Ho-Chunk Gaming bought it.
+// A slot key followed by `null` is open inventory; followed by `{` it's sold.
+const CONFIG = fs.readFileSync(path.join(ROOT, "src", "config.js"), "utf8");
+const SPONSORS_BLOCK = (/export const SPONSORS = \{([\s\S]*?)\n\}/.exec(CONFIG) || [])[1] || "";
+const slotStatus = (key) => {
+  const m = new RegExp("^\\s*" + key + ":\\s*(null|\\{)", "m").exec(SPONSORS_BLOCK);
+  if (!m) throw new Error(`slot "${key}" not found in SPONSORS (src/config.js)`);
+  return m[1] === "null" ? "OPEN" : "SOLD";
+};
 
 const GREEN = "203731", GOLD = "FFB612", GOLD_TEXT = "8A6D00", INK = "1A1A1A", MUTED = "6B6B6B";
 const WASH = "F7F5F0", RULE = "E3DDD0", SAGE = "CFD8D3", WHITE = "FFFFFF";
@@ -46,14 +57,22 @@ function title(slide, kicker, text) {
 }
 
 // Fit an image into a white frame, preserving aspect (reads the PNG's true size from its IHDR).
-function framedImage(slide, imgPath, x, y, w) {
+// Frames a screenshot inside a bounding box (maxW × maxH), keeping its aspect ratio — never
+// just by width. The live screenshots change shape with the season: the hero is short in the
+// preseason and a third taller after a final (linescore + top performers), and a width-only
+// fit ran the Sep 2026 hero off the bottom of the slide under its own caption.
+// `align: "right"` pins the image's right edge to x + maxW. Returns the placed { x, y, w, h }.
+function framedImage(slide, imgPath, x, y, maxW, maxH = Infinity, align = "left") {
   const ihdr = fs.readFileSync(imgPath).slice(16, 24);
   const width = ihdr.readUInt32BE(0);
   const height = ihdr.readUInt32BE(4);
-  const h = (w * height) / width;
-  slide.addShape("rect", { x: x - 0.08, y: y - 0.08, w: w + 0.16, h: h + 0.16, fill: { color: WHITE }, line: { color: RULE, width: 1 }, shadow: { type: "outer", color: "000000", blur: 8, offset: 3, angle: 135, opacity: 0.18 } });
-  slide.addImage({ path: imgPath, x, y, w, h });
-  return h;
+  let w = maxW;
+  let h = (w * height) / width;
+  if (h > maxH) { h = maxH; w = (h * width) / height; }
+  const left = align === "right" ? x + maxW - w : x;
+  slide.addShape("rect", { x: left - 0.08, y: y - 0.08, w: w + 0.16, h: h + 0.16, fill: { color: WHITE }, line: { color: RULE, width: 1 }, shadow: { type: "outer", color: "000000", blur: 8, offset: 3, angle: 135, opacity: 0.18 } });
+  slide.addImage({ path: imgPath, x: left, y, w, h });
+  return { x: left, y, w, h };
 }
 
 async function main() {
@@ -116,7 +135,7 @@ async function main() {
     [FaCloudSun, "Lambeau forecast", "Kickoff weather for home games — half the story of December football"],
     [FaVideo, "The film room", "Every game replayed: win-probability chart, scoring plays, 20+ yard chunk plays"],
     [FaMedal, "Leaders + player cards", "Offense and defense leaders with NFL rank chips; tap any player for their card"],
-    [FaBell, "Alerts + calendar", "Kickoff alerts and a one-click season calendar download"],
+    [FaBell, "Alerts + share cards", "Opt-in kickoff alerts, and stat cards readers post straight to their feeds"],
   ];
   const featIcons = await Promise.all(feats.map(([C]) => icon(C, "#" + GOLD)));
   feats.forEach(([, h, b], i) => {
@@ -161,10 +180,10 @@ async function main() {
   ], { x: 0.62, y: 5.24, w: 3.2, h: 0.22, fontFace: SANS, margin: 0 });
   // Slot list, right.
   const slots = [
-    ["Title sponsorship — the flagship", "Banner lockup + hero credit + email digest logo", "OPEN"],
-    ["Lambeau kickoff forecast", "“Presented by” credit on the hero's weather line", "OPEN"],
-    ["Division race section", "Lockup beside the season-long NFC North race chart", "OPEN"],
-    ["Leaders section", "Lockup beside the offense & defense leader boards", "OPEN"],
+    ["Title sponsorship — the flagship", "Banner lockup + hero credit + email digest logo", slotStatus("header")],
+    ["Lambeau kickoff forecast", "“Presented by” credit on the hero's weather line", slotStatus("forecast")],
+    ["Division race section", "Lockup beside the season-long NFC North race chart", slotStatus("race")],
+    ["Leaders section", "Lockup beside the offense & defense leader boards", slotStatus("leaders")],
     ["Game-day guide", "Venue listings sold per listing: photos, amenity chips, game-day specials", "OPEN"],
   ];
   slots.forEach(([h, b, status], i) => {
@@ -173,9 +192,12 @@ async function main() {
     s.addShape("rect", { x: 3.95, y, w: 0.045, h: 0.64, fill: { color: GOLD } });
     s.addText(h, { x: 4.12, y: y + 0.06, w: 3.6, h: 0.26, fontFace: SANS, fontSize: 12, bold: true, color: INK, valign: "top", margin: 0 });
     s.addText(b, { x: 4.12, y: y + 0.32, w: 3.9, h: 0.28, fontFace: SANS, fontSize: 9.5, color: MUTED, valign: "top", margin: 0 });
+    // SOLD reads as a filled chip (social proof: this page already has a paying partner), OPEN
+    // as an outline waiting to be filled.
+    const sold = status === "SOLD";
     s.addText(status, {
       x: 8.42, y: y + 0.18, w: 0.82, h: 0.28, fontFace: SANS, fontSize: 9.5, bold: true, align: "center", valign: "middle",
-      color: GREEN, fill: { color: WHITE }, line: { color: GOLD_TEXT, width: 1 }, margin: 0,
+      color: sold ? WHITE : GREEN, fill: { color: sold ? GREEN : WHITE }, line: { color: sold ? GREEN : GOLD_TEXT, width: 1 }, margin: 0,
     });
   });
   s.addText("Every slot is one config line to activate — and one link to preview: add ?demo to the page URL and your prospect sees their placement filled, live.", {
@@ -185,22 +207,25 @@ async function main() {
   s = pres.addSlide();
   s.background = { color: WASH };
   title(s, "See it live", "Your brand in place, on live data");
+  // Two columns inside the slide's safe area (content runs y 1.5 → 5.35): the title lockup over
+  // the game hero on the left, the digest on the right with the caption under it. Every image
+  // is box-fitted, so a tall hero shrinks to its box instead of crossing the caption or the edge.
   try {
-    framedImage(s, MEDIA("banner-demo.png"), 0.62, 1.5, 5.3);   // title lockup, demo mode
-    framedImage(s, MEDIA("hero.png"), 0.62, 3.4, 4.55);         // featured-game hero
-    framedImage(s, MEDIA("mini-digest.png"), 6.55, 1.5, 2.55);  // newsletter digest card
+    const banner = framedImage(s, MEDIA("banner-demo.png"), 0.62, 1.5, 4.5, 1.6);                 // title lockup, demo mode
+    framedImage(s, MEDIA("hero.png"), 0.62, banner.y + banner.h + 0.28, 4.5, 5.35 - (banner.y + banner.h + 0.28)); // featured-game hero
+    const digest = framedImage(s, MEDIA("mini-digest.png"), 5.55, 1.5, 3.83, 3.05, "right");      // newsletter digest card
+    s.addText("Left: the title lockup and game hero in sales-demo mode (?demo). Right: the newsletter digest — your logo rides along twice a day.", {
+      x: digest.x, y: digest.y + digest.h + 0.22, w: digest.w, h: 0.62, fontFace: SANS, fontSize: 9.5, italic: true, color: MUTED, lineSpacing: 12, valign: "top", margin: 0 });
   } catch (e) {
     s.addText("(Add docs/media screenshots and rerun to fill this slide.)", { x: 0.62, y: 2.4, w: 8.7, h: 0.4, fontFace: SANS, fontSize: 12, italic: true, color: MUTED, margin: 0 });
   }
-  s.addText("Left: the title lockup + game hero in sales-demo mode (?demo). Right: the newsletter digest — your logo rides along twice a day.", {
-    x: 0.62, y: 5.4, w: 8.8, h: 0.22, fontFace: SANS, fontSize: 9.5, italic: true, color: MUTED, margin: 0 });
 
   // ------------------------------------------------- 6 · reach that compounds
   s = pres.addSlide();
   s.background = { color: WHITE };
   title(s, "Distribution", "Reach that compounds beyond the page");
   const reach = [
-    [FaCalendarCheck, "Lives in their calendar", "The season-schedule download carries the title sponsor's credit into every kickoff on readers' own phones"],
+    [FaImage, "Stat cards carry the credit", "Readers share the season's numbers as image cards — each one signed “Presented by” the title sponsor"],
     [FaMobileAlt, "Installs like an app", "Add-to-home-screen and opt-in kickoff alerts pull fans back every game day"],
     [FaShareAlt, "Spreads on social", "One-tap share plus a branded card preview wherever links land — Facebook, texts, group chats"],
     [FaEnvelopeOpenText, "Rides the newsletter", "The digest is baked into a fresh image twice a day for email — your logo included, in every inbox"],
@@ -249,7 +274,7 @@ async function main() {
   s.background = { color: GREEN };
   s.addText("NEXT STEPS", { x: 0.75, y: 1.05, w: 8.5, h: 0.3, fontFace: SANS, fontSize: 12, bold: true, color: GOLD, charSpacing: 3, margin: 0 });
   s.addText("Put your brand in the huddle.", { x: 0.7, y: 1.45, w: 8.6, h: 0.8, fontFace: SERIF, fontSize: 34, bold: true, color: WHITE, margin: 0 });
-  s.addText("Packages run from a single-section credit to title sponsorship of the page. Slots activate the same day they're sold — before Week 1 puts the whole state on this page — and your live dashboard link comes with the first invoice.", {
+  s.addText("Packages run from a single-section credit to title sponsorship of the page. Slots activate the same day they're sold, for every game still to play — and your live dashboard link comes with the first invoice.", {
     x: 0.75, y: 2.45, w: 7.6, h: 0.8, fontFace: SANS, fontSize: 14, color: SAGE, lineSpacing: 20, margin: 0,
   });
   s.addShape("rect", { x: 0.75, y: 3.6, w: 5.6, h: 1.1, fill: { color: WHITE } });
