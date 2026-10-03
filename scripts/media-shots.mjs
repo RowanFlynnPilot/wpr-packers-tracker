@@ -67,9 +67,25 @@ try {
   await page.locator('#panel-season > div').first().screenshot({ path: MEDIA('hero.png') })
 
   // Film room: tab bar through the turning-point callout (which only exists when the game had
-  // a ≥4% win-probability swing — fall back to the chart's bottom edge otherwise).
+  // a ≥4% win-probability swing — fall back to the chart's bottom edge otherwise). It shoots
+  // the latest WIN, not just the latest game: a sales shot wants the chart that climbs, and the
+  // callout names the biggest swing toward Green Bay, which only reads as "the play that
+  // decided it" in a win. No win yet → the default (latest game).
   await page.goto(`${BASE}?demo&tab=film`, { waitUntil: 'networkidle' })
   await page.waitForSelector('.recharts-surface')
+  const win = await page.$$eval('#film-game option', (opts) => {
+    const o = opts.find((x) => / · W \d/.test(x.textContent))
+    // Label: "Wk 2 · @ Jets · W 20–17 OT · Sep 20" → the club's last word, as the callout prints it.
+    return o && { id: o.value, opp: o.textContent.split(' · ')[1].split(' ').pop() }
+  })
+  if (win && win.id !== await page.inputValue('#film-game')) {
+    await page.selectOption('#film-game', win.id)
+    // The summary may already be cached (the season boards below read every game), so wait on
+    // the page, not the network: the callout naming the new opponent means the new game drew.
+    await page.waitForFunction((opp) => document.querySelector('#panel-film').innerText.includes(`vs the ${opp})`), win.opp, { timeout: 15000 })
+      .catch(() => page.waitForTimeout(3000)) // no ≥4% swing to call out — give the chart time
+    await page.waitForSelector('.recharts-surface')
+  }
   await page.getByText('The turning point', { exact: false }).waitFor({ timeout: 5000 }).catch(() => {})
   await settle(page)
   const filmClip = await page.evaluate(() => {
@@ -77,7 +93,8 @@ try {
     // Deepest div starting with the callout kicker is the kicker line; its parent is the card.
     const matches = [...document.querySelectorAll('#panel-film div')].filter((d) => d.textContent.startsWith('The turning point'))
     const card = matches.length ? matches[matches.length - 1].parentElement : document.querySelector('.recharts-surface').closest('div')
-    return { top: Math.floor(top) - 6, bottom: Math.ceil(card.getBoundingClientRect().bottom) + 10 }
+    // Start AT the tab bar: any margin above it catches the bookmark button's bottom edge.
+    return { top: Math.floor(top), bottom: Math.ceil(card.getBoundingClientRect().bottom) + 10 }
   })
   await page.screenshot({ path: MEDIA('film-room.png'), clip: { x: 0, y: filmClip.top, width: 1200, height: filmClip.bottom - filmClip.top } })
   await page.close()
