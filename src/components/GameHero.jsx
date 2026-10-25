@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { theme } from '../theme.js'
-import { TEAM_ID, DIVISION, SPONSORS, SITE_URL, WPR_EMBED_URL, headshot } from '../config.js'
+import { TEAM_ID, TEAM_ABBRS, DIVISION, SPONSORS, SITE_URL, WPR_EMBED_URL, headshot } from '../config.js'
 import { fetchFeaturedGame, fetchGameSummary, fetchLiveSummary, liveExtras, fetchStandingsBundle, fetchStatsSeason, fetchTeamSchedule, fetchPredictor, fetchRecentMeetings } from '../api.js'
 import { finals, teamGameLeaders, periodLabel } from '../games.js'
 import { fetchKickoffForecast } from '../weather.js'
@@ -259,10 +259,14 @@ export default function GameHero() {
 
   // Called as a function, not rendered as <TeamBlock/>: declared in render as a component, each
   // live poll minted a new type and remounted both team logos on the page's busiest element.
+  // On a phone with a score between them, the teams go by abbreviation — the TV score bug's
+  // convention: "Buccaneers" plus a two-digit score is wider than the embed's ~280px.
   const teamBlock = (id, name) => (
-    <div key={id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flex: narrow ? '0 1 120px' : '0 1 190px' }}>
+    <div key={id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, minWidth: 0 }}>
       <TeamLogo id={id} size={logoSize} loading="eager" />
-      <div style={{ fontFamily: theme.serif, fontSize: nameSize, color: theme.ink, lineHeight: 1.05 }}>{name}</div>
+      <div style={{ fontFamily: theme.serif, fontSize: nameSize, color: theme.ink, lineHeight: 1.05 }}>
+        {narrow && showScore ? <abbr title={name} style={{ textDecoration: 'none' }}>{TEAM_ABBRS[id] || name}</abbr> : name}
+      </div>
     </div>
   )
 
@@ -298,11 +302,12 @@ export default function GameHero() {
         </div>
       )}
 
-      {/* Matchup */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: matchupGap, flexWrap: 'wrap', margin: '22px 0 18px' }}>
+      {/* Matchup — a three-column grid, never a wrapping row: as a wrapping flex row, a phone put
+          the opponent on a line of its own under "Packers 0–0" all game (found live, Oct 2026). */}
+      <div style={{ display: 'grid', gridTemplateColumns: narrow ? '1fr auto 1fr' : 'minmax(0, 190px) auto minmax(0, 190px)', justifyContent: 'center', alignItems: 'center', columnGap: matchupGap, margin: '22px 0 18px' }}>
         {teamBlock(TEAM_ID, 'Packers')}
         {showScore ? (
-          <div aria-live="polite" className={pop ? 'score-pop' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 14, fontFamily: theme.serif, fontSize: scoreSize, lineHeight: 1 }}>
+          <div aria-live="polite" className={pop ? 'score-pop' : undefined} style={{ display: 'flex', alignItems: 'center', gap: narrow ? 10 : 14, fontFamily: theme.serif, fontSize: scoreSize, lineHeight: 1, whiteSpace: 'nowrap' }}>
             <span style={{ color: won ? theme.green : theme.ink, fontWeight: won ? 700 : 400 }}>{meScore}</span>
             <span style={{ fontSize: scoreSize * 0.5, color: theme.muted }}>–</span>
             <span style={{ color: theme.ink }}>{oppScore}</span>
