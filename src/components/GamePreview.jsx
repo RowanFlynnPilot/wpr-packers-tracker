@@ -40,7 +40,10 @@ export default function GamePreview({ game, onBoxScore }) {
   }, [game.id, game.oppId])
 
   const oppName = TEAM_NAMES[game.oppId] || game.oppName
-  const cols = narrow ? '62px 1fr 1fr' : '92px 1fr 1fr'
+  // Narrow (a phone — and the WPR embed, whose page margins leave the tracker ~350px), the
+  // category label moves above its pair instead of taking a column: beside it, each player had
+  // ~100px and stat lines broke mid-number.
+  const cols = narrow ? '1fr 1fr' : '92px 1fr 1fr'
 
   const cell = (l) => {
     if (!l) return <span style={quiet}>—</span>
@@ -54,7 +57,8 @@ export default function GamePreview({ game, onBoxScore }) {
         <span style={{ minWidth: 0 }}>
           <span className="player-name" style={{ display: 'block', fontFamily: theme.serif, fontSize: 14, color: theme.ink, lineHeight: 1.25 }}>{l.name}</span>
           <span style={{ display: 'block', fontFamily: theme.sans, fontSize: 11.5, color: theme.muted, marginTop: 1, lineHeight: 1.35 }}>
-            <strong style={{ color: theme.ink }}>{l.value} {UNIT[l.unit] || l.unit}</strong>{l.detail ? ` · ${l.detail}` : ''}
+            <strong style={{ color: theme.ink }}>{l.value} {UNIT[l.unit] || l.unit}</strong>
+            {l.detail && (narrow ? <span style={{ display: 'block' }}>{l.detail}</span> : ` · ${l.detail}`)}
           </span>
         </span>
       </>
@@ -82,14 +86,15 @@ export default function GamePreview({ game, onBoxScore }) {
     )
     return (
       <div>
+        {narrow && <div style={{ ...kicker, paddingBottom: 8 }}>Season leaders</div>}
         <div style={{ display: 'grid', gridTemplateColumns: cols, columnGap: 12, alignItems: 'center', paddingBottom: 7 }}>
-          <span style={kicker}>Season leaders</span>
+          {!narrow && <span style={kicker}>Season leaders</span>}
           {team(TEAM_ID, 'Packers')}
           {team(game.oppId, oppName)}
         </div>
         {rows.map((c) => (
-          <div key={c} style={{ display: 'grid', gridTemplateColumns: cols, columnGap: 12, alignItems: 'center', padding: '8px 0', borderTop: `1px solid ${theme.rule}` }}>
-            <span style={{ fontFamily: theme.sans, fontSize: 11, fontWeight: 700, color: theme.muted }}>{(me[c] || opp[c]).cat}</span>
+          <div key={c} style={{ display: 'grid', gridTemplateColumns: cols, columnGap: 12, rowGap: 4, alignItems: narrow ? 'start' : 'center', padding: '8px 0', borderTop: `1px solid ${theme.rule}` }}>
+            <span style={{ fontFamily: theme.sans, fontSize: narrow ? 10 : 11, fontWeight: 700, color: theme.muted, ...(narrow && { gridColumn: '1 / -1', letterSpacing: '0.08em', textTransform: 'uppercase' }) }}>{(me[c] || opp[c]).cat}</span>
             {cell(me[c])}
             {cell(opp[c])}
           </div>
@@ -118,9 +123,10 @@ export default function GamePreview({ game, onBoxScore }) {
             style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: narrow ? 'nowrap' : 'wrap', width: '100%', padding: '8px 0', background: 'transparent', border: 'none', borderTop: `1px solid ${theme.rule}`, cursor: 'pointer', textAlign: 'left', font: 'inherit' }}>
             <span style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted, width: narrow ? 84 : 96, flexShrink: 0 }}>{fmtDate(m.date)}</span>
             <span style={{ fontFamily: theme.serif, fontSize: 14.5, color: theme.ink, flex: '1 1 120px', minWidth: 0 }}>
-              {m.home ? 'vs' : '@'} {m.oppName}
+              {/* Every row is the same opponent — on a phone the abbreviation keeps it one line. */}
+              <span style={{ whiteSpace: 'nowrap' }}>{m.home ? 'vs' : '@'} {narrow ? m.oppAbbr : m.oppName}</span>
               {m.seasonType === 3 && (
-                <span style={{ marginLeft: 7, fontFamily: theme.sans, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.goldText, whiteSpace: 'nowrap' }}>
+                <span style={{ display: narrow ? 'block' : 'inline', marginLeft: narrow ? 0 : 7, fontFamily: theme.sans, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.goldText, whiteSpace: 'nowrap' }}>
                   {m.note || 'Playoffs'}
                 </span>
               )}
