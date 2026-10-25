@@ -72,8 +72,11 @@ export function vsDivision(games) {
 }
 
 // Win-probability flow for one game, from a summary. Converts each entry to the Packers' win %
-// and flags scoring plays (matched through the drives' play list); finds the single biggest
-// jump in the Packers' favor and describes it with that play's text.
+// and flags scoring plays (matched through the drives' play list); finds the TURNING POINT —
+// the single biggest swing toward the side that won — and describes it with that play's text.
+// Toward the winner, not toward Green Bay: measured the Packers' way, a 35–14 loss to Atlanta
+// (Sep 2026) "turned" on a harmless first-quarter catch worth +7%. `toward` says whose way it
+// swung ('gb' | 'opp'); a game that ends level takes the biggest swing either way.
 export function gameFlow(summary, packersHome) {
   const playText = {}
   const scoringIds = new Set((summary.scoringPlays || []).map((p) => String(p.id)))
@@ -90,12 +93,15 @@ export function gameFlow(summary, packersHome) {
       playId: String(e.playId),
     }
   })
+  const endWp = points.length ? points[points.length - 1].wp : 50
+  const dir = endWp > 50 ? 1 : endWp < 50 ? -1 : 0
   let biggest = null
   for (let i = 1; i < points.length; i++) {
     const delta = points[i].wp - points[i - 1].wp
-    if (!biggest || delta > biggest.delta) biggest = { delta, ...points[i], ...(playText[points[i].playId] || {}) }
+    const swing = dir ? delta * dir : Math.abs(delta)
+    if (!biggest || swing > biggest.swing) biggest = { delta, swing, toward: delta >= 0 ? 'gb' : 'opp', ...points[i], ...(playText[points[i].playId] || {}) }
   }
-  return { points, biggest: biggest && biggest.delta >= 4 ? biggest : null }
+  return { points, biggest: biggest && biggest.swing >= 4 ? biggest : null }
 }
 
 // A game's offensive snaps of 20+ yards from the Packers, biggest first — the "chunk plays"

@@ -85,7 +85,7 @@ export default function Coverage() {
       {WPR_NEWS?.archive && (
         <div style={{ marginTop: 16 }}>
           <a href={WPR_NEWS.archive} target="_top" className="link-hover" onClick={() => trackBeacon('Coverage Click', { title: 'archive' })}
-            style={{ fontFamily: theme.sans, fontSize: 12, fontWeight: 700, color: theme.green, textDecoration: 'none' }}>
+            style={{ display: 'inline-block', padding: '6px 0', fontFamily: theme.sans, fontSize: 12, fontWeight: 700, color: theme.green, textDecoration: 'none' }}>
             More Packers coverage at Wausau Pilot &amp; Review {'→'}
           </a>
         </div>

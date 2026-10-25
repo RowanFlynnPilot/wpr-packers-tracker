@@ -110,7 +110,7 @@ function PlayerGroup({ sides, narrow }) {
   const labels = (lead.labels || []).slice(0, keys.length)
   const avatar = narrow ? 22 : 26
   const pad = narrow ? '5px 4px' : '5px 6px'
-  const th = { fontFamily: theme.sans, fontSize: 9.5, letterSpacing: '0.04em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700, textAlign: 'right', padding: narrow ? '4px 4px' : '4px 6px' }
+  const th = { fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.04em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700, textAlign: 'right', padding: narrow ? '4px 4px' : '4px 6px' }
   const td = { fontFamily: theme.sans, fontSize: 12, color: theme.ink, textAlign: 'right', padding: pad, borderTop: `1px solid ${theme.rule}`, whiteSpace: 'nowrap', verticalAlign: 'middle' }
   return (
     <div style={{ marginTop: 16 }}>

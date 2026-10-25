@@ -52,14 +52,14 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, f
   if (compact && sponsor) {
     const Tag = sponsor.url ? 'a' : 'span'
     return (
-      <Tag {...linkProps} className={sponsor.url ? 'link-hover' : undefined} style={{ textDecoration: 'none', fontFamily: theme.sans, fontSize: 11, color: labelColor }}>
+      <Tag {...linkProps} className={sponsor.url ? 'link-hover' : undefined} style={{ display: 'inline-block', padding: '6px 0', textDecoration: 'none', fontFamily: theme.sans, fontSize: 11, color: labelColor }}>
         <span style={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>Presented by </span>
         <span style={{ fontFamily: theme.serif, fontSize: 13, color: nameColor }}>{sponsor.name}</span>
       </Tag>
     )
   }
 
-  const label = (text, size = 9) => (
+  const label = (text, size = 10.5) => (
     <div style={{ fontFamily: theme.sans, fontSize: size, letterSpacing: '0.12em', textTransform: 'uppercase', color: labelColor }}>
       {text}
     </div>
@@ -124,7 +124,7 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, f
           boxShadow: dark ? '0 6px 20px rgba(0,0,0,0.25)' : '0 2px 8px rgba(0,0,0,0.06)',
         }}
       >
-        <div style={{ fontFamily: theme.sans, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>Presented by</div>
+        <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>Presented by</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', marginTop: 6 }}>
           {showLogo ? (
             <img src={sponsor.logo} alt={sponsor.name} style={{ display: 'block', height: 50, objectFit: 'contain' }} onError={() => setLogoFailed(true)} />
@@ -161,7 +161,7 @@ export default function Sponsor({ sponsor, variant = 'light', compact = false, f
         boxShadow: dark ? '0 6px 20px rgba(0,0,0,0.25)' : '0 2px 8px rgba(0,0,0,0.06)',
       }}
     >
-      <div style={{ fontFamily: theme.sans, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>Presented by</div>
+      <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>Presented by</div>
       {showLogo ? (
         <img src={sponsor.logo} alt={sponsor.name} style={{ display: 'block', height: 50, objectFit: 'contain', margin: '8px 0 2px' }} onError={() => setLogoFailed(true)} />
       ) : (

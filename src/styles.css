@@ -130,6 +130,10 @@ body { font-variant-numeric: tabular-nums; }
   100% { opacity: 0; }
 }
 
+/* "Skip to the tracker": off-screen until a keyboard user tabs to it, then a gold tab at the top. */
+.skip-link { position: absolute; left: 12px; top: -60px; z-index: 50; background: #ffb612; color: #203731; font: 700 13px/1 'Public Sans', system-ui, sans-serif; padding: 10px 14px; border-radius: 0 0 6px 6px; text-decoration: none; }
+.skip-link:focus { top: 0; }
+
 /* Read by screen readers, not drawn (the live score's team names). */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 

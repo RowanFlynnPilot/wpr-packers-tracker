@@ -10,10 +10,19 @@ import Figures from './Figures.jsx'
 // average starting field position, and a how-drives-end bar, for the offense AND the defense
 // (opponents' drives against Green Bay). Zero new network: it reads the same cached summaries
 // the film room and chunk board already pulled. Owns its Section; fail-soft.
-const END_COLORS = { TD: theme.green, FG: theme.gold, Punt: '#d8d0bf', Turnover: theme.red, Other: '#b3aa97' }
+// Colors mean good or bad FOR GREEN BAY, so the two sides swap them: an offensive touchdown is
+// green and a turnover red, but on defense the opponent's touchdown is the red one and the
+// turnover — a Packers takeaway — the green one (the defense bar borrowed the offense's colors
+// until Oct 2026 and painted opponents' TDs Packers green).
+const END_COLORS = {
+  offense: { TD: theme.green, FG: theme.gold, Punt: '#d8d0bf', Turnover: theme.red, Other: '#b3aa97' },
+  defense: { TD: theme.red, FG: theme.gold, Punt: '#d8d0bf', Turnover: theme.green, Other: '#b3aa97' },
+}
+const END_LABELS = { offense: {}, defense: { Turnover: 'Takeaway', TD: 'Opp. TD', FG: 'Opp. FG' } }
 const fmtStart = (v) => (v == null ? '—' : v <= 50 ? `Own ${v}` : `Opp ${100 - v}`)
 
-function SideBlock({ label, sub, s }) {
+function SideBlock({ label, sub, s, side }) {
+  const colors = END_COLORS[side]
   if (!s) return null
   const figures = [
     { value: s.pointsPerDrive.toFixed(2), label: 'Points per drive' },
@@ -31,14 +40,14 @@ function SideBlock({ label, sub, s }) {
       {/* How the drives end — one bar, share by outcome. */}
       <div style={{ display: 'flex', height: 14, borderRadius: 7, overflow: 'hidden', marginTop: 14 }} aria-hidden="true">
         {Object.entries(s.ends).map(([k, n]) => n > 0 && (
-          <div key={k} style={{ width: `${(n / total) * 100}%`, background: END_COLORS[k] }} />
+          <div key={k} style={{ width: `${(n / total) * 100}%`, background: colors[k] }} />
         ))}
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 6 }}>
         {Object.entries(s.ends).map(([k, n]) => n > 0 && (
           <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: theme.sans, fontSize: 11, color: theme.muted }}>
-            <span style={{ width: 9, height: 9, borderRadius: 2, background: END_COLORS[k], flexShrink: 0 }} />
-            {k} {Math.round((n / total) * 100)}%
+            <span style={{ width: 9, height: 9, borderRadius: 2, background: colors[k], flexShrink: 0 }} />
+            {END_LABELS[side][k] || k} {Math.round((n / total) * 100)}%
           </span>
         ))}
       </div>
@@ -68,8 +77,8 @@ export default function DriveDNA() {
         stall, and how they end. The defense reads the same way: opponents' drives against
         Green Bay.
       </p>
-      <SideBlock label="The offense" sub="Packers drives" s={data.offense} />
-      <SideBlock label="The defense" sub="Opponents' drives vs Green Bay" s={data.defense} />
+      <SideBlock label="The offense" sub="Packers drives" s={data.offense} side="offense" />
+      <SideBlock label="The defense" sub="Opponents' drives vs Green Bay" s={data.defense} side="defense" />
       <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 14 }}>
         {data.season < SEASON ? `Final ${data.season}` : 'Season to date'} · {data.games} game{data.games === 1 ? '' : 's'} ·
         clock-kill possessions excluded · computed from the play-by-play.

@@ -414,7 +414,7 @@ export default function GameHero() {
               {[...meetings].reverse().map((m) => (
                 <span key={m.id}
                   title={`${m.season} · ${m.tied ? `${m.meScore}–${m.oppScore} tie` : m.won ? `Packers ${m.meScore}–${m.oppScore}` : `${oppName} ${m.oppScore}–${m.meScore}`}${m.home ? ' at Lambeau' : ''}`}
-                  style={{ width: 17, height: 17, borderRadius: 3, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9.5, fontWeight: 700, color: '#fff', background: m.tied ? theme.muted : m.won ? theme.green : theme.red }}>
+                  style={{ width: 19, height: 19, borderRadius: 3, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10.5, fontWeight: 700, color: '#fff', background: m.tied ? theme.muted : m.won ? theme.green : theme.red }}>
                   {m.tied ? 'T' : m.won ? 'W' : 'L'}
                 </span>
               ))}
@@ -491,7 +491,7 @@ export default function GameHero() {
             <div key={l.cat} style={{ display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left' }}>
               <img src={headshot(l.id, 34)} alt="" width={34} height={34} loading="lazy" decoding="async" style={{ borderRadius: '50%', objectFit: 'cover', background: theme.paper, flexShrink: 0 }} onError={(e) => { e.currentTarget.style.display = 'none' }} />
               <div>
-                <div style={{ fontFamily: theme.sans, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>{l.cat}</div>
+                <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>{l.cat}</div>
                 <div style={{ fontFamily: theme.sans, fontSize: 11.5, color: theme.ink }}>
                   <strong>{l.name}</strong> <span style={{ color: theme.muted }}>· {l.line}</span>
                 </div>
@@ -508,11 +508,11 @@ export default function GameHero() {
 
       {/* Share + opt-in game alert (alerts: standalone app only) */}
       <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
-        <button onClick={share} className="link-hover" style={{ cursor: 'pointer', background: 'transparent', border: 'none', fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.04em', color: copied ? theme.green : theme.muted, fontWeight: copied ? 700 : 400 }}>
+        <button onClick={share} className="link-hover" style={{ cursor: 'pointer', background: 'transparent', border: 'none', padding: '8px 4px', fontFamily: theme.sans, fontSize: 12, letterSpacing: '0.04em', color: copied ? theme.green : theme.muted, fontWeight: copied ? 700 : 400 }}>
           {copied ? 'Link copied' : 'Share this game'}
         </button>
         {canAlert && (
-          <button onClick={toggleAlerts} className="link-hover" style={{ cursor: 'pointer', background: 'transparent', border: 'none', fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.04em', color: alertsOn ? theme.green : theme.muted, fontWeight: alertsOn ? 700 : 400 }}>
+          <button onClick={toggleAlerts} className="link-hover" style={{ cursor: 'pointer', background: 'transparent', border: 'none', padding: '8px 4px', fontFamily: theme.sans, fontSize: 12, letterSpacing: '0.04em', color: alertsOn ? theme.green : theme.muted, fontWeight: alertsOn ? 700 : 400 }}>
             {alertsOn ? 'Game alerts on (while this tab is open)' : final || live ? 'Alert me at the next kickoff' : 'Alert me at kickoff'}
           </button>
         )}

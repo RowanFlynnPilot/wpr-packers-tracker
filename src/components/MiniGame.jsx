@@ -125,7 +125,7 @@ export default function MiniGame() {
     </div>
   )
   const band = (text) => (
-    <div style={{ background: theme.green, color: '#fff', fontSize: 9.5, letterSpacing: '0.18em', fontWeight: 700, textTransform: 'uppercase', padding: '5px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+    <div style={{ background: theme.green, color: '#fff', fontSize: 10, letterSpacing: '0.18em', fontWeight: 700, textTransform: 'uppercase', padding: '5px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
       {live && <span className="live-dot" style={{ width: 7, height: 7, borderRadius: '50%', background: theme.gold, flexShrink: 0 }} />}
       {text}
     </div>
@@ -136,12 +136,12 @@ export default function MiniGame() {
     <div style={{ borderTop: `1px solid ${theme.rule}`, marginTop: 9, paddingTop: 7, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
       {SPONSORS.header ? (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
-          <span style={{ fontSize: 8, letterSpacing: '0.12em', fontWeight: 700, color: theme.goldText, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Presented by</span>
+          <span style={{ fontSize: 10, letterSpacing: '0.12em', fontWeight: 700, color: theme.goldText, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Presented by</span>
           {SPONSORS.header.logo ? (
             <img src={SPONSORS.header.logo} alt={SPONSORS.header.name} style={{ height: 22, objectFit: 'contain', display: 'block' }}
               onError={(e) => { e.currentTarget.style.display = 'none' }} />
           ) : (
-            <span style={{ fontSize: 8.5, color: theme.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{SPONSORS.header.name}</span>
+            <span style={{ fontSize: 10, color: theme.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{SPONSORS.header.name}</span>
           )}
         </span>
       ) : <span />}
@@ -199,7 +199,7 @@ export default function MiniGame() {
     <span key={id} style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 3, width: 92 }}>
       <TeamLogo id={id} size={30} />
       <span style={{ fontFamily: theme.serif, fontSize: 13, color: bold ? theme.green : theme.ink, fontWeight: bold ? 700 : 400, lineHeight: 1.1 }}>{name}</span>
-      {rec && <span style={{ fontSize: 9.5, color: theme.muted }}>{rec}{records?.stale ? ` in ’${String(records.season).slice(-2)}` : ''}</span>}
+      {rec && <span style={{ fontSize: 10, color: theme.muted }}>{rec}{records?.stale ? ` in ’${String(records.season).slice(-2)}` : ''}</span>}
     </span>
   )
 
@@ -213,14 +213,14 @@ export default function MiniGame() {
           {kicker}{!live && !final ? (game.seasonType === 3 ? ' · PLAYOFFS' : game.week ? ` · WK ${game.week}` : '') : ''}
         </div>
         {countdown && (
-          <div style={{ display: 'inline-block', background: theme.gold, color: theme.green, fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', borderRadius: 10, padding: '2px 9px', marginTop: 5 }}>
+          <div style={{ display: 'inline-block', background: theme.gold, color: theme.green, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', borderRadius: 10, padding: '2px 9px', marginTop: 5 }}>
             KICKOFF IN {countdown}
           </div>
         )}
         {won && (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: theme.green, borderRadius: 10, padding: '2px 10px 2px 4px', marginTop: 5 }}>
             <span style={{ width: 15, height: 15, borderRadius: '50%', background: theme.gold, color: theme.green, fontSize: 10, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>W</span>
-            <span style={{ color: '#fff', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em' }}>PACKERS WIN</span>
+            <span style={{ color: '#fff', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em' }}>PACKERS WIN</span>
           </div>
         )}
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10, margin: '7px 0 2px' }}>
@@ -245,7 +245,7 @@ export default function MiniGame() {
             <div style={{ display: 'flex', height: 5, borderRadius: 3, overflow: 'hidden', background: theme.rule }}>
               <span style={{ width: `${extras.mePct}%`, background: theme.green }} />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, marginTop: 2 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, marginTop: 2 }}>
               <span style={{ color: theme.green, fontWeight: 700 }}>{TEAM_ABBR} {extras.mePct}%</span>
               <span style={{ color: theme.muted }}>{game.oppAbbr} {100 - extras.mePct}%</span>
             </div>
@@ -265,7 +265,7 @@ export default function MiniGame() {
 
         {final && star && (
           <div style={{ marginTop: 2 }}>
-            <div style={{ fontSize: 8.5, letterSpacing: '0.14em', fontWeight: 700, color: theme.goldText, textTransform: 'uppercase' }}>
+            <div style={{ fontSize: 10, letterSpacing: '0.14em', fontWeight: 700, color: theme.goldText, textTransform: 'uppercase' }}>
               {won ? 'Player of the game' : 'Top performer'}
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 7, marginTop: 3 }}>

@@ -291,6 +291,13 @@ House conventions, so a new surface doesn't invent a fourth grammar:
   green left edge to mark home games, and that is the only one.
 - **Numbers are tabular.** `body { font-variant-numeric: tabular-nums }` in styles.css; don't
   fight it, and don't re-declare it per component.
+- **Nothing under 10px, nothing tappable under 24px tall.** The Oct 2026 critique found 8–9.5px
+  pills/badges/labels and 12–16px-tall text links (Preview, Share, Tickets) — readers are on
+  phones in a ~350px embed. Text links get vertical padding, not a bigger font.
+- **Charts say only what the data says.** Bars on a fixed scale from a meaningful zero (Road
+  ahead draws from a .500 schedule, never min-to-max), straight segments for weekly data (the
+  race chart), and colors that mean good/bad FOR GREEN BAY on both sides of the ball (Drive DNA).
+  The film room's turning point is the biggest swing toward the WINNER, not toward the Packers.
 - **The browser's own surfaces are themed** in styles.css — selection, scrollbar, focus ring,
   underline offset, and `.field` for the one native `<select>`. A new native control gets
   `.field`, not a fresh inline border.

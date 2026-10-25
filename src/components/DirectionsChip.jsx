@@ -17,7 +17,7 @@ export default function DirectionsChip({ address, sponsor, slot }) {
   }
   return (
     <span role="button" tabIndex={0} onClick={open} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && open(e)} className="link-hover"
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1.5px solid ${theme.gold}`, borderRadius: 16, padding: '4px 12px', fontFamily: theme.sans, fontSize: 11.5, fontWeight: 700, color: theme.green, whiteSpace: 'nowrap', cursor: 'pointer' }}>
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: `1.5px solid ${theme.gold}`, borderRadius: 16, padding: '6px 13px', fontFamily: theme.sans, fontSize: 11.5, fontWeight: 700, color: theme.green, whiteSpace: 'nowrap', cursor: 'pointer' }}>
       <svg width="11" height="14" viewBox="0 0 12 15" aria-hidden="true"><path d="M6 0C2.9 0 .5 2.4.5 5.4c0 3.9 4.9 9 5.1 9.2a.55.55 0 0 0 .8 0c.2-.2 5.1-5.3 5.1-9.2C11.5 2.4 9.1 0 6 0zm0 7.6a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4z" fill={theme.gold} /></svg>
       Directions
     </span>

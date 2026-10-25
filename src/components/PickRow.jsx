@@ -80,9 +80,9 @@ export default function PickRow({ game: g, pick, pct, pickable, onPick, packers,
         <Side team={g.home} pct={pct?.home} favorite={favorite === g.home.id} status={status(g.home.id)} pickable={pickable} onPick={() => onPick(g.home.id)} narrow={narrow} />
         <span style={{ fontFamily: theme.sans, fontSize: 11, color: live ? theme.red : theme.muted, fontWeight: live ? 700 : 400, width: narrow ? 54 : 70, textAlign: 'right', flexShrink: 0, lineHeight: 1.25 }}>
           {live ? 'Live' : g.completed ? 'Final' : g.timeValid ? fmtTime(g.date) : 'TBD'}
-          {live && g.detail ? <span style={{ display: 'block', fontSize: 9.5, fontWeight: 400, color: theme.muted }}>{g.detail}</span> : null}
-          {!live && !g.completed && g.tv ? <span style={{ display: 'block', fontSize: 9.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.tv}</span> : null}
-          {g.completed && /OT/i.test(g.detail) ? <span style={{ display: 'block', fontSize: 9.5 }}>Overtime</span> : null}
+          {live && g.detail ? <span style={{ display: 'block', fontSize: 10.5, fontWeight: 400, color: theme.muted }}>{g.detail}</span> : null}
+          {!live && !g.completed && g.tv ? <span style={{ display: 'block', fontSize: 10.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.tv}</span> : null}
+          {g.completed && /OT/i.test(g.detail) ? <span style={{ display: 'block', fontSize: 10.5 }}>Overtime</span> : null}
         </span>
       </div>
 

@@ -31,16 +31,16 @@ export default function MiniStandings() {
     borderRadius: 8, fontFamily: theme.sans,
   }
   const band = (text) => (
-    <div style={{ background: theme.green, color: '#fff', fontSize: 9.5, letterSpacing: '0.18em', fontWeight: 700, textTransform: 'uppercase', padding: '5px 8px', textAlign: 'center' }}>{text}</div>
+    <div style={{ background: theme.green, color: '#fff', fontSize: 10, letterSpacing: '0.18em', fontWeight: 700, textTransform: 'uppercase', padding: '5px 8px', textAlign: 'center' }}>{text}</div>
   )
   const footer = (
     <div style={{ borderTop: `1px solid ${theme.rule}`, margin: '0 12px', padding: '7px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
       {SPONSORS.header ? (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
-          <span style={{ fontSize: 8, letterSpacing: '0.12em', fontWeight: 700, color: theme.goldText, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Presented by</span>
+          <span style={{ fontSize: 10, letterSpacing: '0.12em', fontWeight: 700, color: theme.goldText, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Presented by</span>
           {SPONSORS.header.logo
             ? <img src={SPONSORS.header.logo} alt={SPONSORS.header.name} style={{ height: 20, objectFit: 'contain', display: 'block' }} onError={(e) => { e.currentTarget.style.display = 'none' }} />
-            : <span style={{ fontSize: 8.5, color: theme.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{SPONSORS.header.name}</span>}
+            : <span style={{ fontSize: 10, color: theme.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{SPONSORS.header.name}</span>}
         </span>
       ) : <span />}
       <span style={{ fontSize: 11, fontWeight: 700, color: theme.green, whiteSpace: 'nowrap' }}>Full tracker {'→'}</span>
@@ -60,7 +60,7 @@ export default function MiniStandings() {
 
   const rows = bundle.standings
   const stale = bundle.season < SEASON
-  const th = { fontFamily: theme.sans, fontSize: 9, letterSpacing: '0.04em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700, textAlign: 'right', padding: '4px 6px' }
+  const th = { fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.04em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700, textAlign: 'right', padding: '4px 6px' }
   const td = { fontFamily: theme.sans, fontSize: 12.5, color: theme.ink, textAlign: 'right', padding: '5px 6px', borderTop: `1px solid ${theme.rule}`, whiteSpace: 'nowrap' }
 
   return (

@@ -244,7 +244,7 @@ export default function PlayerCardHost() {
                     {season.map((s) => (
                       <div key={s.label} style={{ border: `1px solid ${theme.rule}`, borderRadius: 6, padding: '8px 10px', background: theme.wash }}>
                         <div style={{ fontFamily: theme.serif, fontSize: 18, color: theme.ink, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
-                        <div style={{ fontSize: 8.5, letterSpacing: '0.1em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700, marginTop: 4, whiteSpace: 'nowrap' }}>{s.label}</div>
+                        <div style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700, marginTop: 4, whiteSpace: 'nowrap' }}>{s.label}</div>
                       </div>
                     ))}
                   </div>
@@ -284,7 +284,7 @@ export default function PlayerCardHost() {
                         {g.score && <span style={{ color: theme.muted }}>{g.score}</span>}
                         <span style={{ marginLeft: 'auto', flexShrink: 0 }}>
                           {g.playoff
-                            ? <span style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.green, background: theme.gold, borderRadius: 3, padding: '1px 6px' }}>Playoffs</span>
+                            ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.green, background: theme.gold, borderRadius: 3, padding: '1px 6px' }}>Playoffs</span>
                             : g.week ? <span style={{ fontSize: 10, color: theme.muted }}>Wk {g.week}</span> : null}
                         </span>
                       </div>

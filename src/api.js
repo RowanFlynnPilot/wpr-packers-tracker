@@ -279,13 +279,18 @@ export async function fetchStandingsBundle() {
     const sorted = [...rows].sort(cmp)
     return { rank: sorted.findIndex((t) => t.id === TEAM_ID) + 1, of: rows.length }
   }
+  // Ranked PER GAME, not on totals: mid-season the byes are uneven, and on totals a team that
+  // has played six games ranks below the same scoring over seven — the Pulse said "25th in NFL
+  // scoring" a few inches above the Matchup's "#23 points per game" (Oct 2026). Per game is
+  // also how ESPN ranks it, so the two now agree.
+  const perGame = (r, v) => v / Math.max(1, r.wins + r.losses + r.ties)
   return {
     season,
     standings: division,
     league: rows,
     ranks: {
-      pointsFor: rankBy((a, b) => b.pointsFor - a.pointsFor),
-      pointsAgainst: rankBy((a, b) => a.pointsAgainst - b.pointsAgainst),
+      pointsFor: rankBy((a, b) => perGame(b, b.pointsFor) - perGame(a, a.pointsFor)),
+      pointsAgainst: rankBy((a, b) => perGame(a, a.pointsAgainst) - perGame(b, b.pointsAgainst)),
     },
   }
 }

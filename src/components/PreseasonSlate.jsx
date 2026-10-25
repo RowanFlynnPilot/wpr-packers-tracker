@@ -60,7 +60,7 @@ export default function PreseasonSlate() {
               Wk {g.week}
               <span style={{ display: 'block', fontWeight: 400, marginTop: 2 }}>{fmtDay(g.date)}</span>
               {g.id === nextId && (
-                <span style={{ display: 'inline-block', background: theme.gold, color: theme.green, borderRadius: 8, padding: '1px 7px', fontSize: 8.5, letterSpacing: '0.1em', marginTop: 3 }}>Next</span>
+                <span style={{ display: 'inline-block', background: theme.gold, color: theme.green, borderRadius: 8, padding: '1px 7px', fontSize: 10, letterSpacing: '0.1em', marginTop: 3 }}>Next</span>
               )}
             </span>
             <TeamLogo id={g.oppId} size={26} />

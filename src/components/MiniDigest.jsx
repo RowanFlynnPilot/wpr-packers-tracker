@@ -85,12 +85,12 @@ export default function MiniDigest() {
     borderRadius: 8, fontFamily: theme.sans,
   }
   const band = (
-    <div style={{ background: theme.green, color: '#fff', fontSize: 9.5, letterSpacing: '0.18em', fontWeight: 700, textTransform: 'uppercase', padding: '5px 8px', textAlign: 'center' }}>
+    <div style={{ background: theme.green, color: '#fff', fontSize: 10, letterSpacing: '0.18em', fontWeight: 700, textTransform: 'uppercase', padding: '5px 8px', textAlign: 'center' }}>
       Packers digest
     </div>
   )
   const heading = (text) => (
-    <div style={{ fontSize: 9, letterSpacing: '0.14em', fontWeight: 700, color: theme.goldText, textTransform: 'uppercase', marginBottom: 6 }}>{text}</div>
+    <div style={{ fontSize: 10, letterSpacing: '0.14em', fontWeight: 700, color: theme.goldText, textTransform: 'uppercase', marginBottom: 6 }}>{text}</div>
   )
   // In image mode with no title sponsor there is nothing to show — skip the footer entirely
   // rather than baking a bare rule over a blank band into every newsletter send.
@@ -98,10 +98,10 @@ export default function MiniDigest() {
     <div style={{ borderTop: `1px solid ${theme.rule}`, margin: '0 12px', padding: '7px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
       {SPONSORS.header ? (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
-          <span style={{ fontSize: 8, letterSpacing: '0.12em', fontWeight: 700, color: theme.goldText, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Presented by</span>
+          <span style={{ fontSize: 10, letterSpacing: '0.12em', fontWeight: 700, color: theme.goldText, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Presented by</span>
           {SPONSORS.header.logo
             ? <img src={SPONSORS.header.logo} alt={SPONSORS.header.name} style={{ height: 20, objectFit: 'contain', display: 'block' }} onError={(e) => { e.currentTarget.style.display = 'none' }} />
-            : <span style={{ fontSize: 8.5, color: theme.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{SPONSORS.header.name}</span>}
+            : <span style={{ fontSize: 10, color: theme.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{SPONSORS.header.name}</span>}
         </span>
       ) : <span />}
       {!imageMode && <span style={{ fontSize: 11, fontWeight: 700, color: theme.green, whiteSpace: 'nowrap' }}>Full tracker {'→'}</span>}
@@ -205,7 +205,7 @@ export default function MiniDigest() {
           return (
             <div key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '5px 0', borderTop: i ? `1px solid ${theme.rule}` : 'none', fontSize: 11.5 }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                <span style={{ fontSize: 9, letterSpacing: '0.06em', color: theme.muted, fontWeight: 700, flexShrink: 0 }}>WK {g.week}</span>
+                <span style={{ fontSize: 10, letterSpacing: '0.06em', color: theme.muted, fontWeight: 700, flexShrink: 0 }}>WK {g.week}</span>
                 <TeamLogo id={g.oppId} size={16} />
                 <span style={{ fontFamily: theme.serif, fontSize: 13, color: theme.ink, fontWeight: nextUp ? 700 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {g.home ? 'vs' : 'at'} {g.oppName}
@@ -229,7 +229,7 @@ export default function MiniDigest() {
   if (bundle && !slateBlock) {
     const rows = bundle.standings
     const stale = bundle.season < SEASON
-    const th = { fontSize: 9, letterSpacing: '0.04em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700, textAlign: 'right', padding: '3px 6px' }
+    const th = { fontSize: 10, letterSpacing: '0.04em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700, textAlign: 'right', padding: '3px 6px' }
     const td = { fontSize: 12, color: theme.ink, textAlign: 'right', padding: '4px 6px', borderTop: `1px solid ${theme.rule}`, whiteSpace: 'nowrap' }
     standingsBlock = (
       <div style={lastBlock || nextBlock ? section : { padding: '11px 14px' }}>

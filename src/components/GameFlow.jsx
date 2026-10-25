@@ -39,7 +39,10 @@ export default function GameFlow({ flow, oppName }) {
             The turning point{biggest.period ? ` · ${periodLabel(biggest.period)} ${biggest.clock || ''}` : ''}
           </div>
           <div style={{ fontFamily: theme.serif, fontSize: 15, color: theme.ink, lineHeight: 1.45, marginTop: 4 }}>
-            {biggest.text} <span style={{ color: theme.muted, fontFamily: theme.sans, fontSize: 12 }}>(+{Math.round(biggest.delta)}% vs the {oppName})</span>
+            {biggest.text}{' '}
+            <span style={{ color: theme.muted, fontFamily: theme.sans, fontSize: 12 }}>
+              (a {Math.round(Math.abs(biggest.delta))}-point swing to the {biggest.toward === 'gb' ? 'Packers' : oppName})
+            </span>
           </div>
         </div>
       )}

@@ -126,7 +126,7 @@ export default function GamePreview({ game, onBoxScore }) {
               {/* Every row is the same opponent — on a phone the abbreviation keeps it one line. */}
               <span style={{ whiteSpace: 'nowrap' }}>{m.home ? 'vs' : '@'} {narrow ? m.oppAbbr : m.oppName}</span>
               {m.seasonType === 3 && (
-                <span style={{ display: narrow ? 'block' : 'inline', marginLeft: narrow ? 0 : 7, fontFamily: theme.sans, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.goldText, whiteSpace: 'nowrap' }}>
+                <span style={{ display: narrow ? 'block' : 'inline', marginLeft: narrow ? 0 : 7, fontFamily: theme.sans, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.goldText, whiteSpace: 'nowrap' }}>
                   {m.note || 'Playoffs'}
                 </span>
               )}
@@ -134,7 +134,7 @@ export default function GamePreview({ game, onBoxScore }) {
             <span style={{ fontFamily: theme.serif, fontSize: 15, marginLeft: 'auto', whiteSpace: 'nowrap', color: m.tied ? theme.muted : m.won ? theme.green : theme.red }}>
               <span style={{ fontWeight: 700 }}>{m.tied ? 'T' : m.won ? 'W' : 'L'}</span>{' '}
               <span style={{ color: m.won ? theme.green : theme.ink }}>{m.meScore}–{m.oppScore}</span>
-              {m.ot && <span style={{ fontFamily: theme.sans, fontSize: 9.5, fontWeight: 700, color: theme.muted, marginLeft: 4 }}>OT</span>}
+              {m.ot && <span style={{ fontFamily: theme.sans, fontSize: 10, fontWeight: 700, color: theme.muted, marginLeft: 4 }}>OT</span>}
             </span>
             {/* On a phone the label would wrap to a line of its own under every meeting; the
                 arrow alone says the row opens. */}

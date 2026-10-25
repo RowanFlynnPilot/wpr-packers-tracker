@@ -59,7 +59,7 @@ export default function PickemLedger({ tally, store, liveWeek, view, onView }) {
                 background: on ? theme.green : '#fff', fontFamily: theme.sans, textAlign: 'center',
                 transition: 'background 0.15s ease, border-color 0.15s ease',
               }}>
-              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 9.5, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: on ? theme.gold : theme.muted }}>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 10.5, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, color: on ? theme.gold : theme.muted }}>
                 {wk === liveWeek && <span aria-hidden="true" style={{ width: 5, height: 5, borderRadius: '50%', background: theme.gold, flexShrink: 0 }} />}
                 Wk {wk}
               </span>

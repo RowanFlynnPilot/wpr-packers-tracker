@@ -131,7 +131,7 @@ export default function SponsorsPage() {
               <div style={{ flex: '1 1 380px', minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
                   <span style={{ fontFamily: theme.serif, fontSize: 18, color: theme.ink, fontWeight: 600 }}>{item.name}</span>
-                  <span style={{ fontFamily: theme.sans, fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', borderRadius: 3, padding: '2px 8px', color: sold ? theme.muted : theme.green, border: `1px solid ${sold ? theme.rule : theme.green}` }}>
+                  <span style={{ fontFamily: theme.sans, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', borderRadius: 3, padding: '2px 8px', color: sold ? theme.muted : theme.green, border: `1px solid ${sold ? theme.rule : theme.green}` }}>
                     {sold ? 'Sold' : item.multi ? 'Listings open' : 'Open'}
                   </span>
                 </div>

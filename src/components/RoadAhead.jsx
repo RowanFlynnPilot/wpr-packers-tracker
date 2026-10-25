@@ -28,8 +28,10 @@ function strength(cur, prev) {
 
 // "The road ahead" — how hard each NFC North team's remaining schedule is: the blended strength
 // of their unplayed opponents, weighted by games (an opponent met twice counts twice). Hardest
-// road first; bars are stretched across the observed range so small differences still read.
-// Owns its Section; fail-soft.
+// road first. Bars run from a .500 schedule — right is harder, left is easier — on a fixed
+// scale of at least ±.100. They used to be stretched across the observed range, which drew
+// .540 vs .562 about six times apart (Oct 2026 critique): the difference is real but small,
+// and the picture should say so. Owns its Section; fail-soft.
 export default function RoadAhead() {
   const [data, setData] = useState(null)
 
@@ -59,10 +61,9 @@ export default function RoadAhead() {
   if (!data || data.rows.length < 2) return null
   const { rows, played } = data
 
-  const pcts = rows.map((r) => r.oppPct)
-  const lo = Math.min(...pcts), hi = Math.max(...pcts)
-  const span = Math.max(0.02, hi - lo) // floor the range so near-identical schedules don't zero out
-  const width = (v) => 25 + ((v - lo) / span) * 75 // 25–100% keeps every bar visible
+  // Half-width of the track in win%: ±.100, or wider (in .050 steps) if a schedule goes past it.
+  const reach = Math.max(0.1, Math.ceil(Math.max(...rows.map((r) => Math.abs(r.oppPct - 0.5))) / 0.05) * 0.05)
+  const half = (v) => `${(Math.abs(v - 0.5) / reach) * 50}%`
   const fmt = (v) => `.${String(Math.round(v * 1000)).padStart(3, '0')}`
 
   // Editorial verdict: Packers vs the rival with the softest road left.
@@ -77,19 +78,22 @@ export default function RoadAhead() {
   return (
     <Section kicker="Strength of schedule" title="The road ahead">
       <p style={{ fontFamily: theme.serif, fontSize: 16, color: theme.muted, margin: '0 0 16px', maxWidth: 600, lineHeight: 1.5 }}>
-        Combined winning percentage of each team's remaining opponents — the longer the bar, the harder the road.
+        Combined winning percentage of each team's remaining opponents, measured from a .500
+        schedule — bars to the right are harder roads, to the left easier ones.
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
         {rows.map((r) => {
           const isMe = r.id === TEAM_ID
+          const harder = r.oppPct >= 0.5
           return (
             <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, width: 110, flexShrink: 0 }}>
                 <TeamLogo id={r.id} size={18} />
                 <span style={{ fontFamily: theme.serif, fontSize: 14, fontWeight: isMe ? 700 : 400, color: isMe ? theme.green : theme.ink }}>{DIVISION[r.id]}</span>
               </span>
-              <div style={{ flex: 1, height: 12, borderRadius: 6, background: theme.wash, overflow: 'hidden' }}>
-                <div style={{ width: `${width(r.oppPct)}%`, height: '100%', borderRadius: 6, background: isMe ? theme.green : theme.rule, border: isMe ? 'none' : `1px solid ${theme.rule}` }} />
+              <div style={{ position: 'relative', flex: 1, height: 12, borderRadius: 6, background: theme.wash }}>
+                <div style={{ position: 'absolute', top: 0, bottom: 0, [harder ? 'left' : 'right']: '50%', width: half(r.oppPct), borderRadius: harder ? '0 6px 6px 0' : '6px 0 0 6px', background: isMe ? theme.green : '#cfc6b3' }} />
+                <div aria-hidden="true" style={{ position: 'absolute', left: '50%', top: -3, bottom: -3, width: 1, background: theme.muted, opacity: 0.6 }} />
               </div>
               <span style={{ fontFamily: theme.sans, fontSize: 12, color: isMe ? theme.green : theme.muted, fontWeight: isMe ? 700 : 400, width: 86, flexShrink: 0 }}>
                 {fmt(r.oppPct)} · {r.games} left
@@ -97,6 +101,14 @@ export default function RoadAhead() {
             </div>
           )
         })}
+        {/* Axis: where .500 sits and which way is harder. */}
+        <div aria-hidden="true" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ width: 110, flexShrink: 0 }} />
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', fontFamily: theme.sans, fontSize: 10.5, color: theme.muted }}>
+            <span>← easier</span><span>.500</span><span>harder →</span>
+          </div>
+          <span style={{ width: 86, flexShrink: 0 }} />
+        </div>
       </div>
       {verdict && <div style={{ fontFamily: theme.sans, fontSize: 13, color: theme.muted, marginTop: 14, lineHeight: 1.5 }}>{verdict}</div>}
       <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 8, lineHeight: 1.5 }}>

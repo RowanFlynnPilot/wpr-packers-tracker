@@ -64,7 +64,7 @@ function VenueCard({ venue, slot, wide = false }) {
       </div>
 
       <div style={{ padding: '15px 18px 17px', display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: theme.sans, fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>Game-day partner</div>
+        <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>Game-day partner</div>
         <div style={{ fontFamily: theme.serif, fontSize: 21, color: theme.ink, lineHeight: 1.15, marginTop: 3 }}>{venue.name}</div>
         {venue.tagline && <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 14.5, color: theme.muted, marginTop: 2 }}>{venue.tagline}</div>}
         {(venue.address || venue.phone) && (
@@ -72,7 +72,7 @@ function VenueCard({ venue, slot, wide = false }) {
             {venue.address}
             {venue.address && venue.phone && ' · '}
             {venue.phone && (
-              <a href={`tel:${venue.phone.replace(/[^\d+]/g, '')}`} className="link-hover" style={{ color: 'inherit', whiteSpace: 'nowrap' }}
+              <a href={`tel:${venue.phone.replace(/[^\d+]/g, '')}`} className="link-hover" style={{ color: 'inherit', whiteSpace: 'nowrap', display: 'inline-block', padding: '5px 0' }}
                 onClick={() => track('Sponsor Click', { sponsor: venue.name, slot, action: 'call' })}>
                 {venue.phone}
               </a>
@@ -105,7 +105,7 @@ function VenueCard({ venue, slot, wide = false }) {
         {(venue.url || venue.address) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginTop: 'auto', paddingTop: 14 }}>
             {venue.url && (
-              <a {...linkProps} className="link-hover" style={{ fontFamily: theme.sans, fontSize: 12, fontWeight: 700, color: theme.green, textDecoration: 'none' }}>
+              <a {...linkProps} className="link-hover" style={{ display: 'inline-block', padding: '6px 0', fontFamily: theme.sans, fontSize: 12.5, fontWeight: 700, color: theme.green, textDecoration: 'none' }}>
                 Menu &amp; info {'→'}
               </a>
             )}

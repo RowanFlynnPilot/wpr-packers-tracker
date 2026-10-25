@@ -85,7 +85,7 @@ export default function Schedule() {
           {label}
           <span style={{ display: 'block', fontWeight: 400, marginTop: 2 }}>{fmtDay(g.date)}</span>
           {g.id === nextId && (
-            <span style={{ display: 'inline-block', background: theme.gold, color: theme.green, borderRadius: 8, padding: '1px 7px', fontSize: 8.5, letterSpacing: '0.1em', marginTop: 3 }}>Next</span>
+            <span style={{ display: 'inline-block', background: theme.gold, color: theme.green, borderRadius: 8, padding: '1px 7px', fontSize: 10, letterSpacing: '0.1em', marginTop: 3 }}>Next</span>
           )}
         </span>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flex: '1 1 150px', minWidth: 0 }}>
@@ -94,7 +94,7 @@ export default function Schedule() {
             {g.home ? 'vs' : '@'} {g.oppName}
           </span>
           {rival && (
-            <span style={{ fontFamily: theme.sans, fontSize: 8.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: theme.green, border: `1px solid ${theme.green}`, borderRadius: 3, padding: '1px 5px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            <span style={{ fontFamily: theme.sans, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.green, border: `1px solid ${theme.green}`, borderRadius: 3, padding: '1px 5px', whiteSpace: 'nowrap', flexShrink: 0 }}>
               NFC North
             </span>
           )}
@@ -116,14 +116,14 @@ export default function Schedule() {
             {ticketHref && (
               <a href={ticketHref} target="_blank" rel="sponsored noopener noreferrer" className="link-hover"
                 onClick={(e) => { e.stopPropagation(); track('Tickets Click', { week: g.week ?? 0 }) }}
-                style={{ display: 'inline-block', marginTop: 3, fontFamily: theme.sans, fontSize: 11, fontWeight: 700, color: theme.green, textDecoration: 'none' }}>
+                style={{ display: 'inline-block', marginTop: 0, padding: '6px 0 3px', fontFamily: theme.sans, fontSize: 11.5, fontWeight: 700, color: theme.green, textDecoration: 'none' }}>
                 Tickets{g.tickets?.price ? ` from $${Math.round(g.tickets.price)}` : ''} →
               </a>
             )}
             {previewable && (
               <button type="button" aria-expanded={expanded} aria-controls={`preview-${g.id}`}
                 onClick={(e) => { e.stopPropagation(); toggle() }}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto', marginTop: 3, background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', fontFamily: theme.sans, fontSize: 11, fontWeight: 700, color: theme.goldText }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto', marginTop: 0, background: 'transparent', border: 'none', padding: '7px 0 3px', cursor: 'pointer', fontFamily: theme.sans, fontSize: 11.5, fontWeight: 700, color: theme.goldText }}>
                 {expanded ? 'Close preview' : 'Preview'}
                 <svg width="9" height="9" viewBox="0 0 10 10" aria-hidden="true" style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }}>
                   <path d="M1.5 3.5 5 7l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />

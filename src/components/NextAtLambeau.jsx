@@ -53,7 +53,7 @@ export default function NextAtLambeau() {
           {(TICKETS_OVERRIDE_URL || game.tickets?.href) && (
             <a href={TICKETS_OVERRIDE_URL || game.tickets.href} target="_blank" rel="sponsored noopener noreferrer" className="link-hover"
               onClick={() => track('Tickets Click', { week: game.week ?? 0 })}
-              style={{ display: 'inline-block', marginTop: 7, fontFamily: theme.sans, fontSize: 12, fontWeight: 700, color: theme.green, textDecoration: 'none' }}>
+              style={{ display: 'inline-block', marginTop: 3, padding: '6px 0', fontFamily: theme.sans, fontSize: 12, fontWeight: 700, color: theme.green, textDecoration: 'none' }}>
               Tickets{game.tickets?.price ? ` from $${Math.round(game.tickets.price)}` : ''} →
             </a>
           )}

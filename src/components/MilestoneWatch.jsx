@@ -118,7 +118,7 @@ export default function MilestoneWatch() {
       </div>
       <div style={{ marginTop: 12 }}>
         <button onClick={shareCard} className="link-hover"
-          style={{ cursor: 'pointer', background: 'transparent', border: 'none', padding: 0, fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.04em', color: shared ? theme.green : theme.muted, fontWeight: shared ? 700 : 400 }}>
+          style={{ cursor: 'pointer', background: 'transparent', border: 'none', padding: '8px 0', fontFamily: theme.sans, fontSize: 12, letterSpacing: '0.04em', color: shared ? theme.green : theme.muted, fontWeight: shared ? 700 : 400 }}>
           {shared ? 'Card ready to post' : 'Share the chase as a card'}
         </button>
       </div>

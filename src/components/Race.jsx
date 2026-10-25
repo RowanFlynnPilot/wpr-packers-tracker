@@ -16,31 +16,11 @@ const PAD = { top: 10, right: 62, bottom: 26, left: 28 }
 const IDS = Object.keys(DIVISION)
 const r1 = (v) => Math.round(v * 10) / 10
 
-// Monotone cubic interpolation — Steffen's method, the same curve as d3's curveMonotoneX (which
-// is what the recharts version drew): smooth through every point, never overshooting one, so a
-// team can't appear to dip below first place between two weeks it led.
-function monotonePath(pts) {
-  const n = pts.length
-  if (n < 2) return ''
-  if (n === 2) return `M${r1(pts[0].x)},${r1(pts[0].y)}L${r1(pts[1].x)},${r1(pts[1].y)}`
-  const sign = (v) => (v < 0 ? -1 : 1)
-  const s = []
-  for (let i = 0; i < n - 1; i++) s.push((pts[i + 1].y - pts[i].y) / (pts[i + 1].x - pts[i].x))
-  const t = new Array(n)
-  for (let i = 1; i < n - 1; i++) {
-    const h0 = pts[i].x - pts[i - 1].x
-    const h1 = pts[i + 1].x - pts[i].x
-    const p = (s[i - 1] * h1 + s[i] * h0) / (h0 + h1)
-    t[i] = (sign(s[i - 1]) + sign(s[i])) * Math.min(Math.abs(s[i - 1]), Math.abs(s[i]), 0.5 * Math.abs(p)) || 0
-  }
-  t[0] = (3 * s[0] - t[1]) / 2
-  t[n - 1] = (3 * s[n - 2] - t[n - 2]) / 2
-  let d = `M${r1(pts[0].x)},${r1(pts[0].y)}`
-  for (let i = 0; i < n - 1; i++) {
-    const dx = (pts[i + 1].x - pts[i].x) / 3
-    d += `C${r1(pts[i].x + dx)},${r1(pts[i].y + dx * t[i])} ${r1(pts[i + 1].x - dx)},${r1(pts[i + 1].y - dx * t[i + 1])} ${r1(pts[i + 1].x)},${r1(pts[i + 1].y)}`
-  }
-  return d
+// Straight segments, week to week. The standings only change on game days, so a smooth curve
+// (this used to be monotone-cubic, d3's curveMonotoneX) drew mid-week movement that never
+// happened; a straight line between weekly points claims nothing in between.
+function linePath(pts) {
+  return pts.map((p, i) => `${i ? 'L' : 'M'}${r1(p.x)},${r1(p.y)}`).join('')
 }
 
 const gbText = (gb) => (gb === 0 ? 'leads' : `${gb} back`)
@@ -153,7 +133,7 @@ function RaceChart({ data }) {
             const isMe = Number(id) === TEAM_ID
             const pts = data.map((row, i) => ({ x: x(i), y: y(row[id] ?? 0) }))
             return n > 1
-              ? <path key={id} d={monotonePath(pts)} fill="none" stroke={TEAM_COLORS[id]} strokeWidth={isMe ? 3 : 1.5} strokeOpacity={isMe ? 1 : 0.55} strokeLinejoin="round" strokeLinecap="round" />
+              ? <path key={id} d={linePath(pts)} fill="none" stroke={TEAM_COLORS[id]} strokeWidth={isMe ? 3 : 1.5} strokeOpacity={isMe ? 1 : 0.55} strokeLinejoin="round" strokeLinecap="round" />
               // A line needs two points — with only Week 1 in the books, dots instead.
               : <circle key={id} cx={pts[0].x} cy={pts[0].y} r={4} fill={TEAM_COLORS[id]} />
           })}

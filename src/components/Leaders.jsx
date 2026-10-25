@@ -16,10 +16,14 @@ const CAT_SHORT = {
   passingTouchdowns: 'pass TD', rushingTouchdowns: 'rush TD', receivingTouchdowns: 'rec TD',
   receptions: 'catches', quarterbackRating: 'rating', totalPoints: 'scoring',
 }
-function rankNote(league, id) {
+// A player's NFL top-5 rank chip. On a board (`only` = the board's category) it shows THAT
+// category's rank or nothing: the player's best rank anywhere put "4th in the NFL · passing"
+// under Jordan Love on the RUSHING board (Oct 2026). The spotlight, with no board, takes the best.
+function rankNote(league, id, only) {
   if (!league) return null
   let best = null
   Object.entries(league).forEach(([cat, byId]) => {
+    if (only && cat !== only) return
     const rank = byId[id]
     if (rank && rank <= 5 && CAT_SHORT[cat] && (!best || rank < best.rank)) best = { rank, cat }
   })
@@ -92,7 +96,7 @@ function Spotlight({ qb, def, league }) {
 // One leader board. The top player reads as the headline — bigger headshot, gold ring, bold
 // value — and every row carries a proportional bar so the gaps are visible at a glance, not
 // just legible in the numbers.
-function LeaderTable({ title, rows, league, seasonStats, picks }) {
+function LeaderTable({ title, rows, league, seasonStats, picks, cat }) {
   if (!rows?.length) return null
   const max = Math.max(...rows.map((r) => r.value || 0)) || 1
   return (
@@ -101,7 +105,7 @@ function LeaderTable({ title, rows, league, seasonStats, picks }) {
     <div style={{ breakInside: 'avoid', marginBottom: 30 }}>
       <div style={{ fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.goldText, marginBottom: 10, fontWeight: 700 }}>{title}</div>
       {rows.map((r, i) => {
-        const note = rankNote(league, r.id)
+        const note = rankNote(league, r.id, cat)
         const detail = detailLine(seasonStats?.[r.id], picks)
         const lead = i === 0
         return (
@@ -196,7 +200,7 @@ export default function Leaders({ side }) {
           and a grid row sizes to its tallest cell — which left a hole under the short board and
           an empty half-page beside the third. Columns balance the flow instead. */}
       <div className="stat-boards">
-        {tables.map(([title, rows, cat]) => <LeaderTable key={title} title={title} rows={rows} league={league} seasonStats={seasonStats} picks={DETAILS[cat]} />)}
+        {tables.map(([title, rows, cat]) => <LeaderTable key={title} title={title} rows={rows} league={league} seasonStats={seasonStats} picks={DETAILS[cat]} cat={cat} />)}
       </div>
       {data.season < SEASON && (
         <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 16 }}>

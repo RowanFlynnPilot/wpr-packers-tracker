@@ -162,9 +162,13 @@ export default function App() {
           </a>
         </div>
       )}
+      {/* Keyboard and screen-reader users skip the masthead, banner and title-sponsor card
+          straight to the tabs and the game (hidden until focused — styles.css .skip-link). */}
+      <a href="#main" className="skip-link">Skip to the tracker</a>
       <Masthead />
       <PackersBanner />
       <div style={{ maxWidth: 880, margin: '0 auto', padding: '0 20px' }}>
+        <main id="main" tabIndex={-1} style={{ outline: 'none' }}>
         <ErrorBoundary>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '12px 0 0' }}>
           <BookmarkButton />
@@ -221,6 +225,7 @@ export default function App() {
 
         <PlayerCardHost />
         </ErrorBoundary>
+        </main>
         <footer style={{ borderTop: `1px solid ${theme.rule}`, padding: '22px 0 44px', fontFamily: theme.sans, fontSize: 11, color: theme.muted, lineHeight: 1.6, display: 'flex', alignItems: 'flex-start', gap: 14 }}>
           <img src={WPR_BADGE} alt="" width={44} height={44} loading="lazy" decoding="async"
             style={{ flexShrink: 0, marginTop: 2 }} onError={(e) => { e.currentTarget.style.display = 'none' }} />
