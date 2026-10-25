@@ -185,6 +185,12 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
     phase — with no games played it is exactly the classic preseason SOS. Don't go back to raw
     current records: after Week 2 they rated a 2–0 Raiders team (3–14 the year before) as a
     1.000 opponent and ranked the division's roads by who happened to win in September.
+  - `LiveField` — the live hero's field strip (ball spot, blue line of scrimmage, yellow line to
+    gain, drive band, red zone) + the "Packers ball · 3rd & 9 at DET 14" caption. Drawn in
+    PACKERS terms by `fieldState` in api.js: GB's end zone is always on the left, so the picture
+    never flips with possession. The hero around it adds a win-probability sparkline, gold
+    scoring plays, and the TOUCHDOWN moment — a 5-second gold sweep on a NEW Packers scoring play
+    (by id; the first summary after page load only sets the baseline, so nothing replays).
   - `Status` — `Loading` + `ErrorState`.
 
 ## Phase-awareness (the offseason is a first-class state)
@@ -263,7 +269,9 @@ mode simply wait. This is one deterministic source per phase — NOT a fallback 
   ~45s behind, so `fetchSeasonGames` overlays the in-progress game's live fields from the
   scoreboard (`withLiveScore`). And the live SUMMARY lists the drive in progress in BOTH
   `drives.previous` and `drives.current` (same drive id) — `liveExtras` dedupes, or the hero
-  prints the latest play twice. Finals are unaffected by either.
+  prints the latest play twice. Finals are unaffected by either. Timeouts, quarter ends and the
+  two-minute warning sit in the same play list with JUNK spots (down -1, yard line 0 — GB–DET,
+  Oct 2026): `NOT_A_SNAP` filters them before anything reads a field position or lists plays.
 - Do NOT read `/teams/9/transactions` (returns `{}`) or the core injuries list (70 refs =
   fan-out soup). The roster injuries field is the one correct source.
 - ESPN's schedule archive is solid back to 1999 — that's `ThisDay`'s range. Jan/Feb dates

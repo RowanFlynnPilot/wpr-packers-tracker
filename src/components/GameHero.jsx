@@ -8,6 +8,7 @@ import { track } from '../analytics.js'
 import { useIsNarrow } from '../useIsNarrow.js'
 import Sponsor from './Sponsor.jsx'
 import TeamLogo from './TeamLogo.jsx'
+import LiveField from './LiveField.jsx'
 
 const REFRESH_MS = 30000 // live football moves fast; ESPN caches a few seconds.
 const IDLE_REFRESH_MS = 120000 // pre-game/final cadence — keeps the hero able to flip to Live on its own.
@@ -68,6 +69,8 @@ export default function GameHero() {
   const [copied, setCopied] = useState(false)
   const [pop, setPop] = useState(false)
   const prevScore = useRef(null)
+  const [celebrate, setCelebrate] = useState(null) // the Packers score that just happened
+  const lastScoreId = useRef(undefined)
   const narrow = useIsNarrow()
 
   // Opt-in game alert. Notifications only work on the standalone page (cross-origin iframes block
@@ -143,6 +146,27 @@ export default function GameHero() {
     }
     prevScore.current = key
   }, [game, meScore, oppScore])
+
+  // The touchdown moment: when a NEW scoring play shows up and it's Green Bay's, the card takes
+  // a gold sweep for five seconds — once per score. The first summary after the page opens only
+  // sets the baseline (opening the page mid-game replays nothing), and opponent scores pass
+  // quietly; the score pop already marks them.
+  useEffect(() => {
+    if (!live) { lastScoreId.current = undefined; return }
+    if (!extras) return
+    const ls = extras.lastScore
+    const id = ls?.id ?? null
+    if (lastScoreId.current === undefined) { lastScoreId.current = id; return }
+    if (id && id !== lastScoreId.current) {
+      lastScoreId.current = id
+      if (ls.teamId === TEAM_ID) setCelebrate(ls)
+    }
+  }, [live, extras])
+  useEffect(() => {
+    if (!celebrate) return
+    const t = setTimeout(() => setCelebrate(null), 5200)
+    return () => clearTimeout(t)
+  }, [celebrate])
 
   // Fire an alert once when the featured game flips to live (only if opted in + permitted).
   // wasLive starts null so a page opened mid-game sets the baseline silently — only an
@@ -270,14 +294,54 @@ export default function GameHero() {
     </div>
   )
 
+  // The game so far under the win-probability bar: the Packers' chances play by play, kickoff
+  // at the left edge, now at the right, the 50% line dashed. Thinned to ~120 points.
+  const renderSpark = (series) => {
+    if (!series || series.length < 4) return null
+    const step = Math.max(1, Math.ceil(series.length / 120))
+    const pts = series.filter((_, i) => i % step === 0 || i === series.length - 1)
+    const W = 360, H = 34
+    const line = pts.map((v, i) => `${((i / (pts.length - 1)) * W).toFixed(1)},${(H - (v / 100) * H).toFixed(1)}`).join(' ')
+    return (
+      <div aria-hidden="true" style={{ marginTop: 8 }}>
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" width="100%" height={H} style={{ display: 'block' }}>
+          <line x1="0" x2={W} y1={H / 2} y2={H / 2} stroke={theme.muted} strokeOpacity="0.45" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+          <polyline points={`0,${H} ${line} ${W},${H}`} fill={theme.green} fillOpacity="0.08" stroke="none" />
+          <polyline points={line} fill="none" stroke={theme.green} strokeWidth="1.75" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        </svg>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: theme.sans, fontSize: 10.5, color: theme.muted, marginTop: 2 }}>
+          <span>Kickoff</span><span>Now</span>
+        </div>
+      </div>
+    )
+  }
+
   const leaders = final && summary ? teamGameLeaders(summary) : []
 
   return (
-    <div style={{ marginTop: 22, border: `1px solid ${theme.rule}`, borderTop: `4px solid ${theme.gold}`, borderRadius: 10, background: theme.wash, padding: narrow ? '24px 14px 22px' : '30px 24px 26px', textAlign: 'center' }}>
+    <div style={{ position: 'relative', overflow: 'hidden', marginTop: 22, border: `1px solid ${theme.rule}`, borderTop: `4px solid ${theme.gold}`, borderRadius: 10, background: theme.wash, padding: narrow ? '24px 14px 22px' : '30px 24px 26px', textAlign: 'center' }}>
+      {/* The touchdown moment (see the effect above). A tap dismisses it early; role=status lets
+          a screen reader hear what happened. */}
+      {celebrate && (
+        <div role="status" className="td-moment" onClick={() => setCelebrate(null)}
+          style={{ position: 'absolute', inset: 0, zIndex: 2, background: theme.gold, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: narrow ? 8 : 10, padding: '20px 18px', cursor: 'pointer' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: theme.sans, fontSize: 12, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: theme.green }}>
+            <TeamLogo id={TEAM_ID} size={22} /> Packers
+          </div>
+          <div className="td-word" style={{ fontFamily: theme.serif, fontWeight: 700, fontSize: narrow ? 42 : 68, lineHeight: 0.95, letterSpacing: '0.01em', textTransform: 'uppercase', color: theme.green }}>
+            {celebrate.kind}
+          </div>
+          {celebrate.text && <div style={{ fontFamily: theme.sans, fontSize: narrow ? 13 : 14.5, color: theme.green, maxWidth: 440, lineHeight: 1.4 }}>{celebrate.text}</div>}
+          <div style={{ fontFamily: theme.serif, fontSize: narrow ? 20 : 24, color: theme.green, marginTop: 2 }}>
+            Packers {meScore}, {oppName} {oppScore}
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div style={{ fontFamily: theme.sans, fontSize: 12, letterSpacing: '0.2em', textTransform: 'uppercase', color: live ? theme.goldText : theme.muted, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
         {live && <span className="live-dot" style={{ width: 9, height: 9, borderRadius: '50%', background: theme.gold }} />}
-        {kicker}{live && game.detail ? ` · ${game.detail}` : ''}
+        {/* ESPN's "1:47 - 1st" → "1:47 · 1st", the separator the rest of the card uses. */}
+        {kicker}{live && game.detail ? ` · ${game.detail.replace(/ - /g, ' · ')}` : ''}
       </div>
       {(when || weekLabel || countdown) && (
         <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, marginTop: 6 }}>
@@ -308,8 +372,12 @@ export default function GameHero() {
         {teamBlock(TEAM_ID, 'Packers')}
         {showScore ? (
           <div aria-live="polite" className={pop ? 'score-pop' : undefined} style={{ display: 'flex', alignItems: 'center', gap: narrow ? 10 : 14, fontFamily: theme.serif, fontSize: scoreSize, lineHeight: 1, whiteSpace: 'nowrap' }}>
+            {/* The visible score is bare digits; the hidden names make the live announcement
+                "Packers 7, Lions 7" instead of "7 – 7". */}
+            <span className="sr-only">Packers </span>
             <span style={{ color: won ? theme.green : theme.ink, fontWeight: won ? 700 : 400 }}>{meScore}</span>
-            <span style={{ fontSize: scoreSize * 0.5, color: theme.muted }}>–</span>
+            <span aria-hidden="true" style={{ fontSize: scoreSize * 0.5, color: theme.muted }}>–</span>
+            <span className="sr-only">, {oppName} </span>
             <span style={{ color: theme.ink }}>{oppScore}</span>
           </div>
         ) : (
@@ -372,30 +440,34 @@ export default function GameHero() {
       {/* Live situation: down & distance + win probability + latest plays */}
       {live && extras && (
         <div style={{ margin: '0 0 18px' }}>
-          {extras.situation && (
+          {extras.field ? (
+            <div style={{ maxWidth: 640, margin: '0 auto' }}><LiveField field={extras.field} oppId={game.oppId} narrow={narrow} /></div>
+          ) : extras.situation && (
             <div style={{ fontFamily: theme.sans, fontSize: 13, fontWeight: 700, letterSpacing: '0.04em', color: theme.green, marginBottom: 12 }}>
               {extras.situation}
             </div>
           )}
           {extras.mePct != null && (
-            <div style={{ maxWidth: 320, margin: '0 auto' }}>
-              <div style={{ fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.muted, marginBottom: 5 }}>Win probability</div>
+            <div style={{ maxWidth: 360, margin: '0 auto' }}>
+              <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.muted, marginBottom: 5 }}>Win probability</div>
               <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', background: theme.rule }}>
-                <div style={{ width: `${extras.mePct}%`, background: theme.green }} />
+                <div style={{ width: `${extras.mePct}%`, background: theme.green, transition: 'width 600ms ease' }} />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: theme.sans, fontSize: 11, marginTop: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: theme.sans, fontSize: 12, marginTop: 4 }}>
                 <span style={{ color: theme.green, fontWeight: 700 }}>Packers {extras.mePct}%</span>
                 <span style={{ color: theme.muted }}>{oppName} {100 - extras.mePct}%</span>
               </div>
+              {renderSpark(extras.wpSeries)}
             </div>
           )}
           {extras.plays?.length > 0 && (
-            <div style={{ maxWidth: 440, margin: '14px auto 0', textAlign: 'left' }}>
-              <div style={{ fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.muted, marginBottom: 4 }}>Latest plays</div>
+            <div style={{ maxWidth: 460, margin: '14px auto 0', textAlign: 'left' }}>
+              <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.muted, marginBottom: 4 }}>Latest plays</div>
               {extras.plays.map((p, i) => (
-                <div key={i} style={{ fontFamily: theme.sans, fontSize: 12, color: p.scoring ? theme.ink : theme.muted, lineHeight: 1.4, padding: '4px 0', borderTop: i ? `1px solid ${theme.rule}` : 'none' }}>
-                  <span style={{ color: theme.goldText, fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>{periodLabel(p.period)} {p.clock}</span>{' '}
-                  {p.text.length > 96 ? p.text.slice(0, 95).replace(/\s+\S*$/, '') + '…' : p.text}
+                // A scoring play wears a gold band — the one play in the list that changed the score.
+                <div key={i} style={{ fontFamily: theme.sans, fontSize: 12.5, color: p.scoring ? theme.ink : theme.muted, fontWeight: p.scoring ? 600 : 400, lineHeight: 1.4, padding: p.scoring ? '6px 8px' : '5px 0', margin: p.scoring ? '2px 0' : 0, borderRadius: p.scoring ? 5 : 0, background: p.scoring ? 'rgba(255, 182, 18, 0.2)' : 'transparent', borderTop: i && !p.scoring && !extras.plays[i - 1]?.scoring ? `1px solid ${theme.rule}` : 'none' }}>
+                  <span style={{ color: theme.goldText, fontWeight: 700, fontSize: 10.5, textTransform: 'uppercase' }}>{periodLabel(p.period)} {p.clock}</span>{' '}
+                  {p.text.length > 110 ? p.text.slice(0, 109).replace(/\s+\S*$/, '') + '…' : p.text}
                 </div>
               ))}
             </div>

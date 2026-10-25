@@ -103,6 +103,36 @@ body { font-variant-numeric: tabular-nums; }
   .score-pop { animation: none; }
 }
 
+/* The live hero's touchdown moment: a gold sweep across the card (left to right), held, then
+   gone — five seconds, once per Packers score. The word lands a beat after the sweep. The ball
+   on the field strip glides to each new spot. Reduced motion: the moment simply appears and
+   leaves, and the ball jumps. */
+.td-moment { animation: td-moment 5.2s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes td-moment {
+  0% { clip-path: inset(0 100% 0 0); }
+  7% { clip-path: inset(0 0 0 0); }
+  90% { opacity: 1; clip-path: inset(0 0 0 0); }
+  100% { opacity: 0; clip-path: inset(0 0 0 0); }
+}
+.td-moment .td-word { animation: td-word 0.7s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes td-word {
+  from { opacity: 0; transform: scale(0.86); }
+  to { opacity: 1; transform: none; }
+}
+.field-ball { transition: left 0.7s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .td-moment { animation: td-hold 5.2s linear both; }
+  .td-moment .td-word { animation: none; }
+  .field-ball { transition: none; }
+}
+@keyframes td-hold {
+  0%, 92% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Read by screen readers, not drawn (the live score's team names). */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
 /* Box-score player names open the player card: the name takes a gold underline on hover and
    keyboard focus (the global focus ring still draws around the button). */
 .player-link:hover .player-name,

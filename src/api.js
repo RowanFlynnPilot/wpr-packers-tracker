@@ -407,6 +407,9 @@ export async function fetchWeekProjections(games) {
   return map
 }
 
+// Play types that aren't snaps (ESPN logs them in the same list).
+const NOT_A_SNAP = /timeout|end (of )?(period|quarter|half|game|regulation)|two-minute|coin toss/i
+
 // The pieces of a summary the LIVE hero/mini need, distilled: the score, the Packers' win
 // probability, the current situation (down & distance), and the last few plays. The score
 // comes from here too so the live surfaces tick on the summary's fast cadence — the schedule
@@ -428,18 +431,65 @@ export function liveExtras(summary, packersHome) {
   const allPlays = [...prev, ...cur]
     .flatMap((d) => d.plays || [])
     .filter((p) => !seen.has(p.id) && seen.add(p.id))
-  const last = allPlays[allPlays.length - 1]
+  // Only real snaps describe the game. Timeouts, quarter ends and the two-minute warning carry
+  // junk spots (down -1, yard line 0 — seen live, GB–DET Oct 2026) and led the "latest plays".
+  const snaps = allPlays.filter((p) => !NOT_A_SNAP.test(p.type?.text || ''))
+  const last = snaps[snaps.length - 1]
+  const drive = drives.current || prev[prev.length - 1]
+  const lastScore = (summary.scoringPlays || []).at(-1)
   return {
     meScore: scoreOf((packersHome ? homeC : awayC)?.score),
     oppScore: scoreOf((packersHome ? awayC : homeC)?.score),
     mePct: homePct == null ? null : Math.round(packersHome ? homePct : 100 - homePct),
     situation: last?.end?.downDistanceText || last?.end?.possessionText || null,
-    plays: allPlays.slice(-3).reverse().map((p) => ({
+    field: fieldState(last, drive),
+    // The Packers' win probability play by play, for the hero's sparkline.
+    wpSeries: wp.map((w) => Math.round(packersHome ? w.homeWinPercentage * 100 : 100 - w.homeWinPercentage * 100)),
+    // The latest score — the hero celebrates a NEW one (by id) when it's Green Bay's.
+    lastScore: lastScore ? {
+      id: lastScore.id,
+      teamId: Number(lastScore.team?.id),
+      kind: lastScore.scoringType?.displayName || lastScore.type?.text || 'Score',
+      text: lastScore.text || '',
+    } : null,
+    plays: snaps.slice(-3).reverse().map((p) => ({
       period: p.period?.number,
       clock: p.clock?.displayValue,
       scoring: !!p.scoringPlay,
       text: p.text || '',
     })),
+  }
+}
+
+// Field position for the live hero's field strip, in PACKERS terms: x is yards from Green Bay's
+// own goal line (0–100), so the picture never flips with possession — the Packers always attack
+// to the right. Read from the latest snap's END spot; ESPN's yardsToEndzone counts toward the
+// goal of whichever team has the ball. Dead-ball moments (a kickoff's spot, down < 1) carry no
+// line to gain. The drive band runs from the drive's first scrimmage snap to the ball, and only
+// while the same team still has it.
+function fieldState(last, drive) {
+  const end = last?.end
+  if (!end?.team?.id || end.yardsToEndzone == null) return null
+  const ballTeam = Number(end.team.id)
+  const gbBall = ballTeam === TEAM_ID
+  const toX = (ytE) => (gbBall ? 100 - ytE : ytE)
+  const down = end.down >= 1 ? end.down : null
+  const goal = down != null && end.distance >= end.yardsToEndzone
+  const driveSnaps = Number(drive?.team?.id) === ballTeam
+    ? (drive.plays || []).filter((p) => !NOT_A_SNAP.test(p.type?.text || '') && !/kickoff|punt/i.test(p.type?.text || '') && Number(p.start?.team?.id) === ballTeam && p.start?.yardsToEndzone != null)
+    : []
+  return {
+    ballTeam,
+    gbBall,
+    x: toX(end.yardsToEndzone),
+    down,
+    goal,
+    lineToGain: down != null && !goal ? toX(end.yardsToEndzone - end.distance) : null,
+    redZone: down != null && end.yardsToEndzone <= 20,
+    downText: end.downDistanceText || end.possessionText || null,
+    driveStart: driveSnaps.length ? toX(driveSnaps[0].start.yardsToEndzone) : null,
+    // "4 plays, 17 yards, 1:51" → the strip's drive line.
+    driveText: driveSnaps.length ? (drive.description || '').replace(/, /g, ' · ') || null : null,
   }
 }
 
