@@ -9,6 +9,7 @@ import { useIsNarrow } from '../useIsNarrow.js'
 import Sponsor from './Sponsor.jsx'
 import TeamLogo from './TeamLogo.jsx'
 import LiveField from './LiveField.jsx'
+import GameStakes from './GameStakes.jsx'
 
 const REFRESH_MS = 30000 // live football moves fast; ESPN caches a few seconds.
 const IDLE_REFRESH_MS = 120000 // pre-game/final cadence — keeps the hero able to flip to Live on its own.
@@ -436,6 +437,9 @@ export default function GameHero() {
           </div>
         )
       })()}
+
+      {/* Pregame: what this game is worth to the playoff odds (house model, fail-soft). */}
+      {state === 'pre' && <GameStakes game={game} narrow={narrow} />}
 
       {/* Live situation: down & distance + win probability + latest plays */}
       {live && extras && (

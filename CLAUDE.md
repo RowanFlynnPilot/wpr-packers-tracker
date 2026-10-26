@@ -173,12 +173,17 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
     week is final; fail-soft, owns its Section) render only when `CONTEST.api` is set.
   - `FilmRoom` — game picker; hands one cached summary to `GameFlow` (win-probability
     chart), `ScoringPlays`, `BigPlays`.
-  - `PlayoffOdds` runs a 4,000-sim rest-of-season Monte Carlo IN THE BROWSER (win% regressed
-    toward .500 by `BALLAST` = 12 games — the NFL's regression constant; normal-approx
-    binomial; 4 division winners + 3 wild cards) — a deliberate house model, labeled as such;
-    not a data cron. It waits for Week 1 (a coin-flip preseason sim would be noise). The RNG is
-    SEEDED from the standings, so the same table always prints the same odds — don't swap
-    Math.random back in (unseeded, a refresh turned 32% into 31% with nothing having happened).
+  - `PlayoffOdds` shows a 4,000-sim rest-of-season Monte Carlo run IN THE BROWSER — the pure
+    model lives in `src/playoffSim.js` (win% regressed toward .500 by `BALLAST` = 12 games — the
+    NFL's regression constant; normal-approx binomial; 4 division winners + 3 wild cards) — a
+    deliberate house model, labeled as such; not a data cron. It waits for Week 1 (a coin-flip
+    preseason sim would be noise). The RNG is SEEDED from the standings, so the same table always
+    prints the same odds — don't swap Math.random back in (unseeded, a refresh turned 32% into
+    31% with nothing having happened). `gameStakes()` runs it three times — as is, the next game
+    a win, a loss — on ONE shared seed (common random numbers: on separate seeds, noise could make
+    a win look worse than a loss). `GameStakes` puts that on the pregame hero ("This game is
+    worth 33 points of playoff odds", Win → 71% / Loss → 38%) and PlayoffOdds repeats it as a
+    "This week" line — same seed, same numbers. Regular season only; hidden when the swing < 2.
   - `RoadAhead` rates each remaining opponent by its current record BLENDED with last season's,
     the latter counting as `PRIOR_GAMES` = 6 games (a win% correlates ~⅓ year to year, which is
     the reliability of six current games under the same 12-game constant). One formula for every
