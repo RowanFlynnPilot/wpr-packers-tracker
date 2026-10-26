@@ -11,7 +11,9 @@ function Dial({ value, label, color }) {
   const R = 44, C = 2 * Math.PI * R
   const text = oddsText(value)
   return (
-    <div style={{ textAlign: 'center', flex: '0 1 170px' }}>
+    // 140px apiece so the two dials sit side by side even in the ~310px WPR embed — at 170 they
+    // stacked on every phone and took ~550px of the Season tab.
+    <div style={{ textAlign: 'center', flex: '0 1 140px' }}>
       <svg width="120" height="120" viewBox="0 0 120 120" role="img" aria-label={`${label}: ${text}`}>
         <circle cx="60" cy="60" r={R} fill="none" stroke={theme.rule} strokeWidth="10" />
         <circle cx="60" cy="60" r={R} fill="none" stroke={color} strokeWidth="10" strokeLinecap="round"
@@ -55,7 +57,7 @@ export default function PlayoffOdds() {
 
   return (
     <Section kicker="The January picture" title="Playoff odds">
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 28, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '20px 16px', flexWrap: 'wrap' }}>
         <Dial value={odds.postseason} label="Make the playoffs" color={theme.green} />
         <Dial value={odds.division} label={`Win the ${DIVISION_NAME}`} color={theme.goldText} />
       </div>

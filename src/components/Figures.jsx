@@ -7,7 +7,9 @@ import { useIsNarrow } from '../useIsNarrow.js'
 // default and read as one: five boxes of equal weight, and on a phone a ragged grid with an
 // orphan in the last row. A newspaper sets the same numbers in a band between two rules and
 // lets the space do the separating, so the figures read as one statement instead of five
-// widgets. It also wraps correctly at any width, because nothing has to line up.
+// widgets. On a wide screen it's a free-wrapping row. On a phone it's a BALANCED grid — the
+// free wrap left the Pulse's fifth figure ("1–2 In the division") alone on a row of its own and
+// Drive DNA's third ("Own 31") the same (Oct 2026): five go 3 + 2, four go 2 + 2, three go 3.
 //
 // `items`: { value (node — a string, or Pulse's CountUp), label, color? }. Falsy entries are
 // dropped, so callers can build the list conditionally.
@@ -17,10 +19,13 @@ export default function Figures({ items, size = 'lg' }) {
   if (!list.length) return null
   const big = size === 'lg'
   const valueSize = narrow ? (big ? 30 : 24) : (big ? 36 : 27)
+  const cols = list.length === 4 ? 2 : Math.min(list.length, 3)
   return (
     <div style={{
-      display: 'flex', flexWrap: 'wrap',
-      gap: narrow ? '16px 26px' : '18px 40px',
+      ...(narrow
+        ? { display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }
+        : { display: 'flex', flexWrap: 'wrap' }),
+      gap: narrow ? '16px 18px' : '18px 40px',
       borderTop: `2px solid ${theme.green}`,
       borderBottom: `1px solid ${theme.rule}`,
       padding: narrow ? '13px 0 14px' : '15px 0 16px',

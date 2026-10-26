@@ -64,7 +64,11 @@ export default function TeamProfile() {
     name,
     defs.map((t) => {
       const s = stats.cats?.[t.cat]?.[t.name]
-      return s && s.rank ? { label: t.label, display: `${s.display}${t.suffix || ''}`, rank: s.rank } : null
+      if (!s || !s.rank) return null
+      // Percentages to one decimal, like the Matchup (ESPN's display string carried two:
+      // 35.53% here beside 35.5% there).
+      const display = t.suffix === '%' && Number.isFinite(s.value) ? `${s.value.toFixed(1)}%` : `${s.display}${t.suffix || ''}`
+      return { label: t.label, display, rank: s.rank }
     }).filter(Boolean),
   ])
 

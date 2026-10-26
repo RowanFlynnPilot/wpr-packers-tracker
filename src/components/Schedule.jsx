@@ -161,6 +161,11 @@ export default function Schedule() {
           {notes.join(' · ')}
         </div>
       )}
+      {/* The green left edge is the one data-encoding border on the page — say what it means. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginBottom: 10 }}>
+        <span aria-hidden="true" style={{ width: 3, height: 14, borderRadius: 1, background: theme.green, flexShrink: 0 }} />
+        Green edge = home game at Lambeau Field
+      </div>
       {groups.map((grp) => (
         <div key={grp.key} style={{ marginBottom: 18 }}>
           {grp.label && (

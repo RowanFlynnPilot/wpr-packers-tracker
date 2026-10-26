@@ -88,7 +88,7 @@ export default function MiniGame() {
     if (state === 'pre') {
       fetchStandingsBundle().then((b) => {
         if (!alive) return
-        const fmt = (r) => r && r.wins + r.losses + r.ties > 0 ? `${r.wins}-${r.losses}${r.ties ? `-${r.ties}` : ''}` : null
+        const fmt = (r) => r && r.wins + r.losses + r.ties > 0 ? `${r.wins}–${r.losses}${r.ties ? `–${r.ties}` : ''}` : null
         const stale = b.season < new Date(game.date).getFullYear() - (new Date(game.date).getMonth() < 2 ? 1 : 0)
         setRecords({
           me: fmt(b.league.find((r) => r.id === TEAM_ID)),

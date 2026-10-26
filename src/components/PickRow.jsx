@@ -26,7 +26,7 @@ function Side({ team, pct, favorite, status, pickable, onPick, narrow }) {
   const picked = status !== 'none'
   const scored = team.score != null
   // Week 1's thirty-two "0-0"s are noise; on a phone a scored side shows the % alone.
-  const record = team.record && team.record !== '0-0' && !(narrow && scored) ? team.record : ''
+  const record = team.record && team.record !== '0–0' && !(narrow && scored) ? team.record : ''
   return (
     <button
       onClick={pickable ? onPick : undefined}

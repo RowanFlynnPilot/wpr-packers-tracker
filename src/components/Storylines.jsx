@@ -192,7 +192,7 @@ export default function Storylines() {
         if (next) {
           let fpi = null
           try { fpi = await fetchPredictor(next.id, next.home) } catch { /* line renders without it */ }
-          out.push(<>Next: {next.home ? 'the' : 'at the'} <strong>{TEAM_NAMES[next.oppId] || next.oppName}</strong>{next.home ? ' at Lambeau' : ''}, {kickoffPhrase(next)}{fpi != null ? <> — ESPN's FPI makes it a {fpi}% Packers game</> : null}.</>)
+          out.push(<>Next: {next.home ? 'the' : 'at the'} <strong>{TEAM_NAMES[next.oppId] || next.oppName}</strong>{next.home ? ' at Lambeau' : ''}, {kickoffPhrase(next)}{fpi != null ? <> — ESPN's Football Power Index makes it a {fpi}% Packers game</> : null}.</>)
         }
       }
 

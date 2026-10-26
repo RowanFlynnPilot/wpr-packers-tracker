@@ -1,6 +1,6 @@
 import { theme } from '../theme.js'
 import { TEAM_ID } from '../config.js'
-import { periodLabel } from '../games.js'
+import { periodLabel, scoringText } from '../games.js'
 import TeamLogo from './TeamLogo.jsx'
 
 // "How the points went up" — every scoring play in order, who scored it, and the score after.
@@ -22,7 +22,7 @@ export default function ScoringPlays({ summary, packersHome }) {
             </span>
             <TeamLogo id={Number(p.team?.id)} size={20} />
             <span style={{ fontFamily: theme.sans, fontSize: 12.5, color: ours ? theme.ink : theme.muted, lineHeight: 1.4, flex: 1, minWidth: 0 }}>
-              {p.text}
+              {scoringText(p.text)}
             </span>
             <span style={{ fontFamily: theme.serif, fontSize: 14, color: meScore > oppScore ? theme.green : theme.ink, whiteSpace: 'nowrap', fontWeight: ours ? 700 : 400 }}>
               {meScore}–{oppScore}

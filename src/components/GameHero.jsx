@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID, TEAM_ABBRS, DIVISION, SPONSORS, SITE_URL, WPR_EMBED_URL, headshot } from '../config.js'
-import { fetchFeaturedGame, fetchGameSummary, fetchLiveSummary, liveExtras, fetchStandingsBundle, fetchStatsSeason, fetchTeamSchedule, fetchPredictor, fetchRecentMeetings } from '../api.js'
-import { finals, teamGameLeaders, periodLabel } from '../games.js'
+import { fetchFeaturedGame, fetchGameSummary, fetchLiveSummary, liveExtras, fetchStandingsBundle, fetchStatsSeason, fetchTeamSchedule, fetchPredictor, fetchRecentMeetings, fetchSeasonGames } from '../api.js'
+import { finals, teamGameLeaders, periodLabel, scoringText } from '../games.js'
 import { fetchKickoffForecast } from '../weather.js'
 import { track } from '../analytics.js'
 import { useIsNarrow } from '../useIsNarrow.js'
@@ -128,6 +128,23 @@ export default function GameHero() {
     let alive = true
     fetchGameSummary(gameId).then((s) => { if (alive) setSummary(s) }).catch(() => {})
     return () => { alive = false }
+  }, [final, gameId])
+
+  // Final (regular season): the Packers' record AFTER this game, for the result line under the
+  // score — "Packers fall to 4–3" says more than the "Final" the kicker already said.
+  const [finalRecord, setFinalRecord] = useState(null)
+  useEffect(() => {
+    setFinalRecord(null)
+    if (!final || !game || game.seasonType !== 2) return
+    let alive = true
+    fetchSeasonGames().then(({ games }) => {
+      const upTo = games.filter((g) => g.seasonType === 2 && g.state === 'post' && new Date(g.date) <= new Date(game.date))
+      const w = upTo.filter((g) => g.won).length
+      const t = upTo.filter((g) => g.tied).length
+      if (alive) setFinalRecord(`${w}–${upTo.length - w - t}${t ? `–${t}` : ''}`)
+    }).catch(() => {})
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- id + final pin the read
   }, [final, gameId])
 
   // While live, the summary's score is fresher than the schedule feed's (see liveExtras).
@@ -332,7 +349,7 @@ export default function GameHero() {
           <div className="td-word" style={{ fontFamily: theme.serif, fontWeight: 700, fontSize: narrow ? 42 : 68, lineHeight: 0.95, letterSpacing: '0.01em', textTransform: 'uppercase', color: theme.green }}>
             {celebrate.kind}
           </div>
-          {celebrate.text && <div style={{ fontFamily: theme.sans, fontSize: narrow ? 13 : 14.5, color: theme.green, maxWidth: 440, lineHeight: 1.4 }}>{celebrate.text}</div>}
+          {celebrate.text && <div style={{ fontFamily: theme.sans, fontSize: narrow ? 13 : 14.5, color: theme.green, maxWidth: 440, lineHeight: 1.4 }}>{scoringText(celebrate.text)}</div>}
           <div style={{ fontFamily: theme.serif, fontSize: narrow ? 20 : 24, color: theme.green, marginTop: 2 }}>
             Packers {meScore}, {oppName} {oppScore}
           </div>
@@ -430,7 +447,7 @@ export default function GameHero() {
             {ledger || (meetText && <div style={{ color: theme.green, fontWeight: 700 }}>{meetText}</div>)}
             {fpi != null && (
               <div>
-                ESPN's FPI model gives the Packers a{' '}
+                ESPN's Football Power Index gives the Packers a{' '}
                 <span style={{ color: fpi >= 50 ? theme.green : theme.ink, fontWeight: 700 }}>{fpi}%</span> shot
               </div>
             )}
@@ -479,18 +496,34 @@ export default function GameHero() {
         </div>
       )}
 
-      {final && (
-        <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 15, color: theme.muted, margin: '0 0 18px' }}>
-          {won ? 'Packers win' : game.tied ? 'A tie' : 'Final'}{/OT/i.test(game.detail) ? ' — overtime' : ''}
-        </div>
-      )}
+      {final && (() => {
+        // What the result MEANS, not a second "Final": the record it leaves (regular season),
+        // what it means for the season (playoffs), or — before the record loads, or preseason —
+        // just the result.
+        const ot = /OT/i.test(game.detail)
+        const line = game.seasonType === 3
+          ? won ? `Packers advance${ot ? ' in overtime' : ''}` : game.tied ? 'A tie' : `The Packers' season ends${ot ? ' in overtime' : ''}`
+          : finalRecord
+            ? won ? `Packers ${ot ? 'win in overtime and ' : ''}improve to ${finalRecord}`
+              : game.tied ? `A tie — the Packers are ${finalRecord}`
+                : `Packers ${ot ? 'lose in overtime and ' : ''}fall to ${finalRecord}`
+            : won ? `Packers win${ot ? ' in overtime' : ''}` : null
+        return line && (
+          <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 16, color: won ? theme.green : theme.ink, margin: '0 0 18px' }}>{line}</div>
+        )
+      })()}
 
       {/* Quarter-by-quarter scoreboard */}
       {final && summary && <LinescoreStrip summary={summary} packersHome={game.home} oppName={oppName} />}
 
       {/* Top performers after a final */}
+      {/* On a phone the three performers stack as one left-aligned list (centered as a block):
+          wrapped and each centered on its own line, they stepped down the card at three
+          different indents. */}
       {final && leaders.length > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: narrow ? 14 : 26, flexWrap: 'wrap', margin: '0 0 18px' }}>
+        <div style={narrow
+          ? { display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 12, width: 'fit-content', maxWidth: '100%', margin: '0 auto 18px' }
+          : { display: 'flex', justifyContent: 'center', gap: 26, flexWrap: 'wrap', margin: '0 0 18px' }}>
           {leaders.map((l) => (
             <div key={l.cat} style={{ display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left' }}>
               <img src={headshot(l.id, 34)} alt="" width={34} height={34} loading="lazy" decoding="async" style={{ borderRadius: '50%', objectFit: 'cover', background: theme.paper, flexShrink: 0 }} onError={(e) => { e.currentTarget.style.display = 'none' }} />

@@ -238,6 +238,14 @@ export function driveDNA(entries, packersId = TEAM_ID) {
   return { offense: rates(sides.offense), defense: rates(sides.defense) }
 }
 
+// ESPN's scoring-play shorthand in the house's words: "Christian Watson 34 Yd pass from Jordan
+// Love (Brandon McManus Kick)" → "…34-yard pass from Jordan Love (Brandon McManus kick)", and
+// "Brandon McManus 41 Yd Field Goal" → "…41-yard field goal". Names keep their capitals.
+export const scoringText = (t) => (t || '')
+  .replace(/\b(\d+) Yds?\b/g, '$1-yard')
+  .replace(/-yard ([A-Z][a-z]+(?: [A-Z][a-z]+)*)/g, (_, what) => `-yard ${what.toLowerCase()}`)
+  .replace(/ Kick\)/g, ' kick)')
+
 // One team's top performer lines from a summary's per-team leaders — e.g.
 // [{ cat: 'Passing', name: 'Jordan Love', line: '22/30, 268 YDS, 3 TD' }]. A final's summary
 // carries GAME leaders; an upcoming game's carries both teams' SEASON leaders (the schedule's

@@ -123,7 +123,9 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   `api.js`
   memoizes the heavier reads (`cached()`, short TTL) so flipping back is instant.
   Masthead, banner + title sponsor, the updated stamp, and the footer stay pinned across
-  tabs. Tab switches fire a Plausible `Tab` event.
+  tabs — the masthead only STANDALONE: embedded (window.self !== window.top), WPR's own site
+  header sits right above the iframe, and a second masthead cost phones ~180px before the game.
+  Tab switches fire a Plausible `Tab` event.
 - `src/autosize.js` — when embedded, posts document height to the host on every change
   (ResizeObserver) so the iframe fits the active tab. The host embed listens for
   `{ type: 'wpr-packers-height' }`; tab switches also post `{ type: 'wpr-packers-scroll' }`
@@ -133,7 +135,8 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   - `Figures` — the house treatment for a set of headline numbers: a rule-framed strip
     (2px green above, hairline below), values in the serif, labels beneath. Used by `Pulse` and
     `DriveDNA`. It replaced rows of identically bordered tiles — the dashboard default, which
-    also left an orphan in the last row on a phone. Reach for this before inventing stat boxes.
+    also left an orphan in the last row on a phone. On phones it is a BALANCED grid (5 → 3+2,
+    4 → 2+2, 3 → 3). Reach for this before inventing stat boxes.
   - `BookmarkButton` — stickiness nudge pinned in the top bar (⌘/Ctrl+D + copy-link).
   - `Pulse`, `Standings` — consume the shared standings bundle fetched once in `App`.
   - `Race` — games back of the division lead, week by week, from the four division teams'
@@ -294,6 +297,9 @@ House conventions, so a new surface doesn't invent a fourth grammar:
   the turning point, player/box-score modals, the minis). There is no gold side border. A
   colored LEFT border is reserved for encoding data, not for decoration — `Schedule` uses a
   green left edge to mark home games, and that is the only one.
+- **Records take en dashes** (4–3, 1–2): ESPN hands records over as '1-2'; `dash()` in api.js
+  normalizes them at the source (compare against '0–0', not '0-0'). ESPN's scoring-play
+  shorthand ("34 Yd pass … Kick)") goes through `scoringText()` in games.js before display.
 - **Numbers are tabular.** `body { font-variant-numeric: tabular-nums }` in styles.css; don't
   fight it, and don't re-declare it per component.
 - **Nothing under 10px, nothing tappable under 24px tall.** The Oct 2026 critique found 8–9.5px

@@ -43,6 +43,9 @@ async function pooled(items, size, worker) {
   return out
 }
 
+// A W-L record in the house style: en dashes, not ESPN's hyphens ('1-2' → '1–2').
+const dash = (s) => (s || '').replace(/-/g, '–')
+
 // The schedule feed's score is { value, displayValue }; the scoreboard's is a bare string.
 const scoreOf = (s) => {
   if (s == null) return null
@@ -164,7 +167,7 @@ export function normalizeLeagueGame(e) {
     name: c.team.shortDisplayName || c.team.displayName,
     // A scheduled game has no score — the feed's "0" placeholder would render as a real 0.
     score: state === 'pre' ? null : scoreOf(c.score),
-    record: (c.records || [])[0]?.summary || '',
+    record: dash((c.records || [])[0]?.summary),
   })
   // While a game is on, the scoreboard's situation carries the live win probability (home,
   // 0–1) — the pick rows show it in place of the pregame projection.
@@ -254,9 +257,11 @@ export function fetchStandings(season) {
             pointsAgainst: s.pointsAgainst?.value ?? 0,
             pointDiff: s.pointDifferential?.value ?? 0,
             seed: s.playoffSeed?.value ?? null,
-            divRecord: s.divisionRecord?.displayValue ?? '',
-            homeRecord: s.Home?.displayValue ?? '',
-            roadRecord: s.Road?.displayValue ?? '',
+            // ESPN writes records '1-2'; the house style (and every other record on the page) is
+            // the en dash, so the Pulse no longer prints 4–3 beside 1-2.
+            divRecord: dash(s.divisionRecord?.displayValue),
+            homeRecord: dash(s.Home?.displayValue),
+            roadRecord: dash(s.Road?.displayValue),
           })
         })
       })

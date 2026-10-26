@@ -148,6 +148,7 @@ export default function App() {
 
   // ?demo pages look identical to the live page — a forwarded demo link explains itself.
   const demo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('demo')
+  const embedded = typeof window !== 'undefined' && window.self !== window.top
   const ribbonInquiry = useInquiry('demo-ribbon')
 
   return (
@@ -165,7 +166,10 @@ export default function App() {
       {/* Keyboard and screen-reader users skip the masthead, banner and title-sponsor card
           straight to the tabs and the game (hidden until focused — styles.css .skip-link). */}
       <a href="#main" className="skip-link">Skip to the tracker</a>
-      <Masthead />
+      {/* Embedded in WPR's own page, the site's header already sits right above the iframe; a
+          second Wausau Pilot & Review masthead cost phones ~180px before the game (Oct 2026
+          critique). The standalone page — and the media kit and rules pages — keep it. */}
+      {!embedded && <Masthead />}
       <PackersBanner />
       <div style={{ maxWidth: 880, margin: '0 auto', padding: '0 20px' }}>
         <main id="main" tabIndex={-1} style={{ outline: 'none' }}>
