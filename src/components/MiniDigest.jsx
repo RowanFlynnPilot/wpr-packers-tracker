@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { theme } from '../theme.js'
-import { TEAM_ID, DIVISION, DIVISION_NAME, SPONSORS, SEASON, headshot } from '../config.js'
+import { TEAM_ID, DIVISION, DIVISION_NAME, SPONSORS, SEASON, WATCH_VENUES, headshot } from '../config.js'
 import { fetchSeasonGames, fetchStandingsBundle, fetchGameSummary } from '../api.js'
 import { teamGameLeaders } from '../games.js'
 import { trackBeacon } from '../analytics.js'
@@ -266,6 +266,31 @@ export default function MiniDigest() {
     )
   }
 
+  // ---- Game-day partner — the newsletter IMAGE only. The sold venue(s) from the game-day guide
+  // (config WATCH_VENUES; placeholders have no url, so they never print), set above the title
+  // sponsor's "Presented by", which stays the card's sign-off. Image-only because the web
+  // digest is one link to the tracker (a partner link can't nest inside it) and is embedded at
+  // a fixed 480px that a taller card would overflow. Evergreen fields only — never the dated
+  // specials, which would sit in subscribers' inboxes after they expire.
+  const partners = imageMode ? WATCH_VENUES.filter((v) => v.url).slice(0, 2) : []
+  const partnerBlock = partners.length > 0 && (
+    <div style={{ ...section, background: theme.wash }}>
+      {heading(partners.length > 1 ? 'Game-day partners' : 'Game-day partner')}
+      {partners.map((v, i) => (
+        <div key={v.name} style={{ display: 'flex', alignItems: 'center', gap: 11, marginTop: i ? 10 : 0 }}>
+          {v.logo && <img src={v.logo} alt="" width={48} height={48} style={{ borderRadius: 6, objectFit: 'cover', flexShrink: 0, display: 'block' }} />}
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontFamily: theme.serif, fontSize: 15.5, color: theme.ink, lineHeight: 1.15 }}>{v.name}</div>
+            {v.tagline && <div style={{ fontSize: 11, color: theme.ink, marginTop: 3, lineHeight: 1.35 }}>{v.tagline}</div>}
+            {(v.address || v.phone) && (
+              <div style={{ fontSize: 10.5, color: theme.muted, marginTop: 3 }}>{[v.address, v.phone].filter(Boolean).join(' · ')}</div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+
   return (
     <a {...linkProps} className="mini-card" style={card}>
       {band}
@@ -273,6 +298,7 @@ export default function MiniDigest() {
       {nextBlock}
       {slateBlock}
       {standingsBlock}
+      {partnerBlock}
       {footer}
     </a>
   )

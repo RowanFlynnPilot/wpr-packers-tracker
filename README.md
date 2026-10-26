@@ -207,7 +207,20 @@ page:
 
 The image itself is also linked (tapping it opens the tracker), but the text link below
 makes the call-to-action obvious — the image drops its "Full tracker" button, since a
-region inside an image can't carry its own link. The PNG is ~840px wide (2× for retina),
+region inside an image can't carry its own link.
+
+**Game-day partner in the image.** The image (only — not the web digest above) carries a
+"Game-day partner" strip for each sold game-day guide venue (`WATCH_VENUES` in config.js:
+logo, name, hours line, address, phone — never the dated specials), above the title sponsor's
+"Presented by". Since the image can link only to the tracker, give the partner its own text
+link under the image, tagged as newsletter traffic so it shows up in the venue's analytics:
+
+```html
+<p style="margin:6px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;text-align:center">
+  <a href="https://sunrisebar52.com/?utm_source=wausaupilotandreview&utm_medium=newsletter&utm_campaign=packers_tracker"
+     style="color:#203731;text-decoration:none">Game-day partner: Sunrise Bar &amp; Grill — breakfast before the games →</a>
+</p>
+``` The PNG is ~840px wide (2× for retina),
 so it stays sharp displayed up to 600px. To change the refresh times, edit the two `cron`
 lines in the workflow.
 

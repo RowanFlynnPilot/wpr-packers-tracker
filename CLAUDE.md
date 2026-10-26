@@ -93,7 +93,9 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   each its own page so they stay lightweight. `MiniGame.jsx` (featured-game scoreboard w/
   kickoff countdown, live situation + win probability, player of the game),
   `MiniStandings.jsx` (NFC North table), `MiniDigest.jsx` (newsletter combo: last final w/
-  top performers, next kickoff w/ TV, standings). Each card is one link to the full
+  top performers, next kickoff w/ TV, standings; in `?image` mode — the email PNG only — a
+  "Game-day partner" strip for each sold WATCH_VENUES venue sits above the title sponsor's
+  "Presented by", evergreen fields only, never the dated specials). Each card is one link to the full
   tracker; the embed's `?to=` param overrides the destination (http/https only — shared
   `src/embed.js` `destination()`). Clicks fire a `Mini Click` event tagged with `widget`.
   Keep them tiny — no service worker, no recharts.
@@ -252,6 +254,12 @@ mode simply wait. This is one deterministic source per phase — NOT a fallback 
   grades against the model with no stored copy.
   (The sibling `…/odds` endpoint works too — spread/O-U from DraftKings — but is UNUSED
   pending WPR's editorial call on betting content.)
+- FPI power index, PER TEAM: `sports.core.api…/seasons/YYYY/powerindex/9` (~2 KB gz, CORS-open;
+  the league list `…/powerindex?limit=40` is 310 KB). `predictives` carry the road to the Super
+  Bowl in PERCENT (`probmakeplayoffs` 40.8 → `probmakedivplayoffs` → `probmakeconfchamp` →
+  `probmaketitlegame` → `probwintitle`), plus `fpirank` and `projectedw`; refreshed daily
+  (~06:00Z). `fetchPowerIndex` → `SuperBowlRoad`, the funnel under the house dials in
+  PlayoffOdds — labeled as ESPN's model, compared with ours in one sentence, never blended.
 - League scoreboard: `site.api…/scoreboard` — bare call reports where the league clock
   stands (`season.type` 1/2/3 + `week.number`); `?seasontype=2&week=N&dates=YYYY` pins one
   regular-season week (16ish events, both competitors inline). Feeds the pick'em via

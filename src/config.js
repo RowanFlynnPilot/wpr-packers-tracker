@@ -189,6 +189,8 @@ export const TICKETS_OVERRIDE_URL = null
 //     phone: '715-555-0140',
 //     features: ['20 HDTVs', '10+ Wisconsin taps', 'Heated patio'],      // amenity chips
 //     specials: ['$3 game-day taps', 'Half-price wings while the Packers play'],
+//     logo: 'https://…/logo.jpg',                     // optional square logo — the newsletter
+//                                                     // digest image's "Game-day partner" strip
 //   }
 // (`let`, not `const`: sales demo mode below fills it with placeholder listings.)
 // The address also powers the card's "Directions" chip, and the phone taps to call.
@@ -202,6 +204,8 @@ export let WATCH_VENUES = [
     name: 'Sunrise Bar & Grill',
     tagline: 'Breakfast before the games — Saturdays 6 a.m. to noon, Sundays 7 a.m. to noon',
     images: [`${import.meta.env.BASE_URL}sunrise-flyer-2026-10.webp`],
+    // The square logo (cropped from their flyer) — the newsletter digest image's partner strip.
+    logo: `${import.meta.env.BASE_URL}sunrise-logo.jpg`,
     url: 'https://sunrisebar52.com/?utm_source=wausaupilotandreview&utm_medium=widget&utm_campaign=packers_tracker',
     address: '167310 Highway 52, Wausau, WI 54403',
     phone: '715-571-6733',
