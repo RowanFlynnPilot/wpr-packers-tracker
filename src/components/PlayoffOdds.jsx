@@ -4,6 +4,7 @@ import { SEASON, DIVISION_NAME, TEAM_NAMES } from '../config.js'
 import { fetchStandings, fetchStatsSeason, fetchSeasonGames } from '../api.js'
 import { conferenceTeams, simulate, gameStakes, oddsText, SIMS } from '../playoffSim.js'
 import Section from './Section.jsx'
+import SuperBowlRoad from './SuperBowlRoad.jsx'
 
 // SVG donut dial: value% filled, big number centered (oddsText caps at >99% / <1% — the model
 // never claims a lock).
@@ -75,6 +76,8 @@ export default function PlayoffOdds() {
       <div style={{ textAlign: 'center', fontFamily: theme.sans, fontSize: 10.5, color: theme.muted, marginTop: 8 }}>
         Our house model — {SIMS.toLocaleString()} rest-of-season simulations run in your browser, refreshed with the standings.
       </div>
+      {/* ESPN's round-by-round odds — a second, separately labeled model, never blended. */}
+      <SuperBowlRoad housePlayoffs={odds.postseason} />
     </Section>
   )
 }

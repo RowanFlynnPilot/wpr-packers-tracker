@@ -617,6 +617,29 @@ export function fetchLeagueLeaders() {
   })
 }
 
+// ESPN's Football Power Index for one team: the road to the Super Bowl as odds per round — make
+// the playoffs → divisional round → conference title game → Super Bowl → win it — plus the FPI
+// rank and projected record. The PER-TEAM doc (~2 KB gzipped, CORS-open, ESPN caches 15 min);
+// the league list is 310 KB for the same fields ×32. Values arrive in PERCENT (40.8), not
+// fractions. ESPN's model: label it as such wherever shown, never blend it with the house sim.
+const FPI_ROUNDS = ['probmakeplayoffs', 'probmakedivplayoffs', 'probmakeconfchamp', 'probmaketitlegame', 'probwintitle']
+export function fetchPowerIndex(teamId = TEAM_ID) {
+  return cached(`fpi:${teamId}`, 900000, async () => {
+    const d = await getJSON(`${CORE}/seasons/${SEASON}/powerindex/${teamId}`)
+    const v = Object.fromEntries((d.predictives || []).map((p) => [p.name, p.value]))
+    if (FPI_ROUNDS.some((k) => typeof v[k] !== 'number')) throw new Error('power index incomplete')
+    return {
+      rank: v.fpirank || null,
+      projectedWins: v.projectedw ?? null,
+      playoffs: v.probmakeplayoffs,
+      divisionalRound: v.probmakedivplayoffs,
+      conferenceGame: v.probmakeconfchamp,
+      superBowl: v.probmaketitlegame,
+      title: v.probwintitle,
+    }
+  })
+}
+
 // One team's season statistics — every category, each stat with its value, display and NFL
 // rank. Feeds the team profile tiles and the matchup comparison.
 export function fetchTeamStats(teamId) {
