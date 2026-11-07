@@ -196,14 +196,15 @@ export const TICKETS_OVERRIDE_URL = null
 // The address also powers the card's "Directions" chip, and the phone taps to call.
 // Self-host venue art in public/ (see the WPR brand assets note above); never hot-link it.
 export let WATCH_VENUES = [
-  // SOLD Oct 2026. The hero is the venue's own game-day ad (their flyer, padded to 16:9 so the
-  // card's crop can't cut its text). Its specials are dated — the creative and the specials
-  // below run THROUGH OCT. 25: swap in their next flyer (new file name, so no cache serves the
-  // old one) or drop the dated lines before then. Address, phone and hours from sunrisebar52.com.
+  // SOLD Oct 2026, EXTENDED Nov 2026. The hero is the venue's own game-day ad (their flyer,
+  // cropped out of the screenshot it arrived in and padded to 16:9 so the card's crop can't cut
+  // its text). The November creative is evergreen — "Join us for the game", specials every
+  // Saturday and Sunday, no dates — so nothing here expires. A new flyer gets a NEW file name
+  // (no cache serves the old one). Address, phone and hours from sunrisebar52.com.
   {
     name: 'Sunrise Bar & Grill',
-    tagline: 'Breakfast before the games — Saturdays 6 a.m. to noon, Sundays 7 a.m. to noon',
-    images: [`${import.meta.env.BASE_URL}sunrise-flyer-2026-10.webp`],
+    tagline: 'Game-day specials every Saturday and Sunday — breakfast in the morning, lunch and afternoon from noon',
+    images: [`${import.meta.env.BASE_URL}sunrise-flyer-2026-11.webp`],
     // The square logo (cropped from their flyer) — the newsletter digest image's partner strip.
     logo: `${import.meta.env.BASE_URL}sunrise-logo.jpg`,
     url: 'https://sunrisebar52.com/?utm_source=wausaupilotandreview&utm_medium=widget&utm_campaign=packers_tracker',
@@ -211,8 +212,8 @@ export let WATCH_VENUES = [
     phone: '715-571-6733',
     features: ['Est. 1903', 'Breakfast, lunch & dinner', 'Kitchen open until 10 p.m.'],
     specials: [
-      'Ham and cheese omelet with hash browns, $12 — Oct. 4, 17 and 18',
-      'Biscuits and gravy with hash browns, $12 — Oct. 10, 11, 24 and 25',
+      'Breakfast specials — Saturdays 6 a.m. to noon, Sundays 7 a.m. to noon',
+      'Lunch and afternoon specials starting at noon',
     ],
   },
 ]
