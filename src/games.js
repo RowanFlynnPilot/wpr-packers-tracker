@@ -71,6 +71,23 @@ export function vsDivision(games) {
   return byOpp
 }
 
+// Play types that aren't snaps — ESPN logs timeouts, quarter ends and the two-minute warning in
+// the same lists as real plays, with junk spots (down -1, yard line 0).
+export const NOT_A_SNAP = /timeout|end (of )?(period|quarter|half|game|regulation)|two-minute|coin toss/i
+
+// A summary's win-probability entries for SNAPS only. ESPN gives those non-plays their own
+// entries — usually a copy of the last value, but not always: in GB–CAR (Oct 29, 2026) an
+// "Official Timeout" carried 56.6% between two 97% plays. That one point drew a spike in the
+// film room, named a harmless 8-yard catch the game's "41-point swing" turning point, put the
+// spike on the share card, and would drop the live bar for the length of a timeout. Entries
+// match plays by playId; one with no matching play (the opening point) is kept.
+export function snapWinProbability(summary) {
+  const type = {}
+  ;[...(summary.drives?.previous || []), ...(summary.drives?.current ? [summary.drives.current] : [])]
+    .forEach((d) => (d.plays || []).forEach((p) => { type[String(p.id)] = p.type?.text || '' }))
+  return (summary.winprobability || []).filter((w) => !NOT_A_SNAP.test(type[String(w.playId)] || ''))
+}
+
 // Win-probability flow for one game, from a summary. Converts each entry to the Packers' win %
 // and flags scoring plays (matched through the drives' play list); finds the TURNING POINT —
 // the single biggest swing toward the side that won — and describes it with that play's text.
@@ -84,7 +101,7 @@ export function gameFlow(summary, packersHome) {
     .forEach((d) => (d.plays || []).forEach((p) => {
       playText[String(p.id)] = { text: p.text || '', period: p.period?.number, clock: p.clock?.displayValue }
     }))
-  const points = (summary.winprobability || []).map((e, i) => {
+  const points = snapWinProbability(summary).map((e, i) => {
     const home = e.homeWinPercentage * 100
     return {
       i,

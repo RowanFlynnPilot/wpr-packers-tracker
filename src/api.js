@@ -4,6 +4,7 @@
 // Brewers tracker's MLB client. Live feeds are NOT cached; the heavier season-wide reads
 // memoize for a short TTL so flipping between tabs doesn't refetch them.
 import { SEASON, TEAM_ID, DIVISION, DIVISION_NAME, CONFERENCE } from './config.js'
+import { NOT_A_SNAP, snapWinProbability } from './games.js'
 
 const SITE = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl'
 const SITE_V2 = 'https://site.api.espn.com/apis/v2/sports/football/nfl'
@@ -417,8 +418,6 @@ export async function fetchWeekProjections(games) {
   return map
 }
 
-// Play types that aren't snaps (ESPN logs them in the same list).
-const NOT_A_SNAP = /timeout|end (of )?(period|quarter|half|game|regulation)|two-minute|coin toss/i
 
 // The pieces of a summary the LIVE hero/mini need, distilled: the score, the Packers' win
 // probability, the current situation (down & distance), and the last few plays. The score
@@ -428,7 +427,8 @@ export function liveExtras(summary, packersHome) {
   const comps = summary.header?.competitions?.[0]?.competitors || []
   const homeC = comps.find((c) => c.homeAway === 'home')
   const awayC = comps.find((c) => c.homeAway === 'away')
-  const wp = summary.winprobability || []
+  // Snaps only — a timeout's entry once read 56.6% between two 97% plays (games.js).
+  const wp = snapWinProbability(summary)
   const lastWp = wp[wp.length - 1]
   const homePct = lastWp ? lastWp.homeWinPercentage * 100 : null
   const drives = summary.drives || {}
