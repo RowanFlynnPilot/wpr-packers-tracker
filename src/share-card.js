@@ -150,11 +150,11 @@ async function draw({ kicker, headline, stats, footnote, chips }) {
 // The drawn canvas, for previews and dev checks (the share path below is what readers use).
 export const renderStatCard = draw
 
-// Render + hand off. Returns true if a share/download actually happened (callers flip a
-// "shared" confirmation). Fail-soft: any error just returns false.
-export async function shareStatCard({ card, kicker, headline, stats, footnote, chips }) {
+// Canvas → the native share sheet where file sharing exists, a PNG download otherwise. Returns
+// true if a share/download actually happened (callers flip a "shared" confirmation). Fail-soft:
+// any error — an aborted share sheet included — just returns false.
+async function handOff(canvas, card) {
   try {
-    const canvas = await draw({ kicker, headline, stats, footnote, chips })
     const blob = await new Promise((res) => canvas.toBlob(res, 'image/png'))
     if (!blob) return false
     track('Stat Card', { card })
@@ -170,6 +170,167 @@ export async function shareStatCard({ card, kicker, headline, stats, footnote, c
     setTimeout(() => URL.revokeObjectURL(a.href), 5000)
     return true
   } catch {
-    return false // an aborted share sheet lands here too — quiet either way
+    return false
+  }
+}
+
+export async function shareStatCard({ card, kicker, headline, stats, footnote, chips }) {
+  try {
+    return await handOff(await draw({ kicker, headline, stats, footnote, chips }), card)
+  } catch {
+    return false
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
+// The FINAL-SCORE card — portrait 1080×1350 (4:5: full-width in the Facebook, Instagram and X
+// feeds, and a phone-screen of a group text). Same rules as the stat cards: type and brand
+// shapes only, no remote images (team logos would taint the canvas), so each club wears its
+// color as a bar beside its name. Top to bottom: the result, what it means ("Packers fall to
+// 4–3"), the game's win-probability line, the Packers' top performers, and the sponsor + where
+// to find the tracker. Everything comes from the final's summary the hero already holds.
+const FW = 1080
+const FH = 1350
+const spaced = (s) => s.toUpperCase().split('').join(' ') // hair-spaced caps, as on the stat cards
+
+async function drawFinal({ kicker, rows, resultLine, wp, leaders, url }) {
+  await document.fonts.ready
+  await Promise.all([
+    document.fonts.load('600 120px Fraunces'),
+    document.fonts.load('italic 400 44px Fraunces'),
+    document.fonts.load('700 26px "Public Sans"'),
+    document.fonts.load('400 26px "Public Sans"'),
+  ]).catch(() => {})
+
+  const canvas = document.createElement('canvas')
+  canvas.width = FW
+  canvas.height = FH
+  const ctx = canvas.getContext('2d')
+  const L = 70, R = FW - 70
+  ctx.textBaseline = 'alphabetic'
+
+  ctx.fillStyle = theme.green
+  ctx.fillRect(0, 0, FW, FH)
+  ctx.fillStyle = theme.gold
+  ctx.fillRect(0, 0, FW, 14)
+
+  ctx.fillStyle = theme.gold
+  ctx.font = '700 22px "Public Sans", sans-serif'
+  ctx.fillText(spaced('Wausau Pilot & Review  ·  The Packers, by the numbers'), L, 84)
+  ctx.fillStyle = '#cfd8d3'
+  ctx.font = '700 26px "Public Sans", sans-serif'
+  ctx.fillText(spaced(kicker), L, 146)
+
+  // The scoreboard: a color bar, the club, its score — the winner in white, the loser dimmed.
+  rows.forEach((r, i) => {
+    const base = 300 + i * 150
+    ctx.fillStyle = r.color
+    ctx.fillRect(L, base - 96, 14, 112)
+    // Several clubs' colors (Bears navy, Texans) vanish on the green — a hairline keeps the bar.
+    ctx.strokeStyle = 'rgba(255,255,255,0.45)'
+    ctx.lineWidth = 2
+    ctx.strokeRect(L, base - 96, 14, 112)
+    ctx.fillStyle = r.won === false ? '#93a89d' : '#ffffff'
+    ctx.font = '600 84px Fraunces, Georgia, serif'
+    ctx.fillText(r.name, L + 40, base)
+    ctx.font = '600 128px Fraunces, Georgia, serif'
+    const sw = ctx.measureText(String(r.score)).width
+    ctx.fillText(String(r.score), R - sw, base + 6)
+  })
+
+  if (resultLine) {
+    ctx.fillStyle = theme.gold
+    ctx.font = 'italic 400 46px Fraunces, Georgia, serif'
+    ctx.fillText(resultLine, L, 572)
+  }
+
+  // How it unfolded: the Packers' win probability play by play, kickoff → final whistle.
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)'
+  ctx.lineWidth = 1
+  ctx.beginPath(); ctx.moveTo(L, 620); ctx.lineTo(R, 620); ctx.stroke()
+  if (wp?.length >= 4) {
+    ctx.fillStyle = '#cfd8d3'
+    ctx.font = '700 20px "Public Sans", sans-serif'
+    ctx.fillText(spaced('How it unfolded · Packers win probability'), L, 672)
+    const top = 704, h = 230
+    const yAt = (v) => top + h - (v / 100) * h
+    // The plot starts after a gutter for the axis labels, so the line never runs over them.
+    const P = L + 52
+    const xAt = (i) => P + (i / (wp.length - 1)) * (R - P)
+    ctx.setLineDash([8, 8])
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+    ctx.beginPath(); ctx.moveTo(P, yAt(50)); ctx.lineTo(R, yAt(50)); ctx.stroke()
+    ctx.setLineDash([])
+    ctx.fillStyle = 'rgba(255,255,255,0.45)'
+    ctx.font = '400 18px "Public Sans", sans-serif'
+    ctx.textAlign = 'right'
+    ;[100, 50, 0].forEach((v) => ctx.fillText(`${v}%`, P - 12, yAt(v) + 6))
+    ctx.textAlign = 'left'
+    // Area under the line, then the line, then where it ended.
+    ctx.beginPath()
+    ctx.moveTo(xAt(0), yAt(0))
+    wp.forEach((v, i) => ctx.lineTo(xAt(i), yAt(v)))
+    ctx.lineTo(xAt(wp.length - 1), yAt(0))
+    ctx.closePath()
+    ctx.fillStyle = 'rgba(255,255,255,0.07)' // a light wash — gold at low alpha read olive on the green
+    ctx.fill()
+    ctx.beginPath()
+    wp.forEach((v, i) => (i ? ctx.lineTo(xAt(i), yAt(v)) : ctx.moveTo(xAt(i), yAt(v))))
+    ctx.strokeStyle = theme.gold
+    ctx.lineWidth = 5
+    ctx.lineJoin = 'round'
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.arc(xAt(wp.length - 1), yAt(wp[wp.length - 1]), 9, 0, Math.PI * 2)
+    ctx.fillStyle = theme.gold
+    ctx.fill()
+  }
+
+  // Top performers: category, name, line — the line yields (ellipsis) rather than overrun.
+  if (leaders?.length) {
+    ctx.fillStyle = '#cfd8d3'
+    ctx.font = '700 20px "Public Sans", sans-serif'
+    ctx.fillText(spaced('Top performers'), L, 1012)
+    leaders.slice(0, 3).forEach((l, i) => {
+      const y = 1064 + i * 52
+      ctx.fillStyle = theme.gold
+      ctx.font = '700 24px "Public Sans", sans-serif'
+      ctx.fillText(l.cat.toUpperCase(), L, y)
+      ctx.fillStyle = '#ffffff'
+      ctx.font = '600 32px Fraunces, Georgia, serif'
+      ctx.fillText(l.name, L + 196, y)
+      const nameW = ctx.measureText(l.name).width
+      ctx.fillStyle = '#cfd8d3'
+      ctx.font = '400 24px "Public Sans", sans-serif'
+      const max = R - (L + 196 + nameW + 20)
+      let text = l.line
+      while (text.length > 1 && ctx.measureText(text).width > max) text = text.slice(0, -1)
+      ctx.fillText(text === l.line ? text : `${text.slice(0, -1).trimEnd()}…`, L + 196 + nameW + 20, y)
+    })
+  }
+
+  // Footer: the title sponsor, then where to follow along.
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)'
+  ctx.lineWidth = 1
+  ctx.beginPath(); ctx.moveTo(L, 1232); ctx.lineTo(R, 1232); ctx.stroke()
+  if (SPONSORS.header) {
+    ctx.fillStyle = theme.gold
+    ctx.font = '700 22px "Public Sans", sans-serif'
+    ctx.fillText(`PRESENTED BY ${SPONSORS.header.name.toUpperCase()}`, L, 1278)
+  }
+  ctx.fillStyle = '#cfd8d3'
+  ctx.font = '400 24px "Public Sans", sans-serif'
+  ctx.fillText(`The live Packers tracker · ${url.replace(/^https?:\/\//, '').replace(/\/$/, '')}`, L, SPONSORS.header ? 1316 : 1290)
+
+  return canvas
+}
+
+export const renderFinalCard = drawFinal
+
+export async function shareFinalCard(opts) {
+  try {
+    return await handOff(await drawFinal(opts), 'final')
+  } catch {
+    return false
   }
 }

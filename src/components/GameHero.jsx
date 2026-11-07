@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { theme } from '../theme.js'
-import { TEAM_ID, TEAM_ABBRS, DIVISION, SPONSORS, SITE_URL, WPR_EMBED_URL, headshot } from '../config.js'
+import { TEAM_ID, TEAM_ABBRS, TEAM_ACCENT, DIVISION, SPONSORS, SITE_URL, WPR_EMBED_URL, headshot } from '../config.js'
 import { fetchFeaturedGame, fetchGameSummary, fetchLiveSummary, liveExtras, fetchStandingsBundle, fetchStatsSeason, fetchTeamSchedule, fetchPredictor, fetchRecentMeetings, fetchSeasonGames } from '../api.js'
-import { finals, teamGameLeaders, periodLabel, scoringText } from '../games.js'
+import { finals, teamGameLeaders, periodLabel, scoringText, gameFlow } from '../games.js'
+import { shareFinalCard } from '../share-card.js'
 import { fetchKickoffForecast } from '../weather.js'
 import { track } from '../analytics.js'
 import { useIsNarrow } from '../useIsNarrow.js'
@@ -68,6 +69,7 @@ export default function GameHero() {
   const [meetings, setMeetings] = useState(null)  // recent head-to-heads (division rivals only)
   const [fpi, setFpi] = useState(null)            // ESPN's pregame win projection (their model, labeled)
   const [copied, setCopied] = useState(false)
+  const [cardShared, setCardShared] = useState(false)
   const [pop, setPop] = useState(false)
   const prevScore = useRef(null)
   const [celebrate, setCelebrate] = useState(null) // the Packers score that just happened
@@ -336,6 +338,37 @@ export default function GameHero() {
 
   const leaders = final && summary ? teamGameLeaders(summary) : []
 
+  // What a final MEANS, not a second "Final": the record it leaves (regular season), what it
+  // means for the season (playoffs), or — before the record loads, or preseason — the result.
+  // Printed under the score and on the shareable card.
+  const ot = final && /OT/i.test(game.detail)
+  const resultLine = !final ? null
+    : game.seasonType === 3
+      ? won ? `Packers advance${ot ? ' in overtime' : ''}` : game.tied ? 'A tie' : `The Packers' season ends${ot ? ' in overtime' : ''}`
+      : finalRecord
+        ? won ? `Packers ${ot ? 'win in overtime and ' : ''}improve to ${finalRecord}`
+          : game.tied ? `A tie — the Packers are ${finalRecord}`
+            : `Packers ${ot ? 'lose in overtime and ' : ''}fall to ${finalRecord}`
+        : won ? `Packers win${ot ? ' in overtime' : ''}` : null
+
+  // The final-score card (share-card.js): the scoreboard, the result line, the game's
+  // win-probability line and the top performers — all from the summary this card already holds.
+  const shareFinal = async () => {
+    const tie = game.tied
+    const ok = await shareFinalCard({
+      kicker: [`Final${ot ? '/OT' : ''}`, weekLabel, game.home ? 'at Lambeau' : `at ${game.city || game.venue}`].filter(Boolean).join(' · '),
+      rows: [
+        { name: 'Packers', score: game.meScore, color: theme.gold, won: tie ? null : !!game.won },
+        { name: oppName, score: game.oppScore, color: TEAM_ACCENT[game.oppId] || '#888', won: tie ? null : !game.won },
+      ],
+      resultLine,
+      wp: summary ? gameFlow(summary, game.home).points.map((p) => p.wp) : null,
+      leaders,
+      url: WPR_EMBED_URL || SITE_URL,
+    })
+    if (ok) { setCardShared(true); setTimeout(() => setCardShared(false), 2500) }
+  }
+
   return (
     <div style={{ position: 'relative', overflow: 'hidden', marginTop: 22, border: `1px solid ${theme.rule}`, borderTop: `4px solid ${theme.gold}`, borderRadius: 10, background: theme.wash, padding: narrow ? '24px 14px 22px' : '30px 24px 26px', textAlign: 'center' }}>
       {/* The touchdown moment (see the effect above). A tap dismisses it early; role=status lets
@@ -496,22 +529,9 @@ export default function GameHero() {
         </div>
       )}
 
-      {final && (() => {
-        // What the result MEANS, not a second "Final": the record it leaves (regular season),
-        // what it means for the season (playoffs), or — before the record loads, or preseason —
-        // just the result.
-        const ot = /OT/i.test(game.detail)
-        const line = game.seasonType === 3
-          ? won ? `Packers advance${ot ? ' in overtime' : ''}` : game.tied ? 'A tie' : `The Packers' season ends${ot ? ' in overtime' : ''}`
-          : finalRecord
-            ? won ? `Packers ${ot ? 'win in overtime and ' : ''}improve to ${finalRecord}`
-              : game.tied ? `A tie — the Packers are ${finalRecord}`
-                : `Packers ${ot ? 'lose in overtime and ' : ''}fall to ${finalRecord}`
-            : won ? `Packers win${ot ? ' in overtime' : ''}` : null
-        return line && (
-          <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 16, color: won ? theme.green : theme.ink, margin: '0 0 18px' }}>{line}</div>
-        )
-      })()}
+      {final && resultLine && (
+        <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 16, color: won ? theme.green : theme.ink, margin: '0 0 18px' }}>{resultLine}</div>
+      )}
 
       {/* Quarter-by-quarter scoreboard */}
       {final && summary && <LinescoreStrip summary={summary} packersHome={game.home} oppName={oppName} />}
@@ -535,6 +555,19 @@ export default function GameHero() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* The final as a picture for the feed — the one share a fan actually wants after a game. */}
+      {final && (
+        <div style={{ margin: '0 0 14px' }}>
+          <button type="button" onClick={shareFinal} className="link-hover"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer', background: theme.green, color: '#fff', border: 'none', borderRadius: 20, padding: '10px 18px', fontFamily: theme.sans, fontSize: 13, fontWeight: 700, letterSpacing: '0.02em' }}>
+            <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M8 1v9M4.5 4.5 8 1l3.5 3.5M3 8.5V14h10V8.5" fill="none" stroke={theme.gold} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {cardShared ? 'Card ready to post' : 'Share the final score'}
+          </button>
         </div>
       )}
 

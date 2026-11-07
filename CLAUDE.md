@@ -287,7 +287,11 @@ mode simply wait. This is one deterministic source per phase — NOT a fallback 
   `drives.previous` and `drives.current` (same drive id) — `liveExtras` dedupes, or the hero
   prints the latest play twice. Finals are unaffected by either. Timeouts, quarter ends and the
   two-minute warning sit in the same play list with JUNK spots (down -1, yard line 0 — GB–DET,
-  Oct 2026): `NOT_A_SNAP` filters them before anything reads a field position or lists plays.
+  Oct 2026): `NOT_A_SNAP` (games.js) filters them before anything reads a field position or lists
+  plays — and `snapWinProbability()` drops their WIN-PROBABILITY entries too: one "Official
+  Timeout" carried 56.6% between two 97% plays (GB–CAR, Oct 2026), which named a harmless catch
+  the game's "41-point swing" turning point. Every WP consumer (gameFlow, liveExtras) reads
+  through it.
 - Do NOT read `/teams/9/transactions` (returns `{}`) or the core injuries list (70 refs =
   fan-out soup). The roster injuries field is the one correct source.
 - ESPN's schedule archive is solid back to 1999 — that's `ThisDay`'s range. Jan/Feb dates
@@ -394,7 +398,10 @@ offense/defense leaders w/ NFL rank chips + supporting stat lines, team profile 
 league-ladder dot plot, film room (win probability + scoring plays + chunk plays) +
 season chunk-play leaderboard + drive-DNA panel, player cards w/ season tiles +
 game-by-game spark bars + full-season game logs, shareable canvas stat cards
-(src/share-card.js — Pulse + MilestoneWatch; carries the title sponsor into feeds),
+(src/share-card.js — Pulse + MilestoneWatch; carries the title sponsor into feeds; plus the
+FINAL-SCORE card, portrait 1080×1350, from the hero's "Share the final score" button: score,
+result line, win-probability line, top performers — type + shapes only, no logos, so the canvas
+never taints),
 hero rivalry ledger on division games (fetchRecentMeetings),
 data-written storylines lede, milestone watch (paces from Week 4), FPI line on the hero,
 deep-linkable tabs (`?tab=`), three minis + the email digest PNG.)
