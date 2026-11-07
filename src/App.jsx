@@ -237,7 +237,7 @@ export default function App() {
             Data via ESPN's public NFL feeds · refreshes live. Not affiliated with or endorsed by the NFL, the Green Bay Packers, or ESPN.<br />
             {SPONSOR_DISCLAIMER && <>{SPONSOR_DISCLAIMER}<br /></>}
             Wausau Pilot &amp; Review · 715-301-5539 ·{' '}
-            <a href="sponsors.html" target="_blank" rel="noopener noreferrer" className="link-hover" style={{ color: theme.green, fontWeight: 700, textDecoration: 'none' }}>
+            <a href="sponsors.html" target="_blank" rel="noopener noreferrer" className="link-hover" style={{ display: 'inline-block', padding: '6px 0', color: theme.green, fontWeight: 700, textDecoration: 'none' }}>
               Advertise on this tracker
             </a>
           </div>
