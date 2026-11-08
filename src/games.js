@@ -94,14 +94,138 @@ export function snapWinProbability(summary) {
 // Toward the winner, not toward Green Bay: measured the Packers' way, a 35–14 loss to Atlanta
 // (Sep 2026) "turned" on a harmless first-quarter catch worth +7%. `toward` says whose way it
 // swung ('gb' | 'opp'); a game that ends level takes the biggest swing either way.
-// Every play's text and game clock, by play id (the WP entries carry only the id).
+// Every play's text, game clock and type, by play id (the WP entries carry only the id).
 function playIndex(summary) {
   const playText = {}
   ;[...(summary.drives?.previous || []), ...(summary.drives?.current ? [summary.drives.current] : [])]
     .forEach((d) => (d.plays || []).forEach((p) => {
-      playText[String(p.id)] = { text: p.text || '', period: p.period?.number, clock: p.clock?.displayValue }
+      playText[String(p.id)] = {
+        text: p.text || '', period: p.period?.number, clock: p.clock?.displayValue,
+        type: p.type?.text || '', yards: p.statYardage ?? null, down: p.start?.down ?? null, scoring: !!p.scoringPlay,
+      }
     }))
   return playText
+}
+
+// GSIS play-by-play names players "J.Love"; the box score has "Jordan Love". The lookup is keyed
+// by first initial (and first two letters — GSIS writes some players "Ja.Williams") + surname,
+// across both teams; a key two different players share is left out rather than guessed.
+function boxNames(summary) {
+  const map = {}
+  const put = (key, name) => { map[key] = key in map && map[key] !== name ? null : name }
+  ;(summary.boxscore?.players || []).forEach((side) => (side.statistics || []).forEach((cat) =>
+    (cat.athletes || []).forEach(({ athlete: a }) => {
+      if (!a?.firstName || !a?.lastName || !a.displayName) return
+      // GSIS drops suffixes: the box score's "Penix Jr." is "M.Penix" in the play text.
+      const last = a.lastName.replace(/\s+(Jr\.?|Sr\.?|II|III|IV|V)$/, '')
+      put(`${a.firstName[0]}.${last}`, a.displayName)
+      put(`${a.firstName.slice(0, 2)}.${last}`, a.displayName)
+    })))
+  return map
+}
+
+// A GSIS name: an initial or two, a dot, a surname whose further words start Capital-lowercase
+// (so "M.Price MUFFS" stops at Price, "A.Van Ginkel" doesn't stop at Van), "St. Brown" allowed.
+const NAME = String.raw`([A-Z][a-z]?\.(?:St\.\s)?[A-Z][A-Za-z'’-]*(?:\s[A-Z][a-z][A-Za-z'’-]*)*)`
+const re = (s) => new RegExp(s.replaceAll('NAME', NAME))
+const possessive = (name) => (name.endsWith('s') ? `${name}’` : `${name}’s`)
+
+// One play in a reader's words — "Jordan Love’s 53-yard touchdown pass to Christian Watson" —
+// for the film room's turning point. Covers the plays that turn games (completions, runs,
+// picks, sacks, fumbles, kicks, returns, fourth-down stops); anything else returns null and the
+// caller shows ESPN's play-by-play as before. A replay reversal reads from the final ruling.
+export function plainPlay(play, summary) {
+  if (!play?.text) return null
+  const names = boxNames(summary)
+  const full = (n) => (n.includes('.') ? names[n] || n.replace('.', '. ') : n)
+  // The final ruling after a reversal, minus a LEADING "(Shotgun)" / "X reported in as eligible."
+  // (the eligibility note can also come after the play — that one must stay put, or the strip
+  // eats the play itself).
+  const formation = /^\s*\([^)]*\)\s*/
+  const text = play.text.split(/REVERSED\./).pop()
+    .replace(formation, '')
+    .replace(/^(?:\d+-)?[A-Z][a-z]?\.[A-Za-z'’ .-]+? reported in as eligible\.\s*/, '')
+    .replace(formation, '').trim()
+  const type = (play.type || '').toLowerCase()
+  const main = describePlay(play, text, type, full)
+  // An accepted flag on top of a play rides along ("…, plus an unnecessary roughness penalty on
+  // Jarvis Brownlee Jr."); a flag that IS the play stands alone. Declined flags read "Penalty
+  // on" in mixed case and are ignored.
+  const flag = re(String.raw`PENALTY on [A-Z]{2,3}-NAME, ([^,]+),`).exec(text)
+  if (!flag) return main
+  const foul = flag[2].toLowerCase()
+  if (main && !/penalty/.test(type)) return `${main}, plus ${/^[aeiou]/.test(foul) ? 'an' : 'a'} ${foul} penalty on ${full(flag[1])}`
+  return `the ${foul} penalty on ${full(flag[1])}`
+}
+
+function describePlay(play, text, type, full) {
+  const y = Math.abs(Number(play.yards) || Number((/for (-?\d+) yards?/.exec(text) || [])[1]) || 0)
+  const yd = y ? `${y}-yard ` : ''
+  const recovered = re(String.raw`RECOVERED by [A-Z]{2,3}-NAME`).exec(text)
+  let m
+  // ESPN's scoring-summary shorthand ("George Pickens 28 Yd pass from Dak Prescott (… Kick)",
+  // "Jayden Reed Pass From Jordan Love for 70 Yds", "Jaire Alexander 35 Yd Interception Return").
+  if ((m = /^(.+?) (\d+) Yd pass from (.+?)(?: \(|$)/i.exec(text))) return `${possessive(m[3])} ${m[2]}-yard touchdown pass to ${m[1]}`
+  if ((m = /^(.+?) Pass From (.+?) for (\d+) Yds?/i.exec(text))) return `${possessive(m[2])} ${m[3]}-yard touchdown pass to ${m[1]}`
+  if ((m = /^(.+?) (\d+) Yd (Interception|Fumble|Punt|Kickoff) Return/i.exec(text))) return `${possessive(m[1])} ${m[2]}-yard ${m[3].toLowerCase()} return for a touchdown`
+  if ((m = /^(.+?) (\d+) Yd (?:Run|Rush)/i.exec(text))) return `${possessive(m[1])} ${m[2]}-yard touchdown run`
+  if ((m = /^(.+?) (\d+) Yd Field Goal/i.exec(text))) return `${possessive(m[1])} ${m[2]}-yard field goal`
+
+  // By what happened, not ESPN's type label: a pick whose returner fumbles is typed
+  // "Fumble Recovery (Own)", a muffed punt is sometimes just "Punt".
+  if ((m = re('NAME pass .*?INTERCEPTED by NAME').exec(text))) {
+    return `${possessive(full(m[2]))} interception of ${full(m[1])}${play.scoring ? ', returned for a touchdown' : ''}`
+  }
+  // A muff: "RECOVERED by" (capitals) is the other team's recovery; the receiving team falling on
+  // its own muff is written in lower case — still the muff, not "a 3-yard punt return".
+  if ((m = re('NAME MUFFS').exec(text))) {
+    return `${possessive(full(m[1]))} muffed ${/kicks/.test(text) ? 'kickoff' : 'punt'}${recovered ? `, recovered by ${full(recovered[1])}` : ''}`
+  }
+  // A lost fumble, whatever ESPN typed the play: the ball carrier is the LAST player named before
+  // "FUMBLES" outside the tacklers' parentheses — the receiver on a catch ("J.Love pass … to
+  // C.Watson … FUMBLES" is Watson's), the returner on a kick, the runner on a run. Leading with
+  // the first name credited Jordan Love with Watson's fumble and called a fumbled kickoff a
+  // "19-yard kickoff return".
+  if (/FUMBLES/.test(text) && recovered) {
+    const before = text.split('FUMBLES')[0].replace(/\([^)]*\)/g, '')
+    const who = [...before.matchAll(new RegExp(NAME, 'g'))].map((x) => x[1]).at(-1)
+    if (who) {
+      const rec = full(recovered[1])
+      if ((m = re('^NAME sacked').exec(before))) return `the strip-sack of ${full(m[1])}, recovered by ${rec}`
+      const on = /\bkicks\b/.test(before) ? ' on the kickoff return' : /\bpunts\b/.test(before) ? ' on the punt return'
+        : / pass /.test(before) && !/Lateral/.test(before) ? ' after the catch' : ''
+      return `${possessive(full(who))} fumble${on}, recovered by ${rec}`
+    }
+  }
+  if (/kicks onside/.test(text) && (m = re('^NAME kicks').exec(text))) {
+    return `${possessive(full(m[1]))} onside kick${recovered ? `, recovered by ${full(recovered[1])}` : ''}`
+  }
+  if ((m = re('^NAME sacked').exec(text))) {
+    const by = re(String.raw`\((?:sack split by )?NAME`).exec(text)
+    return by ? `${possessive(full(by[1]))} sack of ${full(m[1])}` : `the sack of ${full(m[1])}`
+  }
+  if (/field goal|blocked field goal/.test(type) && (m = re(String.raw`^NAME (\d+) yard field goal is (GOOD|No Good|BLOCKED)`).exec(text))) {
+    const how = m[3] === 'GOOD' ? '' : m[3] === 'BLOCKED' ? 'blocked ' : 'missed '
+    return `${possessive(full(m[1]))} ${how}${m[2]}-yard field goal`
+  }
+  // Returns: the returner is the name after the kick's own sentence. statYardage on a return is
+  // the return, but read the "for N yards" of the return itself to be sure.
+  if ((m = re(String.raw`(kicks|punts) .*?\.\s+NAME (?:to|for|pushed|ran)[^.]*?for (\d+) yards?`).exec(text))) {
+    const kind = m[1] === 'kicks' ? 'kickoff' : 'punt'
+    return /touchdown/.test(type) || play.scoring
+      ? `${possessive(full(m[2]))} ${m[3]}-yard ${kind} return for a touchdown`
+      : `${possessive(full(m[2]))} ${m[3]}-yard ${kind} return`
+  }
+  if (/^(passing touchdown|pass reception)$/.test(type) && (m = re('^NAME pass .*?to NAME').exec(text))) {
+    return `${possessive(full(m[1]))} ${yd}${/touchdown/.test(type) ? 'touchdown pass' : 'completion'} to ${full(m[2])}`
+  }
+  if (/^(rushing touchdown|rush)$/.test(type) && y > 0 && (m = re('^NAME').exec(text))) {
+    return `${possessive(full(m[1]))} ${yd}${/touchdown/.test(type) ? 'touchdown run' : 'run'}`
+  }
+  if (/incompletion/.test(type) && (m = re('^NAME pass incomplete').exec(text))) {
+    return play.down === 4 ? `${possessive(full(m[1]))} incompletion on fourth down` : `${possessive(full(m[1]))} incomplete pass`
+  }
+  return null
 }
 
 // The game's biggest win-probability swings SO FAR, either way, biggest first — the live hero's
@@ -115,7 +239,9 @@ export function swingPlays(summary, packersHome, n = 3) {
     const delta = Math.round(points[i].wp - points[i - 1].wp)
     if (Math.abs(delta) >= 5 && playText[points[i].playId]) out.push({ i, delta, ...playText[points[i].playId] })
   }
+  // In a reader's words where the play parses, like the film room's turning point.
   return out.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, n)
+    .map((s) => ({ ...s, plain: plainPlay(s, summary) }))
 }
 
 export function gameFlow(summary, packersHome) {
@@ -136,8 +262,9 @@ export function gameFlow(summary, packersHome) {
   for (let i = 1; i < points.length; i++) {
     const delta = points[i].wp - points[i - 1].wp
     const swing = dir ? delta * dir : Math.abs(delta)
-    if (!biggest || swing > biggest.swing) biggest = { delta, swing, toward: delta >= 0 ? 'gb' : 'opp', ...points[i], ...(playText[points[i].playId] || {}) }
+    if (!biggest || swing > biggest.swing) biggest = { delta, swing, from: points[i - 1].wp, toward: delta >= 0 ? 'gb' : 'opp', ...points[i], ...(playText[points[i].playId] || {}) }
   }
+  if (biggest) biggest.plain = plainPlay(biggest, summary)
   return { points, biggest: biggest && biggest.swing >= 4 ? biggest : null }
 }
 

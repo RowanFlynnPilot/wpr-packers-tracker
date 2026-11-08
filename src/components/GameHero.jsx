@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { theme } from '../theme.js'
-import { TEAM_ID, TEAM_ABBRS, TEAM_ACCENT, DIVISION, SPONSORS, SITE_URL, WPR_EMBED_URL, SEASON, headshot } from '../config.js'
+import { TEAM_ID, TEAM_ABBRS, TEAM_ACCENT, DIVISION, DIVISION_NAME, SPONSORS, SITE_URL, WPR_EMBED_URL, SEASON, headshot } from '../config.js'
 import { fetchFeaturedGame, fetchGameSummary, fetchLiveSummary, liveExtras, fetchStandingsBundle, fetchStandings, fetchStatsSeason, fetchTeamSchedule, fetchPredictor, fetchRecentMeetings, fetchSeasonGames } from '../api.js'
 import { finals, teamGameLeaders, periodLabel, scoringText, gameFlow } from '../games.js'
-import { CLINCH } from '../playoffSim.js'
+import { CLINCH, conferenceTeams, openRace, resultMove, oddsText } from '../playoffSim.js'
 import { shareFinalCard } from '../share-card.js'
 import { fetchKickoffForecast } from '../weather.js'
 import { track } from '../analytics.js'
@@ -11,7 +11,7 @@ import { useIsNarrow } from '../useIsNarrow.js'
 import Sponsor from './Sponsor.jsx'
 import TeamLogo from './TeamLogo.jsx'
 import LiveField from './LiveField.jsx'
-import GameStakes from './GameStakes.jsx'
+import GameStakes, { useGameStakes, MIN_SWING } from './GameStakes.jsx'
 
 const REFRESH_MS = 30000 // live football moves fast; ESPN caches a few seconds.
 const IDLE_REFRESH_MS = 120000 // pre-game/final cadence — keeps the hero able to flip to Live on its own.
@@ -159,6 +159,39 @@ export default function GameHero() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- id + final pin the read
   }, [final, gameId])
 
+  // Final (regular season): what the result DID to the odds — "Playoff odds 66% → 79%" — the
+  // other half of the pregame stakes line (playoffSim.js resultMove; `after` is the dials'
+  // number). Whether the standings already count this game decides which table is "before": the
+  // table's record matches the schedule's record after the game once they do, the record before
+  // it until then; anything else (a mid-update mismatch) skips the line rather than guess.
+  const [move, setMove] = useState(null)
+  useEffect(() => {
+    setMove(null)
+    if (!final || !game || game.seasonType !== 2 || game.tied || !finalRecord) return
+    let alive = true
+    ;(async () => {
+      if (await fetchStatsSeason() !== SEASON) return
+      const rows = await fetchStandings(SEASON)
+      const teams = conferenceTeams(rows)
+      const me = rows.find((r) => r.id === TEAM_ID)
+      const metric = openRace(me?.clincher)
+      if (!teams || !me || !metric) return
+      const table = `${me.wins}–${me.losses}${me.ties ? `–${me.ties}` : ''}`
+      const [w, l, t = 0] = finalRecord.split('–').map(Number)
+      const pre = `${w - (game.won ? 1 : 0)}–${l - (game.won ? 0 : 1)}${t ? `–${t}` : ''}`
+      const counted = table === finalRecord ? true : table === pre ? false : null
+      if (counted === null) return
+      const m = resultMove(teams, game.oppId, !!game.won, counted)
+      if (alive) setMove({ before: m.before[metric], after: m.after[metric], other: m.other[metric], metric })
+    })().catch(() => {})
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- id + record pin the run
+  }, [final, gameId, finalRecord])
+
+  // Live (regular season): the same stakes as the pregame line, re-read as the league's other
+  // results land — the hero blends them with the live win probability below.
+  const liveStakes = useGameStakes(game, live)
+
   // While live, the summary's score is fresher than the schedule feed's (see liveExtras).
   const meScore = live && extras?.meScore != null ? extras.meScore : game?.meScore
   const oppScore = live && extras?.oppScore != null ? extras.oppScore : game?.oppScore
@@ -288,13 +321,15 @@ export default function GameHero() {
     : null
   const venueLine = !live && !final ? [game.venue, game.tv && `${game.tv}`].filter(Boolean).join(' · ') : null
 
-  // Pre-game countdown: hours+minutes inside 12 hours, days beyond that (football is weekly).
+  // Pre-game countdown: hours+minutes inside 48 hours, days beyond that. Inside two days "1 day"
+  // was a lie in either direction — Saturday evening it read "Kickoff in 1 day" for a game 20
+  // hours off (Nov 2026 critique); "Kickoff in 20h 14m" is the number a fan plans around.
   // A flexed game's placeholder time supports a day count but never an hours countdown — that
   // would contradict the "kickoff TBD" line beside it.
   const msToStart = state === 'pre' ? new Date(game.date).getTime() - now : null
   let countdown = null
-  if (msToStart != null && msToStart > 0 && (game.timeValid || msToStart >= 12 * 3600 * 1000)) {
-    if (msToStart < 12 * 3600 * 1000) {
+  if (msToStart != null && msToStart > 0 && (game.timeValid || msToStart >= 48 * 3600 * 1000)) {
+    if (msToStart < 48 * 3600 * 1000) {
       const h = Math.floor(msToStart / 3600000)
       const m = Math.floor((msToStart % 3600000) / 60000)
       countdown = h > 0 ? `Kickoff in ${h}h ${m}m` : `Kickoff in ${m}m`
@@ -389,8 +424,16 @@ export default function GameHero() {
             : `Packers ${ot ? 'lose in overtime and ' : ''}fall to ${finalRecord}`
         : won ? `Packers win${ot ? ' in overtime' : ''}` : null
 
-  // The final-score card (share-card.js): the scoreboard, the result line, the game's
-  // win-probability line and the top performers — all from the summary this card already holds.
+  // The odds move in words, for the block under the result line and the share card. A move of
+  // under a point isn't worth a line.
+  const oddsMove = move && Math.abs(move.after - move.before) >= 1 ? {
+    label: move.metric === 'division' ? `${DIVISION_NAME} title odds` : 'Playoff odds',
+    before: oddsText(move.before),
+    after: oddsText(move.after),
+  } : null
+
+  // The final-score card (share-card.js): the scoreboard, the result line, the odds move, the
+  // game's win-probability line and the top performers — all from data this card already holds.
   const shareFinal = async () => {
     const tie = game.tied
     const ok = await shareFinalCard({
@@ -400,6 +443,7 @@ export default function GameHero() {
         { name: oppName, score: game.oppScore, color: TEAM_ACCENT[game.oppId] || '#888', won: tie ? null : !game.won },
       ],
       resultLine,
+      odds: oddsMove,
       wp: summary ? gameFlow(summary, game.home).points.map((p) => p.wp) : null,
       leaders,
       url: WPR_EMBED_URL || SITE_URL,
@@ -470,7 +514,7 @@ export default function GameHero() {
           {countdown && (
             <>
               {(weekLabel || when) && ' · '}
-              <strong style={{ color: theme.ink, fontWeight: 700 }}>{countdown}</strong>
+              <strong style={{ color: theme.ink, fontWeight: 700, whiteSpace: 'nowrap' }}>{countdown}</strong>
             </>
           )}
         </div>
@@ -580,6 +624,28 @@ export default function GameHero() {
                 <span style={{ color: theme.muted }}>{oppName} {100 - extras.mePct}%</span>
               </div>
               {renderSpark(extras.wpSeries, extras.swings)}
+              {/* What the game is doing to the season, as it happens: the house model's win and
+                  loss odds weighted by the live win probability — "Playoff odds right now 71% ·
+                  79% if they hold on". Same numbers as the pregame stakes line. */}
+              {liveStakes && (() => {
+                const k = liveStakes.metric
+                const win = liveStakes.win[k], loss = liveStakes.loss[k]
+                if (win - loss < MIN_SWING) return null
+                const p = extras.mePct / 100
+                const lead = (meScore ?? 0) - (oppScore ?? 0)
+                return (
+                  <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${theme.rule}`, fontFamily: theme.sans, fontSize: 12, color: theme.muted, lineHeight: 1.5 }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: 8 }}>
+                      <span style={{ fontSize: 10.5, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>{k === 'division' ? `${DIVISION_NAME} odds` : 'Playoff odds'} right now</span>
+                      <strong style={{ fontFamily: theme.serif, fontSize: 20, color: theme.ink }}>{oddsText(Math.round(p * win + (1 - p) * loss))}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: theme.green, fontWeight: 700 }}>{oddsText(win)}</span> {lead > 0 ? 'if they hold on' : lead < 0 ? 'if they come back' : 'with a win'}
+                      {' · '}<span style={{ color: theme.red, fontWeight: 700 }}>{oddsText(loss)}</span> if not · our model
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
           )}
           {/* The plays that have moved the needle most so far — the turning-point list a fan
@@ -595,7 +661,9 @@ export default function GameHero() {
                   </span>
                   <span>
                     <span style={{ color: theme.goldText, fontWeight: 700, fontSize: 10.5, textTransform: 'uppercase' }}>{periodLabel(s.period)} {s.clock}</span>{' '}
-                    {s.text.length > 100 ? s.text.slice(0, 99).replace(/\s+\S*$/, '') + '…' : s.text}
+                    {s.plain
+                      ? s.plain.charAt(0).toUpperCase() + s.plain.slice(1)
+                      : s.text.length > 100 ? s.text.slice(0, 99).replace(/\s+\S*$/, '') + '…' : s.text}
                   </span>
                 </div>
               ))}
@@ -619,6 +687,33 @@ export default function GameHero() {
       {final && resultLine && (
         <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 16, color: won ? theme.green : theme.ink, margin: '0 0 18px' }}>{resultLine}</div>
       )}
+
+      {/* What the result did to the season — the loop the pregame stakes line opened. */}
+      {final && oddsMove && (() => {
+        const up = move.after >= move.before
+        const color = up ? theme.green : theme.red
+        const pos = (v) => `${Math.min(99.5, Math.max(0.5, v))}%`
+        const lo = Math.min(move.before, move.after), hi = Math.max(move.before, move.after)
+        return (
+          <div style={{ maxWidth: 360, margin: '-4px auto 20px' }}>
+            <div style={{ fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: theme.muted, fontWeight: 700 }}>{oddsMove.label}</div>
+            <div style={{ fontFamily: theme.serif, fontSize: narrow ? 26 : 30, color: theme.ink, marginTop: 2, whiteSpace: 'nowrap' }}>
+              {oddsMove.before} <span aria-hidden="true" style={{ color: theme.muted }}>→</span><span className="sr-only"> to </span>{' '}
+              <strong style={{ color, fontWeight: 600 }}>{oddsMove.after}</strong>
+              <span style={{ fontFamily: theme.sans, fontSize: 12.5, fontWeight: 700, color, marginLeft: 10 }}>{up ? 'up' : 'down'} {Math.abs(Math.round(move.after - move.before))}</span>
+            </div>
+            {/* 0–100: the move as a segment ending in a dot, the result that didn't happen as a faint tick. */}
+            <div aria-hidden="true" style={{ position: 'relative', height: 6, borderRadius: 3, background: theme.rule, margin: '10px 0 8px' }}>
+              <div style={{ position: 'absolute', top: 0, bottom: 0, left: pos(lo), width: `calc(${pos(hi)} - ${pos(lo)})`, background: color, opacity: 0.75, borderRadius: 3 }} />
+              <div style={{ position: 'absolute', top: -4, bottom: -4, left: pos(move.other), width: 2, marginLeft: -1, background: theme.muted, opacity: 0.55 }} />
+              <div style={{ position: 'absolute', top: -3, width: 12, height: 12, marginLeft: -6, left: pos(move.after), borderRadius: '50%', background: color, boxShadow: `0 0 0 2px ${theme.wash}` }} />
+            </div>
+            <div style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted }}>
+              {won ? 'A loss would have left them at' : 'A win would have put them at'} {oddsText(move.other)} · our house model
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Quarter-by-quarter scoreboard */}
       {final && summary && <LinescoreStrip summary={summary} packersHome={game.home} oppName={oppName} />}

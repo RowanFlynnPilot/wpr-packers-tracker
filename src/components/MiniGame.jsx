@@ -178,12 +178,13 @@ export default function MiniGame() {
     ? new Date(game.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()
     : `${isToday ? 'TODAY' : new Date(game.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()} · ${game.timeValid ? new Date(game.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : 'TBD'}${game.tv ? ` · ${game.tv}` : ''}`
 
-  // Countdown chip: minutes/hours inside 12 hours, days beyond (football is weekly). A flexed
-  // game's placeholder time never gets an hours countdown next to its "TBD" kicker.
+  // Countdown chip: hours + minutes inside 48 hours, days beyond — the same rule as the hero
+  // (a game 20 hours off is not "1 DAY"). A flexed game's placeholder time never gets an hours
+  // countdown next to its "TBD" kicker.
   const msToStart = state === 'pre' ? new Date(game.date).getTime() - now : null
   let countdown = null
-  if (msToStart != null && msToStart > 0 && (game.timeValid || msToStart >= 12 * 3600 * 1000)) {
-    if (msToStart < 12 * 3600 * 1000) {
+  if (msToStart != null && msToStart > 0 && (game.timeValid || msToStart >= 48 * 3600 * 1000)) {
+    if (msToStart < 48 * 3600 * 1000) {
       const h = Math.floor(msToStart / 3600000)
       const m = Math.floor((msToStart % 3600000) / 60000)
       countdown = h > 0 ? `${h}H ${m}M` : `${m}M`
@@ -213,7 +214,7 @@ export default function MiniGame() {
           {kicker}{!live && !final ? (game.seasonType === 3 ? ' · PLAYOFFS' : game.week ? ` · WK ${game.week}` : '') : ''}
         </div>
         {countdown && (
-          <div style={{ display: 'inline-block', background: theme.gold, color: theme.green, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', borderRadius: 10, padding: '2px 9px', marginTop: 5 }}>
+          <div style={{ display: 'inline-block', background: theme.gold, color: theme.green, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', borderRadius: 10, padding: '2px 9px', marginTop: 5, whiteSpace: 'nowrap' }}>
             KICKOFF IN {countdown}
           </div>
         )}

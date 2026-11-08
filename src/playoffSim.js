@@ -125,6 +125,18 @@ export function gameOutcomes(teams, homeId, awayId, seed, counted = null) {
   }
 }
 
+// What a Packers final DID to the odds, for the final hero: the table without the game
+// (`before`), with it (`after`), and with the other result (`other`). All three run on the seed
+// of the table WITH the result — the seed the playoff dials use once the standings post it — so
+// `after` is exactly the dial's number. `counted` says the standings already include the game.
+export function resultMove(teams, oppId, gbWon, counted) {
+  const [w, l] = gbWon ? [TEAM_ID, oppId] : [oppId, TEAM_ID]
+  const post = counted ? teams : withResult(teams, w, l)
+  const pre = withResult(post, w, l, -1)
+  const seed = seedFrom(post)
+  return { before: simulate(pre, seed), after: simulate(post, seed), other: simulate(withResult(pre, l, w), seed) }
+}
+
 // Which of the Packers' odds is still an open question, from ESPN's clinch mark: the playoff
 // spot until it's clinched, then the division, then nothing (the sim doesn't model seeding, and
 // once ESPN says a race is settled no simulated "97%" should argue). Eliminated: nothing.

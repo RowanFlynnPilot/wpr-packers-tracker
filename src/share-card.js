@@ -193,7 +193,7 @@ const FW = 1080
 const FH = 1350
 const spaced = (s) => s.toUpperCase().split('').join(' ') // hair-spaced caps, as on the stat cards
 
-async function drawFinal({ kicker, rows, resultLine, wp, leaders, url }) {
+async function drawFinal({ kicker, rows, resultLine, odds, wp, leaders, url }) {
   await document.fonts.ready
   await Promise.all([
     document.fonts.load('600 120px Fraunces'),
@@ -238,10 +238,22 @@ async function drawFinal({ kicker, rows, resultLine, wp, leaders, url }) {
     ctx.fillText(String(r.score), R - sw, base + 6)
   })
 
+  // The result line, and under it what the result did to the season ("PLAYOFF ODDS 66% → 79%");
+  // with the odds line the result line rises to make room above the rule at 620.
   if (resultLine) {
     ctx.fillStyle = theme.gold
     ctx.font = 'italic 400 46px Fraunces, Georgia, serif'
-    ctx.fillText(resultLine, L, 572)
+    ctx.fillText(resultLine, L, odds ? 548 : 572)
+  }
+  if (odds) {
+    ctx.fillStyle = '#cfd8d3'
+    ctx.font = '700 20px "Public Sans", sans-serif'
+    const label = spaced(odds.label)
+    ctx.fillText(label, L, 600)
+    const labelW = ctx.measureText(label).width // measured in the label's own font
+    ctx.fillStyle = '#ffffff'
+    ctx.font = '600 32px Fraunces, Georgia, serif'
+    ctx.fillText(`${odds.before}  →  ${odds.after}`, L + labelW + 22, 602)
   }
 
   // How it unfolded: the Packers' win probability play by play, kickoff → final whistle.

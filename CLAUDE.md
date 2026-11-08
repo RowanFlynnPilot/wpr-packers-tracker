@@ -91,7 +91,9 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   `rulesApproved` is flipped.
 - `mini*.html` + `src/mini*.jsx` — extra Vite entries: compact sidebar/in-article embeds,
   each its own page so they stay lightweight. `MiniGame.jsx` (featured-game scoreboard w/
-  kickoff countdown, live situation + win probability, player of the game),
+  kickoff countdown — hours + minutes inside 48 hours, days beyond, the same rule as the hero;
+  "1 day" for a game 20 hours off misled both ways — live situation + win probability, player
+  of the game),
   `MiniStandings.jsx` (NFC North table), `MiniDigest.jsx` (newsletter combo: last final w/
   top performers, next kickoff w/ TV, standings; in `?image` mode — the email PNG only — a
   "Game-day partner" strip for each sold WATCH_VENUES venue sits above the title sponsor's
@@ -183,7 +185,17 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
     `Leaderboard` (week/season standings, top 25 + the reader's own row, the winner once a
     week is final; fail-soft, owns its Section) render only when `CONTEST.api` is set.
   - `FilmRoom` — game picker; hands one cached summary to `GameFlow` (win-probability
-    chart), `ScoringPlays`, `BigPlays`.
+    chart), `ScoringPlays`, `BigPlays`. The turning point reads in plain English — "Ty'Ron
+    Hopper's interception of Bryce Young lifted the Packers' chances from 67% to 76%." — with
+    ESPN's play-by-play under it. `plainPlay()` in games.js rewrites GSIS text ("J.Love pass deep
+    middle to C.Watson…") through the game's box-score names (first initial or two + surname,
+    suffixes dropped; a key two players share is left out, not guessed), describing what HAPPENED
+    rather than ESPN's type label: a pick returned and fumbled is an interception, a lost fumble
+    belongs to the LAST player named before "FUMBLES" (the receiver, the returner — never the
+    passer), a muff is a muff whoever recovers, a replay reversal reads from the final ruling, an
+    accepted flag rides along ("…, plus an unnecessary roughness penalty on …"). ~95% of 5+-point
+    swing plays across 2024–26 parse; the rest show the raw text as before. The live hero's
+    "Biggest swings" list uses the same rewrite.
   - `PlayoffOdds` shows a 4,000-sim rest-of-season Monte Carlo run IN THE BROWSER — the pure
     model lives in `src/playoffSim.js` (win% regressed toward .500 by `BALLAST` = 12 games — the
     NFL's regression constant; normal-approx binomial; 4 division winners + 3 wild cards) — a
@@ -195,7 +207,15 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
     a win look worse than a loss). `GameStakes` puts that on the pregame hero ("This game is
     worth 33 points of playoff odds", Win → 71% / Loss → 38%). Regular season only; hidden when
     the swing < 2. PlayoffOdds no longer repeats it (its "This week" line was a Season-tab echo);
-    the rooting guide's Packers row carries it, same seed, same numbers.
+    the rooting guide's Packers row carries it, same seed, same numbers. The stakes come from
+    `useGameStakes(game, active)` (GameStakes.jsx — re-read every 2 min, memoized by table +
+    opponent), which the LIVE hero reuses for "Playoff odds right now 71% · 79% if they hold on ·
+    48% if not": the win/loss odds weighted by the live win probability. AFTER a final the hero
+    closes the loop with "Playoff odds 50% → 66%" (+ a 0–100 track, "a loss would have left them
+    at 32%") from `resultMove()` in playoffSim.js: before/after/other on the seed of the table
+    WITH the result, so `after` is exactly the dials' number. Whether the standings already count
+    the game is read from GB's record vs the schedule's (after-game record = counted, before-game
+    = not yet, anything else = skip). The final-score share card prints the same line.
   - `RootingGuide` ("Who to root for in Week N") — every game of the week that touches the NFC
     table, run both ways through `gameOutcomes()` on the table's ONE seed (`seedFrom`), biggest
     swing first, the Packers' own game pinned on top as the yardstick; AFC-only games are

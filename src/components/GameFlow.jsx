@@ -38,12 +38,31 @@ export default function GameFlow({ flow, oppName }) {
           <div style={{ fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>
             The turning point{biggest.period ? ` · ${periodLabel(biggest.period)} ${biggest.clock || ''}` : ''}
           </div>
-          <div style={{ fontFamily: theme.serif, fontSize: 15, color: theme.ink, lineHeight: 1.45, marginTop: 4 }}>
-            {biggest.text}{' '}
-            <span style={{ color: theme.muted, fontFamily: theme.sans, fontSize: 12 }}>
-              (a {Math.round(Math.abs(biggest.delta))}-point swing to the {biggest.toward === 'gb' ? 'Packers' : oppName})
-            </span>
-          </div>
+          {/* In a reader's words when the play parses (games.js plainPlay) — "Jordan Love's
+              53-yard touchdown pass to Christian Watson lifted the Packers' chances from 68% to
+              86%." — with ESPN's play-by-play underneath for the detail; otherwise the
+              play-by-play itself, as before. */}
+          {biggest.plain ? (
+            <>
+              <div style={{ fontFamily: theme.serif, fontSize: 16, color: theme.ink, lineHeight: 1.45, marginTop: 4, textWrap: 'pretty' }}>
+                {/* An aside in the phrase (", recovered by …") closes with a comma before the verb. */}
+                {biggest.plain.charAt(0).toUpperCase() + biggest.plain.slice(1)}{biggest.plain.includes(',') ? ',' : ''}{' '}
+                {biggest.delta >= 0 ? 'lifted' : 'dropped'} the Packers’ chances from{' '}
+                <strong>{Math.round(biggest.from)}%</strong> to{' '}
+                <strong style={{ color: biggest.delta >= 0 ? theme.green : theme.red }}>{Math.round(biggest.wp)}%</strong>.
+              </div>
+              <div style={{ fontFamily: theme.sans, fontSize: 11.5, color: theme.muted, lineHeight: 1.45, marginTop: 6 }}>
+                {biggest.text.length > 160 ? biggest.text.slice(0, 159).replace(/\s+\S*$/, '') + '…' : biggest.text}
+              </div>
+            </>
+          ) : (
+            <div style={{ fontFamily: theme.serif, fontSize: 15, color: theme.ink, lineHeight: 1.45, marginTop: 4 }}>
+              {biggest.text}{' '}
+              <span style={{ color: theme.muted, fontFamily: theme.sans, fontSize: 12 }}>
+                (a {Math.round(Math.abs(biggest.delta))}-point swing to the {biggest.toward === 'gb' ? 'Packers' : oppName})
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>
