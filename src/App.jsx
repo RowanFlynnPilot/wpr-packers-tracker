@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { theme } from './theme.js'
-import { SPONSOR_DISCLAIMER, WPR_NEWS, SPONSORS, SEASON, SPONSOR_INQUIRY, WPR_BADGE, PICKEM_TAB } from './config.js'
+import { SPONSOR_DISCLAIMER, WPR_NEWS, SPONSORS, SEASON, SPONSOR_INQUIRY, WPR_BADGE, PICKEM_TAB, DIVISION_NAME } from './config.js'
 import { fetchStandingsBundle, fetchDivisionSchedules, fetchSeasonGames } from './api.js'
 import { lastFinalGame } from './games.js'
 import { initAnalytics, track } from './analytics.js'
@@ -30,6 +30,8 @@ import Leaders from './components/Leaders.jsx'
 import MilestoneWatch from './components/MilestoneWatch.jsx'
 import TeamProfile from './components/TeamProfile.jsx'
 import PlayoffOdds from './components/PlayoffOdds.jsx'
+import PlayoffPicture from './components/PlayoffPicture.jsx'
+import RootingGuide from './components/RootingGuide.jsx'
 import RoadAhead from './components/RoadAhead.jsx'
 import FilmRoom from './components/FilmRoom.jsx'
 import Pickem from './components/Pickem.jsx'
@@ -60,6 +62,30 @@ const visibleTabs = () => {
   return PICKEM_TAB || demo ? TABS : TABS.filter((t) => t.id !== 'pickem')
 }
 
+// The Season tab tells the story the week is in, so its sections reorder by phase (Nov 2026
+// critique: on game day the matchup and injuries sat below three screens of standings; the
+// night after a final, the race sat below a preview of a game six days off).
+//   offseason — last season's finals + the countdown (the race sections wait for Week 1)
+//   week      — between games: where things stand and the race lead; the next matchup trails
+//   gameday   — kickoff inside 48 hours: the matchup and this week's injuries move up
+//   live      — a Packers game is on: the rest of the league's scoreboard right under the lede
+// The hero, the lede and the sold game-day venues hold the top three spots in every phase, so
+// a sponsor's placement never slides around under it.
+const SEASON_ORDER = {
+  offseason: ['hero', 'story', 'watch', 'matchup', 'standings', 'preseason', 'race', 'picture', 'odds', 'guide', 'road'],
+  week: ['hero', 'story', 'watch', 'standings', 'picture', 'odds', 'guide', 'race', 'road', 'matchup'],
+  gameday: ['hero', 'story', 'watch', 'matchup', 'injuries', 'standings', 'picture', 'odds', 'guide', 'race', 'road'],
+  live: ['hero', 'story', 'watch', 'guide', 'standings', 'picture', 'odds', 'race', 'road', 'matchup'],
+}
+const GAMEDAY_MS = 48 * 3600 * 1000
+
+function seasonPhase(bundle, games) {
+  if (!bundle || bundle.season !== SEASON || !games) return 'offseason'
+  if (games.some((g) => g.state === 'in')) return 'live'
+  const next = games.find((g) => g.state === 'pre' && g.seasonType !== 1)
+  return next && new Date(next.date) - Date.now() < GAMEDAY_MS ? 'gameday' : 'week'
+}
+
 // Subtle "Updated Xm ago" stamp; re-renders every 30s so the relative time stays current.
 function UpdatedStamp({ at }) {
   const [, setTick] = useState(0)
@@ -84,7 +110,7 @@ export default function App() {
   // Race, form strips); other modules fetch their own feeds.
   const [bundle, setBundle] = useState(null)
   const [schedules, setSchedules] = useState(null)
-  const [opener, setOpener] = useState(null) // the next regular-season kickoff (countdown chip)
+  const [teamGames, setTeamGames] = useState(null) // the Packers' season: phase + countdown chip
   const [updatedAt, setUpdatedAt] = useState(null)
   // Per-feed failure flags so a failed FIRST load shows an error state instead of an eternal
   // skeleton. Once a feed has data, later failures keep the prior data (flag cleared on success).
@@ -114,7 +140,7 @@ export default function App() {
       // flags flip — otherwise the race chart skeletons forever instead of showing its error.
       .catch(() => { flag('standings', true); flag('schedules', true) })
     fetchSeasonGames()
-      .then(({ games }) => setOpener(games.find((g) => g.seasonType === 2 && g.state === 'pre') || null))
+      .then(({ games }) => setTeamGames(games))
       .catch(() => {})
   }, [])
 
@@ -145,6 +171,39 @@ export default function App() {
 
   const lastGame = schedules ? lastFinalGame(schedules) : null
   const raceSeason = bundle?.season ?? SEASON
+  const opener = teamGames ? teamGames.find((g) => g.seasonType === 2 && g.state === 'pre') || null : null
+  const phase = seasonPhase(bundle, teamGames)
+
+  // The Season tab's sections, keyed so a phase change REORDERS them without remounting (the
+  // hero keeps its live state across the flip to "live").
+  const seasonBlocks = {
+    hero: <GameHero key="hero" />,
+    story: <Storylines key="story" />,
+    // Sold game-day venues ride on the default tab too, after the lede so the game card and its
+    // story stay together; the full guide is on Schedule.
+    watch: <WhereToWatch key="watch" compact />,
+    matchup: <Matchup key="matchup" />,
+    injuries: <InjuryReport key="injuries" weekOnly />,
+    // The Pulse figures and the division table were two sections saying "where things stand"
+    // one after the other; they're one now.
+    standings: (
+      <Section key="standings" kicker={DIVISION_NAME} title="Where things stand">
+        <Pulse bundle={bundle} lastGame={lastGame} opener={opener} error={errors.standings} />
+        {bundle && <div style={{ marginTop: 26 }}><Standings bundle={bundle} schedules={schedules} /></div>}
+        <VsNorth />
+      </Section>
+    ),
+    preseason: <PreseasonSlate key="preseason" />,
+    picture: <PlayoffPicture key="picture" bundle={bundle} />,
+    odds: <PlayoffOdds key="odds" />,
+    guide: <RootingGuide key="guide" />,
+    race: (
+      <Section key="race" kicker="The division race" title={`${DIVISION_NAME}, week by week`} sponsor={SPONSORS.race} slot="race">
+        <Race schedules={schedules} season={raceSeason} error={errors.schedules} />
+      </Section>
+    ),
+    road: <RoadAhead key="road" />,
+  }
 
   // ?demo pages look identical to the live page — a forwarded demo link explains itself.
   const demo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('demo')
@@ -181,21 +240,8 @@ export default function App() {
         <TabBar tabs={visibleTabs()} active={tab} onChange={changeTab} />
 
         {tab === 'season' && (
-          <div role="tabpanel" id="panel-season" aria-labelledby="tab-season">
-            <GameHero />
-            <Storylines />
-            {/* Sold game-day venues ride on the default tab too, after the lede so the game card
-                and its story stay together; the full guide (and its upsell) is on Schedule. */}
-            <WhereToWatch compact />
-            <Matchup />
-            <Section kicker="Season pulse" title="Where things stand"><Pulse bundle={bundle} lastGame={lastGame} opener={opener} error={errors.standings} /></Section>
-            <PreseasonSlate />
-            <Section kicker="NFC North" title="The standings"><Standings bundle={bundle} schedules={schedules} error={errors.standings} /><VsNorth /></Section>
-            <Section kicker="The division race" title="NFC North, week by week" sponsor={SPONSORS.race} slot="race">
-              <Race schedules={schedules} season={raceSeason} error={errors.schedules} />
-            </Section>
-            <PlayoffOdds />
-            <RoadAhead />
+          <div role="tabpanel" id="panel-season" aria-labelledby="tab-season" data-phase={phase}>
+            {SEASON_ORDER[phase].map((k) => seasonBlocks[k])}
           </div>
         )}
 

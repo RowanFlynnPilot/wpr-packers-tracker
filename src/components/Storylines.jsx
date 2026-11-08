@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
 import { TEAM_ID, SEASON, DIVISION, DIVISION_NAME, TEAM_NAMES, CAMP_OPEN } from '../config.js'
-import { fetchStandingsBundle, fetchSeasonGames, fetchTeamSchedule, fetchGameSummary, fetchPredictor } from '../api.js'
+import { fetchStandingsBundle, fetchSeasonGames, fetchTeamSchedule, fetchGameSummary } from '../api.js'
 import { gamesBack, teamGameLeaders, scheduleNotes } from '../games.js'
 import Section from './Section.jsx'
 
 // "The storylines" — a short editorial lede written by the data itself: deterministic template
 // sentences filled from feeds the page already reads (no backend, no generator — same trick as
 // the road-ahead verdict, at paragraph length). Phase-aware: in season it recaps the last game,
-// places the team in the race, and frames the next kickoff (with ESPN's FPI number when
-// published); in the offseason it wraps last season and points at the opener. Owns its
+// places the team in the race, and frames the next kickoff (the hero carries the FPI number);
+// in the offseason it wraps last season and points at the opener. Owns its
 // Section; fail-soft — missing pieces drop sentences, never the page.
 const ord = (n) => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]) }
 const fmtDate = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
@@ -189,10 +189,10 @@ export default function Storylines() {
         // beat) and returns with the recap once the final lands.
         const live = games.some((g) => g.state === 'in')
         const next = live ? null : regGames.find((g) => g.state === 'pre') || games.find((g) => g.seasonType === 3 && g.state === 'pre')
+        // No FPI number here: the hero right above prints it for the same game, and the lede
+        // repeating it was one of the Season tab's echoes (Nov 2026 critique).
         if (next) {
-          let fpi = null
-          try { fpi = await fetchPredictor(next.id, next.home) } catch { /* line renders without it */ }
-          out.push(<>Next: {next.home ? 'the' : 'at the'} <strong>{TEAM_NAMES[next.oppId] || next.oppName}</strong>{next.home ? ' at Lambeau' : ''}, {kickoffPhrase(next)}{fpi != null ? <> — ESPN's Football Power Index makes it a {fpi}% Packers game</> : null}.</>)
+          out.push(<>Next: {next.home ? 'the' : 'at the'} <strong>{TEAM_NAMES[next.oppId] || next.oppName}</strong>{next.home ? ' at Lambeau' : ''}, {kickoffPhrase(next)}.</>)
         }
       }
 

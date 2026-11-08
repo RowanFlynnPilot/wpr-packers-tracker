@@ -4,7 +4,7 @@
 // Brewers tracker's MLB client. Live feeds are NOT cached; the heavier season-wide reads
 // memoize for a short TTL so flipping between tabs doesn't refetch them.
 import { SEASON, TEAM_ID, DIVISION, DIVISION_NAME, CONFERENCE } from './config.js'
-import { NOT_A_SNAP, snapWinProbability } from './games.js'
+import { NOT_A_SNAP, snapWinProbability, swingPlays } from './games.js'
 
 const SITE = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl'
 const SITE_V2 = 'https://site.api.espn.com/apis/v2/sports/football/nfl'
@@ -263,6 +263,9 @@ export function fetchStandings(season) {
             divRecord: dash(s.divisionRecord?.displayValue),
             homeRecord: dash(s.Home?.displayValue),
             roadRecord: dash(s.Road?.displayValue),
+            // ESPN's clinch mark once the math settles it: z division, y wild card, * the #1
+            // seed, e eliminated — '' until then (verified on the 2025 finals, Nov 2026).
+            clincher: s.clincher?.displayValue || '',
           })
         })
       })
@@ -455,6 +458,8 @@ export function liveExtras(summary, packersHome) {
     field: fieldState(last, drive),
     // The Packers' win probability play by play, for the hero's sparkline.
     wpSeries: wp.map((w) => Math.round(packersHome ? w.homeWinPercentage * 100 : 100 - w.homeWinPercentage * 100)),
+    // The three plays that have moved it most so far (indices into wpSeries, for the marks).
+    swings: swingPlays(summary, packersHome),
     // The latest score — the hero celebrates a NEW one (by id) when it's Green Bay's.
     lastScore: lastScore ? {
       id: lastScore.id,

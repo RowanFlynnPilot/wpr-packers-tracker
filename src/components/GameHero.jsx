@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { theme } from '../theme.js'
-import { TEAM_ID, TEAM_ABBRS, TEAM_ACCENT, DIVISION, SPONSORS, SITE_URL, WPR_EMBED_URL, headshot } from '../config.js'
-import { fetchFeaturedGame, fetchGameSummary, fetchLiveSummary, liveExtras, fetchStandingsBundle, fetchStatsSeason, fetchTeamSchedule, fetchPredictor, fetchRecentMeetings, fetchSeasonGames } from '../api.js'
+import { TEAM_ID, TEAM_ABBRS, TEAM_ACCENT, DIVISION, SPONSORS, SITE_URL, WPR_EMBED_URL, SEASON, headshot } from '../config.js'
+import { fetchFeaturedGame, fetchGameSummary, fetchLiveSummary, liveExtras, fetchStandingsBundle, fetchStandings, fetchStatsSeason, fetchTeamSchedule, fetchPredictor, fetchRecentMeetings, fetchSeasonGames } from '../api.js'
 import { finals, teamGameLeaders, periodLabel, scoringText, gameFlow } from '../games.js'
+import { CLINCH } from '../playoffSim.js'
 import { shareFinalCard } from '../share-card.js'
 import { fetchKickoffForecast } from '../weather.js'
 import { track } from '../analytics.js'
@@ -90,8 +91,17 @@ export default function GameHero() {
     Notification.requestPermission().then((p) => { if (p === 'granted') { setAlertsOn(true); persist(true) } })
   }
 
+  // ESPN's clinch mark for Green Bay ('' until there is one) rides the same poll: the badge, and
+  // the one-time takeover below, appear within a couple of minutes of the math settling.
+  const [clinch, setClinch] = useState('')
+  const [clinchMoment, setClinchMoment] = useState(null)
+
   const load = useCallback(() => {
     fetchFeaturedGame().then((g) => { setGame(g); setError(false) }).catch(() => setError(true))
+    fetchStatsSeason()
+      .then((s) => (s === SEASON ? fetchStandings(SEASON) : null))
+      .then((rows) => { if (rows) setClinch(rows.find((r) => r.id === TEAM_ID)?.clincher || '') })
+      .catch(() => {})
   }, [])
 
   useEffect(() => { load() }, [load])
@@ -187,6 +197,26 @@ export default function GameHero() {
     const t = setTimeout(() => setCelebrate(null), 5200)
     return () => clearTimeout(t)
   }, [celebrate])
+
+  // The CLINCHED moment: the first time this device sees a new clinch level (a playoff spot, then
+  // the division, then the No. 1 seed), the card takes the same gold sweep as a touchdown, once.
+  // Remembered per season in localStorage; without storage there's no takeover at all — it would
+  // otherwise replay on every visit. The badge under the kicker carries the news after that.
+  useEffect(() => {
+    const level = CLINCH[clinch]
+    if (!level) return
+    const key = `packersClinch:${SEASON}`
+    let seen
+    try { seen = Number(localStorage.getItem(key)) || 0 } catch { return }
+    if (level.rank <= seen) return
+    try { localStorage.setItem(key, String(level.rank)) } catch { return }
+    setClinchMoment(level)
+  }, [clinch])
+  useEffect(() => {
+    if (!clinchMoment) return
+    const t = setTimeout(() => setClinchMoment(null), 6500)
+    return () => clearTimeout(t)
+  }, [clinchMoment])
 
   // Fire an alert once when the featured game flips to live (only if opted in + permitted).
   // wasLive starts null so a page opened mid-game sets the baseline silently — only an
@@ -316,7 +346,10 @@ export default function GameHero() {
 
   // The game so far under the win-probability bar: the Packers' chances play by play, kickoff
   // at the left edge, now at the right, the 50% line dashed. Thinned to ~120 points.
-  const renderSpark = (series) => {
+  // The swing plays (below) are marked on it: a dot where each landed, green when it swung Green
+  // Bay's way, red when it didn't. HTML dots over the SVG — it stretches to the card's width
+  // (preserveAspectRatio none), which would squash SVG circles into ovals.
+  const renderSpark = (series, swings = []) => {
     if (!series || series.length < 4) return null
     const step = Math.max(1, Math.ceil(series.length / 120))
     const pts = series.filter((_, i) => i % step === 0 || i === series.length - 1)
@@ -324,11 +357,16 @@ export default function GameHero() {
     const line = pts.map((v, i) => `${((i / (pts.length - 1)) * W).toFixed(1)},${(H - (v / 100) * H).toFixed(1)}`).join(' ')
     return (
       <div aria-hidden="true" style={{ marginTop: 8 }}>
-        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" width="100%" height={H} style={{ display: 'block' }}>
-          <line x1="0" x2={W} y1={H / 2} y2={H / 2} stroke={theme.muted} strokeOpacity="0.45" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
-          <polyline points={`0,${H} ${line} ${W},${H}`} fill={theme.green} fillOpacity="0.08" stroke="none" />
-          <polyline points={line} fill="none" stroke={theme.green} strokeWidth="1.75" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-        </svg>
+        <div style={{ position: 'relative' }}>
+          <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" width="100%" height={H} style={{ display: 'block' }}>
+            <line x1="0" x2={W} y1={H / 2} y2={H / 2} stroke={theme.muted} strokeOpacity="0.45" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+            <polyline points={`0,${H} ${line} ${W},${H}`} fill={theme.green} fillOpacity="0.08" stroke="none" />
+            <polyline points={line} fill="none" stroke={theme.green} strokeWidth="1.75" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          </svg>
+          {swings.filter((s) => s.i < series.length).map((s) => (
+            <span key={s.i} style={{ position: 'absolute', left: `${(s.i / (series.length - 1)) * 100}%`, top: H - (series[s.i] / 100) * H, width: 8, height: 8, margin: '-4px 0 0 -4px', borderRadius: '50%', background: s.delta > 0 ? theme.green : theme.red, boxShadow: `0 0 0 2px ${theme.wash}` }} />
+          ))}
+        </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: theme.sans, fontSize: 10.5, color: theme.muted, marginTop: 2 }}>
           <span>Kickoff</span><span>Now</span>
         </div>
@@ -371,10 +409,16 @@ export default function GameHero() {
 
   return (
     <div style={{ position: 'relative', overflow: 'hidden', marginTop: 22, border: `1px solid ${theme.rule}`, borderTop: `4px solid ${theme.gold}`, borderRadius: 10, background: theme.wash, padding: narrow ? '24px 14px 22px' : '30px 24px 26px', textAlign: 'center' }}>
-      {/* The touchdown moment (see the effect above). A tap dismisses it early; role=status lets
-          a screen reader hear what happened. */}
+      {/* What the gold moments say, for screen readers: one status region that is ALWAYS mounted
+          and changes its text — a role=status element inserted already filled is often never
+          announced (Nov 2026 critique). The visual overlays themselves are aria-hidden. */}
+      <div role="status" className="sr-only">
+        {celebrate ? `Packers ${celebrate.kind}. Packers ${meScore}, ${oppName} ${oppScore}.`
+          : clinchMoment ? `Clinched. ${clinchMoment.line}.` : ''}
+      </div>
+      {/* The touchdown moment (see the effect above). A tap dismisses it early. */}
       {celebrate && (
-        <div role="status" className="td-moment" onClick={() => setCelebrate(null)}
+        <div aria-hidden="true" className="td-moment" onClick={() => setCelebrate(null)}
           style={{ position: 'absolute', inset: 0, zIndex: 2, background: theme.gold, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: narrow ? 8 : 10, padding: '20px 18px', cursor: 'pointer' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: theme.sans, fontSize: 12, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: theme.green }}>
             <TeamLogo id={TEAM_ID} size={22} /> Packers
@@ -388,12 +432,36 @@ export default function GameHero() {
           </div>
         </div>
       )}
+      {/* The clinch moment — same sweep, once per level per device (effect above). A touchdown
+          in progress keeps the stage; the clinch waits its turn. */}
+      {clinchMoment && !celebrate && (
+        <div aria-hidden="true" className="td-moment" onClick={() => setClinchMoment(null)}
+          style={{ position: 'absolute', inset: 0, zIndex: 2, background: theme.gold, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: narrow ? 8 : 10, padding: '20px 18px', cursor: 'pointer' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: theme.sans, fontSize: 12, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: theme.green }}>
+            <TeamLogo id={TEAM_ID} size={22} /> Packers · {SEASON}
+          </div>
+          <div className="td-word" style={{ fontFamily: theme.serif, fontWeight: 700, fontSize: narrow ? 46 : 72, lineHeight: 0.95, letterSpacing: '0.01em', textTransform: 'uppercase', color: theme.green }}>
+            Clinched
+          </div>
+          <div style={{ fontFamily: theme.serif, fontSize: narrow ? 19 : 23, color: theme.green, maxWidth: 460, lineHeight: 1.25, textWrap: 'balance' }}>
+            {clinchMoment.line}
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div style={{ fontFamily: theme.sans, fontSize: 12, letterSpacing: '0.2em', textTransform: 'uppercase', color: live ? theme.goldText : theme.muted, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
         {live && <span className="live-dot" style={{ width: 9, height: 9, borderRadius: '50%', background: theme.gold }} />}
         {/* ESPN's "1:47 - 1st" → "1:47 · 1st", the separator the rest of the card uses. */}
         {kicker}{live && game.detail ? ` · ${game.detail.replace(/ - /g, ' · ')}` : ''}
       </div>
+      {/* Once the math settles it, the card says so on every visit — a quiet gold chip. */}
+      {CLINCH[clinch] && (
+        <div style={{ marginTop: 8 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: theme.gold, color: theme.green, fontFamily: theme.sans, fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '4px 11px', borderRadius: 12 }}>
+            <span aria-hidden="true">✓</span> {CLINCH[clinch].badge}
+          </span>
+        </div>
+      )}
       {(when || weekLabel || countdown) && (
         <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, marginTop: 6 }}>
           {[weekLabel, when].filter(Boolean).join(' · ')}
@@ -511,7 +579,26 @@ export default function GameHero() {
                 <span style={{ color: theme.green, fontWeight: 700 }}>Packers {extras.mePct}%</span>
                 <span style={{ color: theme.muted }}>{oppName} {100 - extras.mePct}%</span>
               </div>
-              {renderSpark(extras.wpSeries)}
+              {renderSpark(extras.wpSeries, extras.swings)}
+            </div>
+          )}
+          {/* The plays that have moved the needle most so far — the turning-point list a fan
+              arriving at halftime wants. Two on a phone, three on wider screens. */}
+          {extras.swings?.length > 0 && (
+            <div style={{ maxWidth: 460, margin: '14px auto 0', textAlign: 'left' }}>
+              <div style={{ fontFamily: theme.sans, fontSize: 10.5, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.muted, marginBottom: 4 }}>Biggest win-probability swings so far</div>
+              {extras.swings.slice(0, narrow ? 2 : 3).map((s, i) => (
+                <div key={s.i} style={{ display: 'grid', gridTemplateColumns: '44px 1fr', columnGap: 8, alignItems: 'baseline', fontFamily: theme.sans, fontSize: 12.5, color: theme.ink, lineHeight: 1.4, padding: '5px 0', borderTop: i ? `1px solid ${theme.rule}` : 'none' }}>
+                  <span style={{ fontFamily: theme.serif, fontSize: 15, fontWeight: 700, color: s.delta > 0 ? theme.green : theme.red, textAlign: 'right' }}>
+                    <span className="sr-only">{`Packers win probability ${s.delta > 0 ? 'up' : 'down'} ${Math.abs(s.delta)} points:`}</span>
+                    <span aria-hidden="true">{s.delta > 0 ? '+' : '−'}{Math.abs(s.delta)}</span>
+                  </span>
+                  <span>
+                    <span style={{ color: theme.goldText, fontWeight: 700, fontSize: 10.5, textTransform: 'uppercase' }}>{periodLabel(s.period)} {s.clock}</span>{' '}
+                    {s.text.length > 100 ? s.text.slice(0, 99).replace(/\s+\S*$/, '') + '…' : s.text}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
           {extras.plays?.length > 0 && (

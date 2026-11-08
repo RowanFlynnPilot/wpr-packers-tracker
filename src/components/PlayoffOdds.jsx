@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
-import { SEASON, DIVISION_NAME, TEAM_NAMES } from '../config.js'
-import { fetchStandings, fetchStatsSeason, fetchSeasonGames } from '../api.js'
-import { conferenceTeams, simulate, gameStakes, oddsText, SIMS } from '../playoffSim.js'
+import { SEASON, DIVISION_NAME, DIVISION, TEAM_ID } from '../config.js'
+import { fetchStandings, fetchStatsSeason } from '../api.js'
+import { conferenceTeams, simulate, oddsText, SIMS } from '../playoffSim.js'
 import Section from './Section.jsx'
 import SuperBowlRoad from './SuperBowlRoad.jsx'
 
 // SVG donut dial: value% filled, big number centered (oddsText caps at >99% / <1% — the model
-// never claims a lock).
-function Dial({ value, label, color }) {
+// never claims a lock). `settled` ('in' | 'out') is ESPN's clinch math overruling the sim: once a
+// spot is clinched or gone, the dial says so instead of a simulated 97%.
+function Dial({ value, label, color, settled }) {
   const R = 44, C = 2 * Math.PI * R
-  const text = oddsText(value)
+  if (settled) value = settled === 'in' ? 100 : 0
+  const text = settled === 'in' ? 'In' : settled === 'out' ? 'Out' : oddsText(value)
   return (
     // 140px apiece so the two dials sit side by side even in the ~310px WPR embed — at 170 they
     // stacked on every phone and took ~550px of the Season tab.
@@ -26,14 +28,14 @@ function Dial({ value, label, color }) {
   )
 }
 
-// "The January picture" — playoff + division odds from the in-browser simulation (playoffSim.js),
-// plus what the NEXT game is worth (the same stakes the pregame hero shows, from the same seed,
-// so the two surfaces agree to the point). Owns its Section; renders nothing until the CURRENT
-// season has results (a coin-flip preseason sim would be noise, so the section simply waits
-// for Week 1), and never on failure.
+// "The January picture" — playoff + division odds from the in-browser simulation (playoffSim.js).
+// What this week's games are worth lives in the rooting guide below it (the Packers' own game
+// first), so this section no longer repeats a "This week" line. Owns its Section; renders
+// nothing until the CURRENT season has results (a coin-flip preseason sim would be noise, so
+// the section simply waits for Week 1), and never on failure.
 export default function PlayoffOdds() {
   const [odds, setOdds] = useState(null)
-  const [next, setNext] = useState(null) // { game, stakes }
+  const [settled, setSettled] = useState({}) // { postseason, division }: 'in' | 'out' per ESPN
 
   useEffect(() => {
     let alive = true
@@ -43,41 +45,36 @@ export default function PlayoffOdds() {
       // result" opens the gate a month early. fetchStatsSeason flips to SEASON only once
       // a regular-season game is final — exactly when the sim stops being a coin flip.
       if (await fetchStatsSeason() !== SEASON) return
-      const teams = conferenceTeams(await fetchStandings(SEASON))
+      const rows = await fetchStandings(SEASON)
+      const teams = conferenceTeams(rows)
       if (!alive || !teams) return
       setOdds(simulate(teams))
-      const { games } = await fetchSeasonGames()
-      const game = games.find((g) => g.seasonType === 2 && g.state === 'pre')
-      if (alive && game) setNext({ game, stakes: gameStakes(teams, game.oppId) })
+      const mark = rows.find((r) => r.id === TEAM_ID)?.clincher || ''
+      const rivalWon = rows.some((r) => DIVISION[r.id] && r.id !== TEAM_ID && (r.clincher === 'z' || r.clincher === '*'))
+      setSettled({
+        postseason: mark === 'e' ? 'out' : mark ? 'in' : null,
+        division: mark === 'z' || mark === '*' ? 'in' : mark === 'e' || rivalWon ? 'out' : null,
+      })
     })().catch(() => {})
     return () => { alive = false }
   }, [])
 
   if (!odds) return null
-  const swing = next ? next.stakes.win.postseason - next.stakes.loss.postseason : 0
 
   return (
     <Section kicker="The January picture" title="Playoff odds">
       <div style={{ display: 'flex', justifyContent: 'center', gap: '20px 16px', flexWrap: 'wrap' }}>
-        <Dial value={odds.postseason} label="Make the playoffs" color={theme.green} />
-        <Dial value={odds.division} label={`Win the ${DIVISION_NAME}`} color={theme.goldText} />
+        <Dial value={odds.postseason} label={settled.postseason === 'in' ? 'Playoff spot clinched' : settled.postseason === 'out' ? 'Eliminated' : 'Make the playoffs'} color={theme.green} settled={settled.postseason} />
+        <Dial value={odds.division} label={settled.division === 'in' ? `${DIVISION_NAME} champions` : `Win the ${DIVISION_NAME}`} color={theme.goldText} settled={settled.division} />
       </div>
       <div style={{ textAlign: 'center', fontFamily: theme.sans, fontSize: 12, color: theme.muted, marginTop: 14 }}>
         Median simulated finish: <span style={{ color: theme.green, fontWeight: 700 }}>{odds.medianWins} wins</span>
       </div>
-      {next && swing >= 2 && (
-        <div style={{ maxWidth: 520, margin: '14px auto 0', textAlign: 'center', fontFamily: theme.serif, fontSize: 16, color: theme.ink, lineHeight: 1.45, borderTop: `1px solid ${theme.rule}`, paddingTop: 12 }}>
-          <span style={{ fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700, marginRight: 8 }}>This week</span>
-          {next.game.home ? 'vs' : 'at'} the {TEAM_NAMES[next.game.oppId] || next.game.oppName}: a win puts the odds at{' '}
-          <strong style={{ color: theme.green }}>{oddsText(next.stakes.win.postseason)}</strong>, a loss at{' '}
-          <strong style={{ color: theme.red }}>{oddsText(next.stakes.loss.postseason)}</strong>.
-        </div>
-      )}
       <div style={{ textAlign: 'center', fontFamily: theme.sans, fontSize: 10.5, color: theme.muted, marginTop: 8 }}>
         Our house model — {SIMS.toLocaleString()} rest-of-season simulations run in your browser, refreshed with the standings.
       </div>
       {/* ESPN's round-by-round odds — a second, separately labeled model, never blended. */}
-      <SuperBowlRoad housePlayoffs={odds.postseason} />
+      <SuperBowlRoad housePlayoffs={settled.postseason ? null : odds.postseason} />
     </Section>
   )
 }

@@ -18,7 +18,9 @@ const SEVERITY = { out: 3, 'injured reserve': 4, ir: 4, doubtful: 2, questionabl
 const sev = (status) => SEVERITY[(status || '').toLowerCase()] ?? 1
 const isIR = (status) => sev(status) === 4
 
-export default function InjuryReport() {
+// `weekOnly`: just this week's game statuses — the Season tab's game-day slot. The long-term
+// injured-reserve list stays on the Schedule tab's full report.
+export default function InjuryReport({ weekOnly = false }) {
   const [players, setPlayers] = useState(null)
 
   useEffect(() => {
@@ -48,11 +50,12 @@ export default function InjuryReport() {
 
   const groups = [
     { label: 'This week', list: players.filter((p) => !isIR(p.status)) },
-    { label: 'Injured reserve', list: players.filter((p) => isIR(p.status)) },
+    { label: 'Injured reserve', list: weekOnly ? [] : players.filter((p) => isIR(p.status)) },
   ].filter((g) => g.list.length)
+  if (!groups.length) return null
 
   return (
-    <Section kicker="The trainer's room" title="Injury report">
+    <Section kicker="The trainer's room" title={weekOnly ? "This week's injury report" : 'Injury report'}>
       {groups.map((g, gi) => (
       <div key={g.label} style={{ marginTop: gi ? 18 : 0 }}>
       {groups.length > 1 && (
@@ -78,7 +81,9 @@ export default function InjuryReport() {
       </div>
       ))}
       <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 12 }}>
-        {players.length} on the report · this week's game statuses first, most serious first
+        {weekOnly
+          ? `${groups[0].list.length} with a game status this week · injured reserve is on the Schedule tab`
+          : `${players.length} on the report · this week's game statuses first, most serious first`}
       </div>
     </Section>
   )

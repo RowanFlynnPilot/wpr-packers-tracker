@@ -101,8 +101,14 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   Keep them tiny — no service worker, no recharts.
 - Sections are grouped into tabs in `App.jsx` (`TABS` + `TabBar.jsx`): Season (hero +
   storylines + SOLD game-day venues — `<WhereToWatch compact />`, side-by-side rows, its own
-  click slot `where-to-watch-season`, no upsell — + matchup + pulse + standings/vs-North +
-  race + playoff odds + road ahead),
+  click slot `where-to-watch-season`, no upsell — + matchup + "Where things stand" (Pulse
+  figures + division table + vs-North, ONE section since Nov 2026) + playoff picture + playoff
+  odds + rooting guide + race + road ahead; game day adds this week's injuries). The Season tab
+  REORDERS BY PHASE (`SEASON_ORDER` + `seasonPhase` in App.jsx, keyed blocks so nothing
+  remounts): `offseason`, `week` (race first, matchup last), `gameday` (kickoff < 48h: matchup
+  + `InjuryReport weekOnly` move up), `live` (the rooting guide right under the venues). Hero,
+  lede and the sold venues keep the top three spots in EVERY phase — a sponsor's placement
+  doesn't slide around. Don't flatten this back into one fixed order.
   Schedule (game-day guide — sold venues only, NO open-listing upsell beside a paying bar;
   inventory sells from sponsors.html — + full season list w/ box scores; upcoming games expand
   into `GamePreview`: both teams' season leaders from the game's own pregame summary + the last
@@ -187,8 +193,30 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
     31% with nothing having happened). `gameStakes()` runs it three times — as is, the next game
     a win, a loss — on ONE shared seed (common random numbers: on separate seeds, noise could make
     a win look worse than a loss). `GameStakes` puts that on the pregame hero ("This game is
-    worth 33 points of playoff odds", Win → 71% / Loss → 38%) and PlayoffOdds repeats it as a
-    "This week" line — same seed, same numbers. Regular season only; hidden when the swing < 2.
+    worth 33 points of playoff odds", Win → 71% / Loss → 38%). Regular season only; hidden when
+    the swing < 2. PlayoffOdds no longer repeats it (its "This week" line was a Season-tab echo);
+    the rooting guide's Packers row carries it, same seed, same numbers.
+  - `RootingGuide` ("Who to root for in Week N") — every game of the week that touches the NFC
+    table, run both ways through `gameOutcomes()` on the table's ONE seed (`seedFrom`), biggest
+    swing first, the Packers' own game pinned on top as the yardstick; AFC-only games are
+    skipped (they can't move an NFC-only model). Live rows show the score colored by whether
+    it's going Green Bay's way; finals say ✓/✗. A final the standings ALREADY count (board
+    records == table records — a final's scoreboard records are post-game) is taken back out
+    before both outcomes are run; one the table hasn't caught up with is run as pending; a
+    mismatch either way is skipped. Results memoize by seed + game and the first pass yields
+    between games (~10 ms a sim on a laptop, ~25 sims a week). Polls 1 min while a slate game
+    is live, 5 min otherwise. Week from `fetchPickemWeek`, so it sits out the postseason.
+  - CLINCH: ESPN's standings `clincher` (z division, y/x playoff spot, * No. 1 seed, e out)
+    rides the standings rows. `openRace()` in playoffSim.js says which odds are still a
+    question — the playoff spot, then the division once the spot is clinched, then nothing — and
+    GameStakes + RootingGuide measure THAT race; PlayoffOdds' dials print In/Out instead of a
+    simulated 97% once ESPN has settled it. The hero wears a gold "✓ Clinched…" chip and, once
+    per device per clinch level (localStorage `packersClinch:SEASON`), the touchdown-style gold
+    takeover. No storage → no takeover (it would replay on every visit).
+  - `PlayoffPicture` — "If the season ended today": seeds 1–7 as wild-card weekend pairs them
+    (2v7, 3v6, 4v5, 1 rests), the hunt behind them, one sentence on the Packers vs the cut line.
+    Seeds are ESPN's `playoffSeed` (tiebreakers applied — don't re-derive them). Reads App's
+    bundle; flips to "The NFC playoff field" when every team has played 17.
   - `RoadAhead` rates each remaining opponent by its current record BLENDED with last season's,
     the latter counting as `PRIOR_GAMES` = 6 games (a win% correlates ~⅓ year to year, which is
     the reliability of six current games under the same 12-game constant). One formula for every
@@ -200,7 +228,11 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
     PACKERS terms by `fieldState` in api.js: GB's end zone is always on the left, so the picture
     never flips with possession. The hero around it adds a win-probability sparkline, gold
     scoring plays, and the TOUCHDOWN moment — a 5-second gold sweep on a NEW Packers scoring play
-    (by id; the first summary after page load only sets the baseline, so nothing replays).
+    (by id; the first summary after page load only sets the baseline, so nothing replays). Under
+    the sparkline: "Biggest win-probability swings so far" (`swingPlays` in games.js — snap WP
+    only, moves of 5+ points, 3 on desktop / 2 on a phone), each marked on the sparkline as a
+    green/red dot (HTML dots over the stretched SVG, so they stay round). The gold moments speak
+    through ONE always-mounted `role=status` region; the overlays themselves are aria-hidden.
   - `Status` — `Loading` + `ErrorState`.
 
 ## Phase-awareness (the offseason is a first-class state)
@@ -224,7 +256,9 @@ mode simply wait. This is one deterministic source per phase — NOT a fallback 
   current season treat that as "not yet"). KEEP `seasontype=2` pinned: the bare call
   follows the league clock and serves PRESEASON records in August (GB 2–1 under
   `season=2026`, verified Sep 2026) — it would poison the Pulse the evening the tracker
-  flips to the new season.
+  flips to the new season. Each entry also carries `playoffSeed` 1–16 per conference (ESPN's
+  tiebreakers applied) and, once the math settles it, a `clincher` stat whose displayValue is
+  z / y / x / * / e (verified on the 2025 finals, Nov 2026; absent mid-season until earned).
 - Summary: `site.api…/summary?event=ID` carries box score, drives (w/ per-play
   `statYardage` + `type`), `winprobability` (per play, home %), `scoringPlays`, per-team
   `leaders`, and header linescores — one cached read powers the hero final state, box

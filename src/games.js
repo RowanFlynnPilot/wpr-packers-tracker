@@ -94,13 +94,33 @@ export function snapWinProbability(summary) {
 // Toward the winner, not toward Green Bay: measured the Packers' way, a 35–14 loss to Atlanta
 // (Sep 2026) "turned" on a harmless first-quarter catch worth +7%. `toward` says whose way it
 // swung ('gb' | 'opp'); a game that ends level takes the biggest swing either way.
-export function gameFlow(summary, packersHome) {
+// Every play's text and game clock, by play id (the WP entries carry only the id).
+function playIndex(summary) {
   const playText = {}
-  const scoringIds = new Set((summary.scoringPlays || []).map((p) => String(p.id)))
   ;[...(summary.drives?.previous || []), ...(summary.drives?.current ? [summary.drives.current] : [])]
     .forEach((d) => (d.plays || []).forEach((p) => {
       playText[String(p.id)] = { text: p.text || '', period: p.period?.number, clock: p.clock?.displayValue }
     }))
+  return playText
+}
+
+// The game's biggest win-probability swings SO FAR, either way, biggest first — the live hero's
+// "Swing plays" under its sparkline. `i` is the point's index in the snap series, so the
+// sparkline can mark it. A move under 5 points isn't a swing.
+export function swingPlays(summary, packersHome, n = 3) {
+  const { points } = gameFlow(summary, packersHome)
+  const playText = playIndex(summary)
+  const out = []
+  for (let i = 1; i < points.length; i++) {
+    const delta = Math.round(points[i].wp - points[i - 1].wp)
+    if (Math.abs(delta) >= 5 && playText[points[i].playId]) out.push({ i, delta, ...playText[points[i].playId] })
+  }
+  return out.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, n)
+}
+
+export function gameFlow(summary, packersHome) {
+  const playText = playIndex(summary)
+  const scoringIds = new Set((summary.scoringPlays || []).map((p) => String(p.id)))
   const points = snapWinProbability(summary).map((e, i) => {
     const home = e.homeWinPercentage * 100
     return {

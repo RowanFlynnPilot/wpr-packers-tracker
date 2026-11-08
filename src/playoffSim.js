@@ -1,7 +1,7 @@
 // The house playoff model: a Monte Carlo of the rest of the NFC season, run in the browser (no
 // backend, per the architecture). Pure — hand it a conference table, get odds back. Used by the
 // "Playoff odds" dials and by the stakes line ("Win → 68% · Loss → 41%") on the game hero.
-import { TEAM_ID, GAMES_IN_SEASON, CONFERENCE } from './config.js'
+import { TEAM_ID, GAMES_IN_SEASON, CONFERENCE, DIVISION_NAME } from './config.js'
 
 export const SIMS = 4000
 
@@ -26,7 +26,8 @@ function seededRandom(seed) {
   }
 }
 // The seed is the standings themselves — any result anywhere in the conference changes it.
-const seedFrom = (teams) => teams.reduce((h, t) => Math.imul(h ^ (t.id * 1000 + t.wins * 37 + t.losses * 7 + t.ties), 16777619), 2166136261)
+// Exported for the rooting guide, which runs a whole week's games on this one seed.
+export const seedFrom = (teams) => teams.reduce((h, t) => Math.imul(h ^ (t.id * 1000 + t.wins * 37 + t.losses * 7 + t.ties), 16777619), 2166136261)
 
 // The conference table the sim runs on — or null when the response looks wrong (a short table
 // means a bad response; skip quietly rather than simulate nonsense).
@@ -85,7 +86,16 @@ export function simulate(teams, seed = seedFrom(teams)) {
     postseason: Math.round((post / SIMS) * 100),
     division: Math.round((division / SIMS) * 100),
     medianWins: Math.round(myFinals[SIMS >> 1]),
+    // Unrounded, for ranking games against each other (two 3-point swings aren't always equal).
+    exact: { postseason: (post / SIMS) * 100, division: (division / SIMS) * 100 },
   }
+}
+
+// The table with one more result in it — or, with sign -1, one taken back out. A team that isn't
+// in the table (an AFC opponent) is simply untouched.
+function withResult(teams, winId, loseId, sign = 1) {
+  return teams.map((t) =>
+    t.id === winId ? { ...t, wins: t.wins + sign } : t.id === loseId ? { ...t, losses: t.losses + sign } : t)
 }
 
 // What one Packers game is worth: the sim three times — as things stand, with that game a
@@ -95,11 +105,41 @@ export function simulate(teams, seed = seedFrom(teams)) {
 // noise of a point or two could make a win look worse than a loss.
 export function gameStakes(teams, oppId) {
   const seed = seedFrom(teams)
-  const settle = (gbWon) => teams.map((t) =>
-    t.id === TEAM_ID ? { ...t, wins: t.wins + (gbWon ? 1 : 0), losses: t.losses + (gbWon ? 0 : 1) }
-      : t.id === oppId ? { ...t, wins: t.wins + (gbWon ? 0 : 1), losses: t.losses + (gbWon ? 1 : 0) }
-        : t)
-  return { now: simulate(teams, seed), win: simulate(settle(true), seed), loss: simulate(settle(false), seed) }
+  return {
+    now: simulate(teams, seed),
+    win: simulate(withResult(teams, TEAM_ID, oppId), seed),
+    loss: simulate(withResult(teams, oppId, TEAM_ID), seed),
+  }
+}
+
+// Both results of ANY game, measured in the Packers' odds — the rooting guide. Every game of the
+// week runs on the one `seed` (the table's own), so the Packers' row matches the hero's stakes
+// line to the point and two games compare on the same dice. `counted` ({ winId, loseId }) means
+// the standings already include this final: the result is taken back out first, so both
+// outcomes start from the same pre-game table and a final's swing reads like a pending game's.
+export function gameOutcomes(teams, homeId, awayId, seed, counted = null) {
+  const base = counted ? withResult(teams, counted.winId, counted.loseId, -1) : teams
+  return {
+    home: simulate(withResult(base, homeId, awayId), seed),
+    away: simulate(withResult(base, awayId, homeId), seed),
+  }
+}
+
+// Which of the Packers' odds is still an open question, from ESPN's clinch mark: the playoff
+// spot until it's clinched, then the division, then nothing (the sim doesn't model seeding, and
+// once ESPN says a race is settled no simulated "97%" should argue). Eliminated: nothing.
+export function openRace(clincher) {
+  if (!clincher) return 'postseason'
+  if (clincher === 'x' || clincher === 'y') return 'division'
+  return null
+}
+
+// ESPN's clinch marks in words, ranked (the hero celebrates each new level once).
+export const CLINCH = {
+  x: { rank: 1, badge: 'Clinched a playoff spot', line: 'The Packers are in the playoffs' },
+  y: { rank: 1, badge: 'Clinched a playoff spot', line: 'The Packers are in the playoffs' },
+  z: { rank: 2, badge: `${DIVISION_NAME} champions`, line: `The Packers win the ${DIVISION_NAME}` },
+  '*': { rank: 3, badge: `No. 1 seed in the ${CONFERENCE}`, line: `The Packers clinch the ${CONFERENCE}'s top seed — and the only bye` },
 }
 
 // Until a spot is mathematically decided nothing is truly 0 or 100 — the model never claims a lock.

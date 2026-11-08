@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { theme } from '../theme.js'
-import { SEASON, DIVISION, DIVISION_NAME } from '../config.js'
+import { SEASON, DIVISION, DIVISION_NAME, TEAM_ID } from '../config.js'
 import { fetchStandings, fetchStatsSeason } from '../api.js'
-import { conferenceTeams, gameStakes, oddsText, SIMS } from '../playoffSim.js'
+import { conferenceTeams, gameStakes, openRace, oddsText, SIMS } from '../playoffSim.js'
 
 // "What's at stake" on the pregame hero: the house playoff model run with the coming game as a
 // win and as a loss — "This game is worth 27 points of playoff odds" — the NYT/538 stakes line.
@@ -21,18 +21,25 @@ export default function GameStakes({ game, narrow }) {
     let alive = true
     ;(async () => {
       if (await fetchStatsSeason() !== SEASON) return
-      const teams = conferenceTeams(await fetchStandings(SEASON))
-      if (alive && teams) setStakes(gameStakes(teams, game.oppId))
+      const rows = await fetchStandings(SEASON)
+      const teams = conferenceTeams(rows)
+      // Once ESPN marks the playoff spot clinched, the open question is the division; once
+      // that's settled too (or the season's over for them), there's no stakes line to draw.
+      const metric = openRace(rows.find((r) => r.id === TEAM_ID)?.clincher)
+      if (alive && teams && metric) setStakes({ ...gameStakes(teams, game.oppId), metric })
     })().catch(() => {})
     return () => { alive = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- id + state pin the run
   }, [game?.id, game?.state])
 
   if (!stakes) return null
-  const { now, win, loss } = stakes
+  const { metric } = stakes
+  // The figures below read one race: the playoff spot, or the division once the spot is clinched.
+  const pick = (s) => ({ ...s, postseason: s[metric] })
+  const now = pick(stakes.now), win = pick(stakes.win), loss = pick(stakes.loss)
   const swing = win.postseason - loss.postseason
   if (swing < MIN_SWING) return null
-  const rival = !!DIVISION[game.oppId]
+  const rival = !!DIVISION[game.oppId] && metric === 'postseason'
   const divSwing = win.division - loss.division
 
   const figure = (label, value, delta, color) => (
@@ -50,7 +57,7 @@ export default function GameStakes({ game, narrow }) {
     <div style={{ maxWidth: 440, margin: '4px auto 20px', paddingTop: 16, borderTop: `1px solid ${theme.rule}` }}>
       <div style={{ fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>What's at stake</div>
       <div style={{ fontFamily: theme.serif, fontSize: narrow ? 17 : 19, color: theme.ink, lineHeight: 1.3, margin: '5px 0 12px', textWrap: 'balance' }}>
-        This game is worth <strong style={{ color: theme.green }}>{swing} points</strong> of playoff odds.
+        This game is worth <strong style={{ color: theme.green }}>{swing} points</strong> of {metric === 'division' ? `${DIVISION_NAME} title` : 'playoff'} odds.
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         {figure('With a win', win.postseason, win.postseason - now.postseason, theme.green)}
