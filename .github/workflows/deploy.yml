@@ -9,6 +9,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      skip_smoke:
+        description: 'Publish without the smoke test (only to get an urgent fix out past a false alarm)'
+        type: boolean
+        default: false
   schedule:
     # Refresh the email image twice daily, shortly before the ~8 AM and ~5 PM Central sends.
     # Cron is UTC and does not follow DST; these land ~6:30 AM / ~3:30 PM Central (CDT).
@@ -61,6 +66,15 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --with-deps chromium
+      # Load every page of the built site — each tab, the minis, the TV board — in the season's
+      # real state and in mocked live / final / clinched states, and stop the release if any of
+      # them throws, lands on the error boundary, renders nothing or runs wider than its screen
+      # (scripts/smoke.mjs). It asserts nothing about the data, so an ESPN outage can't block a
+      # deploy; one retry covers a slow network. Skipped on the twice-daily image refresh, which
+      # publishes the same code.
+      - name: Smoke test the built site
+        if: github.event_name != 'schedule' && !inputs.skip_smoke
+        run: npm run smoke || { echo "Smoke test failed — retrying once in 15s"; sleep 15; npm run smoke; }
       # The render gets three tries; if ESPN is having a moment, the deploy ships the
       # currently-published digest.png rather than blocking the whole release (and the
       # twice-daily schedule refreshes the image on its next tick). Never swap this for

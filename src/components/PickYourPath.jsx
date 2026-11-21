@@ -98,6 +98,7 @@ export default function PickYourPath() {
     const calls = chosen.map((g) => `${picks[g.week]} ${g.home ? 'vs' : 'at'} ${TEAM_ABBRS[g.oppId] || g.oppAbbr}`).join(', ')
     const text = `My Packers path: ${calls} — ${oddsText(then)} ${metric === 'division' ? `to win the ${DIVISION_NAME}` : 'to make the playoffs'} (today: ${oddsText(now)}).`
     const url = new URL(window.self === window.top ? window.location.href : WPR_EMBED_URL)
+    url.searchParams.set('tab', 'race')
     url.searchParams.set('path', key.toLowerCase())
     track('Path Share', { games: chosen.length })
     if (navigator.share) navigator.share({ title: 'Packers tracker — Wausau Pilot & Review', text, url: url.href }).catch(() => {})

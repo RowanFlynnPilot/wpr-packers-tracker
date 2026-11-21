@@ -34,6 +34,7 @@ import PlayoffOdds from './components/PlayoffOdds.jsx'
 import PlayoffPicture from './components/PlayoffPicture.jsx'
 import RootingGuide from './components/RootingGuide.jsx'
 import PickYourPath from './components/PickYourPath.jsx'
+import RaceDoor from './components/RaceDoor.jsx'
 import RoadAhead from './components/RoadAhead.jsx'
 import FilmRoom from './components/FilmRoom.jsx'
 import Pickem from './components/Pickem.jsx'
@@ -49,6 +50,9 @@ import Race from './components/Race.jsx'
 // fire only when a reader opens it (and the API memoizes them across revisits).
 const TABS = [
   { id: 'season', label: 'Season' },
+  // The playoff material has its own tab (Nov 2026): on one tab the Season page ran to almost
+  // ten phone screens. `?tab=race` is also where a shared "Pick your path" link lands.
+  { id: 'race', label: 'Playoff race', short: 'Race' },
   { id: 'schedule', label: 'Schedule', short: 'Sched.' },
   // Label follows the house sentence case ("Film room"); the id stays `leaders` so the
   // Plausible Tab events and panel ids keep their history. `short` labels keep five tabs
@@ -57,7 +61,7 @@ const TABS = [
   { id: 'film', label: 'Film room', short: 'Film' },
   // The daily game — its own tab so `?tab=guess` can be a newsletter link.
   { id: 'guess', label: 'Guess the Packer', short: 'Guess' },
-  { id: 'pickem', label: "Pick'em" },
+  { id: 'pickem', label: "Pick'em", short: 'Picks' },
 ]
 
 // The tabs a visitor can see: the Pick'em tab stays hidden until PICKEM_TAB flips (config.js),
@@ -68,19 +72,26 @@ const visibleTabs = () => {
 }
 
 // The Season tab tells the story the week is in, so its sections reorder by phase (Nov 2026
-// critique: on game day the matchup and injuries sat below three screens of standings; the
-// night after a final, the race sat below a preview of a game six days off).
-//   offseason — last season's finals + the countdown (the race sections wait for Week 1)
-//   week      — between games: where things stand and the race lead; the next matchup trails
+// critique: on game day the matchup and injuries sat below three screens of standings).
+//   offseason — last season's finals + the countdown
+//   week      — between games: where things stand; the next matchup trails
 //   gameday   — kickoff inside 48 hours: the matchup and this week's injuries move up
-//   live      — a Packers game is on: the rest of the league's scoreboard right under the lede
+//   live      — a Packers game is on: the door to the playoff race right under the venues
 // The hero, the lede and the sold game-day venues hold the top three spots in every phase, so
-// a sponsor's placement never slides around under it.
+// a sponsor's placement never slides around under it. `door` is the row through to the Playoff
+// race tab, `game` the row through to the daily game.
 const SEASON_ORDER = {
-  offseason: ['hero', 'story', 'watch', 'game', 'matchup', 'standings', 'preseason', 'race', 'picture', 'odds', 'path', 'guide', 'road'],
-  week: ['hero', 'story', 'watch', 'game', 'standings', 'picture', 'odds', 'path', 'guide', 'race', 'road', 'matchup'],
-  gameday: ['hero', 'story', 'watch', 'matchup', 'injuries', 'standings', 'picture', 'odds', 'path', 'guide', 'race', 'road', 'game'],
-  live: ['hero', 'story', 'watch', 'guide', 'standings', 'picture', 'odds', 'path', 'race', 'road', 'matchup', 'game'],
+  offseason: ['hero', 'story', 'watch', 'game', 'matchup', 'standings', 'preseason'],
+  week: ['hero', 'story', 'watch', 'game', 'standings', 'door', 'matchup'],
+  gameday: ['hero', 'story', 'watch', 'matchup', 'injuries', 'standings', 'door', 'game'],
+  live: ['hero', 'story', 'watch', 'door', 'standings', 'matchup', 'game'],
+}
+// The Playoff race tab: where they stand, how likely, what moves it this week, the reader's own
+// path, then the division chart and the schedule's difficulty. While a Packers game is on, the
+// scores that matter elsewhere lead.
+const RACE_ORDER = {
+  live: ['guide', 'picture', 'odds', 'path', 'race', 'road'],
+  other: ['picture', 'odds', 'guide', 'path', 'race', 'road'],
 }
 const GAMEDAY_MS = 48 * 3600 * 1000
 
@@ -123,8 +134,10 @@ export default function App() {
   // Tabs are deep-linkable: `?tab=schedule` opens there (so WPR articles can link straight to
   // a section), and switching tabs rewrites the param via replaceState — no history spam.
   const [tab, setTab] = useState(() => {
-    const t = new URLSearchParams(window.location.search).get('tab')
-    return visibleTabs().some((x) => x.id === t) ? t : 'season'
+    const q = new URLSearchParams(window.location.search)
+    const t = q.get('tab')
+    if (visibleTabs().some((x) => x.id === t)) return t
+    return q.has('path') ? 'race' : 'season' // a shared "Pick your path" link opens on its tab
   })
 
   // Refresh on a gentle interval (and on tab focus) so the whole page — not just the hero — stays live.
@@ -179,8 +192,8 @@ export default function App() {
   const opener = teamGames ? teamGames.find((g) => g.seasonType === 2 && g.state === 'pre') || null : null
   const phase = seasonPhase(bundle, teamGames)
 
-  // The Season tab's sections, keyed so a phase change REORDERS them without remounting (the
-  // hero keeps its live state across the flip to "live").
+  // The Season and Playoff race tabs' sections, keyed so a phase change REORDERS them without
+  // remounting (the hero keeps its live state across the flip to "live").
   const seasonBlocks = {
     hero: <GameHero key="hero" />,
     story: <Storylines key="story" />,
@@ -211,6 +224,7 @@ export default function App() {
     road: <RoadAhead key="road" />,
     // The door to the daily game: high on quiet days, out of the way on game day.
     game: <GuessPromo key="game" onPlay={() => changeTab('guess')} />,
+    door: <RaceDoor key="door" bundle={bundle} onOpen={() => changeTab('race')} />,
   }
 
   // ?demo pages look identical to the live page — a forwarded demo link explains itself.
@@ -250,6 +264,12 @@ export default function App() {
         {tab === 'season' && (
           <div role="tabpanel" id="panel-season" aria-labelledby="tab-season" data-phase={phase}>
             {SEASON_ORDER[phase].map((k) => seasonBlocks[k])}
+          </div>
+        )}
+
+        {tab === 'race' && (
+          <div role="tabpanel" id="panel-race" aria-labelledby="tab-race">
+            {RACE_ORDER[phase === 'live' ? 'live' : 'other'].map((k) => seasonBlocks[k])}
           </div>
         )}
 

@@ -20,7 +20,7 @@ const INVENTORY = [
   {
     key: 'race', name: 'Division race section',
     desc: 'Your lockup beside the season-long NFC North race chart — the page’s signature graphic.',
-    sold: () => !!SPONSORS.race, demo: './?demo',
+    sold: () => !!SPONSORS.race, demo: './?demo&tab=race',
   },
   {
     key: 'leaders', name: 'Season stats section',

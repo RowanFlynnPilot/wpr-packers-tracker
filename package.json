@@ -9,6 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "render:digest": "node scripts/render-digest.mjs",
+    "smoke": "node scripts/smoke.mjs",
     "sync:contest": "node scripts/sync-contest.mjs"
   },
   "dependencies": {

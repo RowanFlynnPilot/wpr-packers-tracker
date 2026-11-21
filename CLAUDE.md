@@ -103,14 +103,18 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   Keep them tiny — no service worker, no recharts.
 - Sections are grouped into tabs in `App.jsx` (`TABS` + `TabBar.jsx`): Season (hero +
   storylines + SOLD game-day venues — `<WhereToWatch compact />`, side-by-side rows, its own
-  click slot `where-to-watch-season`, no upsell — + matchup + "Where things stand" (Pulse
-  figures + division table + vs-North, ONE section since Nov 2026) + playoff picture + playoff
-  odds + rooting guide + race + road ahead; game day adds this week's injuries). The Season tab
-  REORDERS BY PHASE (`SEASON_ORDER` + `seasonPhase` in App.jsx, keyed blocks so nothing
-  remounts): `offseason`, `week` (race first, matchup last), `gameday` (kickoff < 48h: matchup
-  + `InjuryReport weekOnly` move up), `live` (the rooting guide right under the venues). Hero,
-  lede and the sold venues keep the top three spots in EVERY phase — a sponsor's placement
-  doesn't slide around. Don't flatten this back into one fixed order.
+  click slot `where-to-watch-season`, no upsell — + "Where things stand" (Pulse figures +
+  division table + vs-North, ONE section) + matchup; game day adds this week's injuries), with
+  two slim door rows: `GuessPromo` to the daily game and `RaceDoor` to the playoff tab (it
+  prints the dials' own odds + the seed). The Season tab REORDERS BY PHASE (`SEASON_ORDER` +
+  `seasonPhase` in App.jsx, keyed blocks so nothing remounts): `offseason`, `week`, `gameday`
+  (kickoff < 48h: matchup + `InjuryReport weekOnly` move up), `live` (the race door right
+  under the venues). Hero, lede and the sold venues keep the top three spots in EVERY phase —
+  a sponsor's placement doesn't slide around. Don't flatten this back into one fixed order.
+  Playoff race (id `race`, split out of Season in Nov 2026 — one tab had grown to ~10 phone
+  screens; now ~5 and ~6): playoff picture + playoff odds + rooting guide + pick your path +
+  division race chart + road ahead (`RACE_ORDER`; while a Packers game is live the rooting
+  guide leads). A `?path=` link with no `?tab=` opens here. Don't move these back to Season.
   Schedule (game-day guide — sold venues only, NO open-listing upsell beside a paying bar;
   inventory sells from sponsors.html — + full season list w/ box scores; upcoming games expand
   into `GamePreview`: both teams' season leaders from the game's own pregame summary + the last
@@ -141,7 +145,9 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   `{ type: 'wpr-packers-height' }`; tab switches also post `{ type: 'wpr-packers-scroll' }`
   so the host scrolls the widget's top back into view (snippet in README). No-op standalone.
 - `src/components/` — one file per concern (separation of concerns):
-  - `Masthead`, `PackersBanner`, `Section`, `TabBar` — chrome.
+  - `Masthead`, `PackersBanner`, `Section`, `TabBar` — chrome. On phones the tab bar drops to
+    13px (six tabs) or 12px (seven) with 1px side padding and uses each tab's `short` label —
+    every label must fit whole at 320px; a new tab needs a `short` of six characters or fewer.
   - `Figures` — the house treatment for a set of headline numbers: a rule-framed strip
     (2px green above, hairline below), values in the serif, labels beneath. Used by `Pulse` and
     `DriveDNA`. It replaced rows of identically bordered tiles — the dashboard default, which
@@ -445,6 +451,18 @@ npm install
 npm run dev        # http://localhost:5173/wpr-packers-tracker/
 npm run build
 ```
+```bash
+npm run build && npm run smoke   # the pre-deploy check, locally
+```
+`scripts/smoke.mjs` loads every page of the built site in headless Chromium — each tab, the
+minis, the TV board, sponsors/rules — in the season's real state and in mocked live / fresh-final
+/ clinched / eliminated states, and fails on an uncaught error, the error boundary, an empty
+page, or a page wider than its screen (351px for tabs). deploy.yml runs it before publishing a
+push (not on the twice-daily image refresh); a failure leaves the previous release live. It
+asserts NOTHING about data, on purpose: an ESPN outage must not block a deploy. Add a line to
+its `visits()` for any new page, tab or rare state. Escape hatch for a false alarm: run the
+workflow by hand with `skip_smoke`.
+
 Push to `main` → auto-deploys via `.github/workflows/deploy.yml`. Set Pages source to
 "GitHub Actions" once in repo Settings.
 

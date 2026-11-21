@@ -59,7 +59,27 @@ export default function Coverage() {
           across at this width and leave a two-thirds-empty second row. A 2×2 block is always
           full, and the bigger cards give WPR's own reporting the space it's worth. */}
       <div style={{ display: 'grid', gridTemplateColumns: narrow ? '1fr' : 'repeat(2, 1fr)', gap: 16 }}>
-        {posts.map((p) => (
+        {posts.map((p, i) => narrow && i > 0 ? (
+          // On a phone the lead story keeps its card; the rest are rows — thumbnail, date,
+          // headline. Four full cards ran to two phone screens.
+          <a
+            key={p.link}
+            href={p.link}
+            target="_top"
+            className="card-hover"
+            onClick={() => trackBeacon('Coverage Click', { title: p.title })}
+            style={{ display: 'grid', gridTemplateColumns: p.image ? '96px minmax(0, 1fr)' : '1fr', gap: 12, alignItems: 'center', textDecoration: 'none', border: `1px solid ${theme.rule}`, borderRadius: 8, overflow: 'hidden', background: '#fff', minHeight: 72 }}
+          >
+            {p.image && (
+              <img src={p.image} alt="" loading="lazy" style={{ width: 96, height: '100%', minHeight: 72, objectFit: 'cover', display: 'block', background: theme.wash }}
+                onError={(e) => { e.currentTarget.style.visibility = 'hidden' }} />
+            )}
+            <div style={{ padding: p.image ? '9px 12px 9px 0' : '9px 12px' }}>
+              <div style={{ fontFamily: theme.sans, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700 }}>{date(p.date)}</div>
+              <div style={{ fontFamily: theme.serif, fontSize: 15.5, lineHeight: 1.22, color: theme.ink, marginTop: 3 }}>{p.title}</div>
+            </div>
+          </a>
+        ) : (
           <a
             key={p.link}
             href={p.link}

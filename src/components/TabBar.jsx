@@ -40,8 +40,10 @@ export default function TabBar({ tabs, active, onChange }) {
             onKeyDown={onKeyDown}
             style={{
               flex: 1, minWidth: 0, cursor: 'pointer', background: 'transparent', border: 'none',
-              padding: '10px 6px', marginBottom: -1,
-              fontFamily: theme.sans, fontSize: 14, fontWeight: on ? 700 : 400, letterSpacing: '0.02em',
+              // Six tabs share a ~310px embed: tighter padding and a point off the type keep
+              // every label whole (at 14px with 6px padding, "Season" and "Sched." clipped).
+              padding: narrow ? '11px 1px' : '10px 6px', marginBottom: -1,
+              fontFamily: theme.sans, fontSize: narrow ? (tabs.length > 6 ? 12 : tabs.length > 5 ? 13 : 14) : 14, fontWeight: on ? 700 : 400, letterSpacing: narrow ? 0 : '0.02em',
               color: on ? theme.green : theme.muted,
               borderBottom: `3px solid ${on ? theme.gold : 'transparent'}`,
               textAlign: 'center', whiteSpace: 'nowrap',

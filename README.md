@@ -145,6 +145,19 @@ iframe. Embedded views are tracked automatically (they appear in Plausible with
 wausaupilotandreview.com as the source); tab switches fire a `Tab` event, and the
 "Bookmark" button fires a `Bookmark` event.
 
+### Before a deploy: the smoke test
+
+```bash
+npm run build
+npm run smoke
+```
+
+Loads every page and tab of the built site (plus mocked live-game, final and clinched states)
+and fails on a crash, an empty page, or a page wider than its screen. The deploy workflow runs
+it automatically on every push; if it fails, the previous version stays live and GitHub emails
+the failed run. To publish past a false alarm, run "Deploy to GitHub Pages" by hand from the
+Actions tab with `skip_smoke` ticked.
+
 ### Daily game link (newsletter / social)
 
 "Guess the Packer" has its own tab, so a newsletter or social post can link straight to it:

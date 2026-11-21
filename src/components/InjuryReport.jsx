@@ -22,6 +22,9 @@ const isIR = (status) => sev(status) === 4
 // injured-reserve list stays on the Schedule tab's full report.
 export default function InjuryReport({ weekOnly = false }) {
   const [players, setPlayers] = useState(null)
+  // Injured reserve is long-term and already known; it folds away under this week's list (the
+  // full report ran to four phone screens, most of it IR). Alone on the report, it shows.
+  const [showIR, setShowIR] = useState(false)
 
   useEffect(() => {
     fetchRoster().then(({ list }) => {
@@ -56,7 +59,17 @@ export default function InjuryReport({ weekOnly = false }) {
 
   return (
     <Section kicker="The trainer's room" title={weekOnly ? "This week's injury report" : 'Injury report'}>
-      {groups.map((g, gi) => (
+      {groups.map((g, gi) => {
+      const folded = g.label === 'Injured reserve' && groups.length > 1 && !showIR
+      if (folded) {
+        return (
+          <button key={g.label} type="button" onClick={() => setShowIR(true)} className="link-hover" aria-expanded="false"
+            style={{ display: 'block', marginTop: 12, cursor: 'pointer', background: 'transparent', border: `1px solid ${theme.rule}`, borderRadius: 18, padding: '8px 14px', fontFamily: theme.sans, fontSize: 12.5, fontWeight: 700, color: theme.green }}>
+            Show the {g.list.length} on injured reserve
+          </button>
+        )
+      }
+      return (
       <div key={g.label} style={{ marginTop: gi ? 18 : 0 }}>
       {groups.length > 1 && (
         <div style={{ fontFamily: theme.sans, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: theme.goldText, fontWeight: 700, marginBottom: 8 }}>
@@ -79,7 +92,7 @@ export default function InjuryReport({ weekOnly = false }) {
         ))}
       </div>
       </div>
-      ))}
+      )})}
       <div style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted, marginTop: 12 }}>
         {weekOnly
           ? `${groups[0].list.length} with a game status this week · injured reserve is on the Schedule tab`
