@@ -74,6 +74,13 @@ try {
     }, null, { timeout: 30000 })
     .catch(() => console.warn('Proceeding without every section (offseason or the season finale).'))
 
+  // The playoff-race block runs a few dozen simulations after the standings arrive; the card
+  // flips data-race to "done" when it has them (or has nothing to show). Best-effort: a card
+  // without that block is still a good image.
+  await page
+    .waitForSelector('.mini-card[data-race="done"]', { timeout: 30000 })
+    .catch(() => console.warn('Proceeding without the playoff-race block.'))
+
   // Let the trailing leader fetches settle, and ensure web fonts + the logos/headshots have
   // painted so nothing renders in a fallback font or half-loaded.
   await page.waitForLoadState('networkidle')

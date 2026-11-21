@@ -3,6 +3,8 @@ import { theme } from '../theme.js'
 import { TEAM_ID, DIVISION, DIVISION_NAME, SPONSORS, SEASON, WATCH_VENUES, headshot } from '../config.js'
 import { fetchSeasonGames, fetchStandingsBundle, fetchGameSummary } from '../api.js'
 import { teamGameLeaders } from '../games.js'
+import { conferenceTeams, simulate, gameStakes, openRace, oddsText, CLINCH } from '../playoffSim.js'
+import { buildWeek, swing, rootingRows } from '../rooting.js'
 import { trackBeacon } from '../analytics.js'
 import { destination } from '../embed.js'
 import TeamLogo from './TeamLogo.jsx'
@@ -36,6 +38,11 @@ export default function MiniDigest() {
   const [games, setGames] = useState(null)      // { last, next }
   const [bundle, setBundle] = useState(null)
   const [leaders, setLeaders] = useState(null)  // last game's Packers leaders
+  // `?image` is set when this is being screenshotted for the email PNG (see render-digest.mjs).
+  const imageMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('image')
+  // The playoff race in three lines — the newsletter IMAGE only (see raceBlock below).
+  // undefined = still working it out (the render script waits on that), null = nothing to say.
+  const [race, setRace] = useState(undefined)
 
   const load = useCallback(() => {
     // Preseason counts here, same as the hero and the scoreboard mini — an August newsletter
@@ -74,10 +81,35 @@ export default function MiniDigest() {
     return () => { alive = false }
   }, [lastId])
 
-  // `?image` is set when this is being screenshotted for the email PNG (see render-digest.mjs).
-  // In that mode the "Full tracker →" affordance is dead pixels (an image can't carry a link to
+  // The odds, what the next game is worth, and the week's top rooting interest — the same
+  // numbers the tracker prints (same table, same seed), worked out here for the email image.
+  useEffect(() => {
+    if (!imageMode || !bundle || !games) return
+    let alive = true
+    ;(async () => {
+      if (bundle.season !== SEASON) return null // before Week 1 there is no race to report
+      const me = bundle.league.find((r) => r.id === TEAM_ID)
+      const teams = conferenceTeams(bundle.league)
+      if (!me || !teams || me.clincher === 'e') return null
+      const metric = openRace(me.clincher)
+      const out = { seed: me.seed, conf: me.conf, clinch: CLINCH[me.clincher]?.badge || null, metric }
+      if (!metric) return out.clinch ? out : null
+      out.odds = simulate(teams)[metric]
+      if (next && next.seasonType === 2) {
+        const s = gameStakes(teams, next.oppId)
+        if (s.win[metric] - s.loss[metric] >= 2) out.stakes = { win: s.win[metric], loss: s.loss[metric] }
+      }
+      const week = await buildWeek().catch(() => null)
+      const top = week && rootingRows(week).find((g) => g.state !== 'post')
+      if (top) out.root = { pick: top.root === 'home' ? top.home : top.away, over: top.root === 'home' ? top.away : top.home, pts: swing(top) }
+      return out
+    })().then((r) => { if (alive) setRace(r) }).catch(() => { if (alive) setRace(null) })
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the standings and the next game pin the run
+  }, [imageMode, bundle, next?.id])
+
+  // In image mode the "Full tracker →" affordance is dead pixels (an image can't carry a link to
   // just that text), so we drop it — the email puts a real text link below the image instead.
-  const imageMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('image')
 
   const card = {
     display: 'block', maxWidth: 420, margin: '0 auto', textDecoration: 'none', overflow: 'hidden',
@@ -266,6 +298,44 @@ export default function MiniDigest() {
     )
   }
 
+  // ---- The playoff race — the newsletter IMAGE only (the web digest is embedded at a fixed
+  // height a taller card would overflow). Every subscriber sees this image; the tracker's newest
+  // material — the odds, what the next game is worth, who to root for — used to be invisible
+  // from it. Three lines, labeled as the house model; nothing before Week 1 or once eliminated.
+  let raceBlock = null
+  if (imageMode && race) {
+    const division = race.metric === 'division'
+    const day = next ? new Date(next.date).toLocaleDateString('en-US', { weekday: 'long' }) : ''
+    raceBlock = (
+      <div style={section}>
+        {heading('The playoff race')}
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 7, minWidth: 0 }}>
+            {race.metric
+              ? <><span style={{ fontFamily: theme.serif, fontSize: 26, color: theme.green, lineHeight: 1 }}>{oddsText(race.odds)}</span>
+                  <span style={{ fontSize: 12, color: theme.ink }}>{division ? `to win the ${DIVISION_NAME}` : 'to make the playoffs'}</span></>
+              : <span style={{ fontFamily: theme.serif, fontSize: 17, color: theme.green }}>{race.clinch}</span>}
+          </span>
+          {race.seed && <span style={{ fontSize: 11, fontWeight: 700, color: theme.green, background: theme.wash, border: `1px solid ${theme.rule}`, borderRadius: 10, padding: '2px 9px', whiteSpace: 'nowrap' }}>No. {race.seed} in the {race.conf}</span>}
+        </div>
+        {division && race.clinch && <div style={{ fontSize: 11.5, color: theme.ink, marginTop: 5 }}>{race.clinch}.</div>}
+        {race.stakes && (
+          <div style={{ fontSize: 11.5, color: theme.ink, marginTop: 6, lineHeight: 1.4 }}>
+            {day}’s game is worth <strong>{race.stakes.win - race.stakes.loss} points</strong>: <strong style={{ color: theme.green }}>{oddsText(race.stakes.win)}</strong> with a win, <strong style={{ color: theme.red }}>{oddsText(race.stakes.loss)}</strong> with a loss.
+          </div>
+        )}
+        {race.root && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: theme.ink, marginTop: 6 }}>
+            <span style={{ color: theme.goldText, fontWeight: 700 }}>Root for</span>
+            <TeamLogo id={race.root.pick.id} size={16} />
+            <span><strong>{race.root.pick.name}</strong> over the {race.root.over.name} <span style={{ color: theme.muted }}>· {race.root.pts} {race.root.pts === 1 ? 'pt' : 'pts'}</span></span>
+          </div>
+        )}
+        <div style={{ fontSize: 10, color: theme.muted, marginTop: 6 }}>Odds from Wausau Pilot &amp; Review’s house model.</div>
+      </div>
+    )
+  }
+
   // ---- Game-day partner — the newsletter IMAGE only. The sold venue(s) from the game-day guide
   // (config WATCH_VENUES; placeholders have no url, so they never print), set above the title
   // sponsor's "Presented by", which stays the card's sign-off. Image-only because the web
@@ -292,10 +362,11 @@ export default function MiniDigest() {
   )
 
   return (
-    <a {...linkProps} className="mini-card" style={card}>
+    <a {...linkProps} className="mini-card" style={card} data-race={imageMode ? (race === undefined ? 'pending' : 'done') : undefined}>
       {band}
       {lastBlock}
       {nextBlock}
+      {raceBlock}
       {slateBlock}
       {standingsBlock}
       {partnerBlock}

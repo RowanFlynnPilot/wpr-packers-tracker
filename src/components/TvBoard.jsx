@@ -7,7 +7,7 @@ import { conferenceTeams, simulate, openRace, oddsText } from '../playoffSim.js'
 import { howToWatch } from '../calendar.js'
 import { track } from '../analytics.js'
 import { useGameStakes, MIN_SWING } from './GameStakes.jsx'
-import { buildWeek } from './RootingGuide.jsx'
+import { buildWeek, swing, rootingRows } from '../rooting.js'
 import TeamLogo from './TeamLogo.jsx'
 
 // The bar TV board (tv.html): a full-screen scoreboard for a game-day venue's own screens — the
@@ -133,8 +133,7 @@ export default function TvBoard() {
   )
   const panels = []
   if (week) {
-    const swing = (g) => Math.abs(g.ifHome - g.ifAway)
-    const rows = week.games.filter((g) => !g.mine && swing(g) >= 1).sort((a, b) => swing(b) - swing(a) || b.exact - a.exact).slice(0, 6)
+    const rows = rootingRows(week).slice(0, 6)
     if (rows.length) {
       panels.push(
         <div key="root">

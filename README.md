@@ -249,7 +249,7 @@ page:
 ```html
 <a href="https://wausaupilotandreview.com/green-bay-packers/">
   <img src="https://rowanflynnpilot.github.io/wpr-packers-tracker/digest.png"
-       alt="Packers digest — last game, next game and the NFC North standings"
+       alt="Packers digest — last game, next game, playoff odds and the NFC North standings"
        width="600" style="width:100%;max-width:600px;height:auto;border:0;display:block" />
 </a>
 <p style="margin:8px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;text-align:center">
@@ -261,6 +261,21 @@ page:
 The image itself is also linked (tapping it opens the tracker), but the text link below
 makes the call-to-action obvious — the image drops its "Full tracker" button, since a
 region inside an image can't carry its own link.
+
+**The playoff race in the image.** From Week 1 on, the image (only — not the web digest above)
+carries a "The playoff race" block under "Next up": the Packers' playoff odds and seed, what the
+next game is worth ("62% with a win, 22% with a loss"), and the week's top rooting interest —
+the same numbers the tracker shows, labeled as the house model. It makes the image about 130px
+taller at 600px wide. Two optional text links to put under it, since the image can't carry them
+(both need the `?tab=` forwarding lines on the WPR page; the github.io addresses work without):
+
+```html
+<p style="margin:6px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;text-align:center">
+  <a href="https://wausaupilotandreview.com/green-bay-packers/?tab=race" style="color:#203731;text-decoration:none">Call the rest of the season yourself →</a>
+  &nbsp;·&nbsp;
+  <a href="https://wausaupilotandreview.com/green-bay-packers/?tab=guess" style="color:#203731;text-decoration:none">Play today’s Guess the Packer →</a>
+</p>
+```
 
 **Game-day partner in the image.** The image (only — not the web digest above) carries a
 "Game-day partner" strip for each sold game-day guide venue (`WATCH_VENUES` in config.js:

@@ -96,6 +96,10 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   of the game),
   `MiniStandings.jsx` (NFC North table), `MiniDigest.jsx` (newsletter combo: last final w/
   top performers, next kickoff w/ TV, standings; in `?image` mode — the email PNG only — a
+  "The playoff race" block under "Next up" (odds + seed, what the next game is worth, the top
+  rooting pick still to be played: the tracker's own numbers via playoffSim.js + `src/rooting.js`,
+  labeled as the house model; the card sets `data-race="done"` when it has them and
+  render-digest.mjs waits on that, best-effort), and a
   "Game-day partner" strip for each sold WATCH_VENUES venue sits above the title sponsor's
   "Presented by", evergreen fields only, never the dated specials). Each card is one link to the full
   tracker; the embed's `?to=` param overrides the destination (http/https only — shared
@@ -222,6 +226,8 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
     WITH the result, so `after` is exactly the dials' number. Whether the standings already count
     the game is read from GB's record vs the schedule's (after-game record = counted, before-game
     = not yet, anything else = skip). The final-score share card prints the same line.
+  - `src/rooting.js` holds the rooting guide's arithmetic (`buildWeek`, `swing`, `rootingRows`)
+    so the section, the bar TV board and the newsletter card list the same rows in the same order.
   - `RootingGuide` ("Who to root for in Week N") — every game of the week that touches the NFC
     table, run both ways through `gameOutcomes()` on the table's ONE seed (`seedFrom`), biggest
     swing first, the Packers' own game pinned on top as the yardstick; AFC-only games are
