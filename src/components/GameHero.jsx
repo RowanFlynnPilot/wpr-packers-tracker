@@ -7,7 +7,6 @@ import { CLINCH, conferenceTeams, openRace, resultMove, oddsText } from '../play
 import { shareFinalCard } from '../share-card.js'
 import { downloadCalendar, howToWatch, isStreaming } from '../calendar.js'
 import { fetchKickoffForecast } from '../weather.js'
-import { loadLedger, coldRank, LEDGER_FROM } from '../coldLedger.js'
 import { track } from '../analytics.js'
 import { useIsNarrow } from '../useIsNarrow.js'
 import Sponsor from './Sponsor.jsx'
@@ -281,8 +280,11 @@ export default function GameHero() {
       if (!alive) return
       setForecast(f)
       if (!f) return
+      // Loaded only when there is a forecast to rank: the ledger's history file stays out of
+      // the main bundle for the ~40 weeks a year the hero has no Lambeau forecast to show.
+      const { loadLedger, coldRank, LEDGER_FROM } = await import('../coldLedger.js')
       const rank = coldRank(await loadLedger(), f.tempF)
-      if (alive && rank <= 25) setColdNote(rank)
+      if (alive && rank <= 25) setColdNote({ rank, from: LEDGER_FROM })
     }).catch(() => {})
     return () => { alive = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- game object churns every poll; id+state pin the fetch
@@ -545,7 +547,7 @@ export default function GameHero() {
       {!live && !final && forecast && (
         <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, marginTop: 5 }}>
           Kickoff forecast at Lambeau: {forecast.tempF}°F, {forecast.label} · {forecast.precipPct}% precip · {forecast.windMph} mph wind
-          {coldNote && <> · <strong style={{ color: theme.ink }}>would be the {ord(coldNote)}-coldest Lambeau kickoff since {LEDGER_FROM}</strong></>}
+          {coldNote && <> · <strong style={{ color: theme.ink }}>would be the {ord(coldNote.rank)}-coldest Lambeau kickoff since {coldNote.from}</strong></>}
           {SPONSORS.forecast && <> · <Sponsor sponsor={SPONSORS.forecast} compact slot="forecast" /></>}
         </div>
       )}

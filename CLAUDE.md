@@ -127,7 +127,9 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   division race chart + road ahead (`RACE_ORDER`; while a Packers game is live the rooting
   guide leads). A `?path=` link with no `?tab=` opens here. Don't move these back to Season.
   Schedule (game-day guide — sold venues only, NO open-listing upsell beside a paying bar;
-  inventory sells from sponsors.html — + full season list w/ box scores; upcoming games expand
+  inventory sells from sponsors.html — + full season list w/ box scores (while games remain,
+  every regular-season final but the latest folds behind "Show the N earlier results (W–L)" —
+  three or more to hide, otherwise nothing folds); upcoming games expand
   into `GamePreview`: both teams' season leaders from the game's own pregame summary + the last
   five meetings via `fetchRecentMeetings`, which sweeps back in 4-season batches until it has
   five; preseason rows drop off once the regular season kicks off + next-at-Lambeau + injuries
@@ -147,6 +149,16 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   (config-driven inventory status + live mini embeds). Only the active tab renders, and
   `api.js`
   memoizes the heavier reads (`cached()`, short TTL) so flipping back is instant.
+  CODE-SPLIT BY TAB (Nov 2026): the Season tab is the main bundle; every other tab is its own
+  chunk, loaded on first open — `src/tabs/{Race,Schedule,Leaders,Film}Tab.jsx`, plus
+  `GuessGame` and `Pickem`, all through `lazyTab()` (src/lazyTab.js) under one `<Suspense>`.
+  That halved the main bundle (230 → 108 KB; 67 → 32 KB gzipped). Keep it that way: a component
+  only another tab uses must not be imported by App.jsx or by anything the Season tab renders
+  (`GuessPromo` lives in its own file for exactly that reason; the hero `import()`s
+  `coldLedger.js` only when it has a Lambeau forecast to rank). `lazyTab` also handles the one
+  hazard of splitting: a page left open across a deploy asks for a chunk that no longer exists,
+  so a failed chunk load reloads the page once (at most once a minute) instead of landing on
+  the error boundary.
   Masthead, banner + title sponsor, the updated stamp, and the footer stay pinned across
   tabs — the masthead only STANDALONE: embedded (window.self !== window.top), WPR's own site
   header sits right above the iframe, and a second masthead cost phones ~180px before the game.
@@ -171,7 +183,9 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
     an aria-label that states the standings in words. PLAIN SVG, bundled with the page: it was
     a recharts LineChart, and recharts (105 KB gz) was half the JavaScript the default Season
     tab shipped for one four-line chart. Recharts now loads only in the Film room (`GameFlow`,
-    lazy). Don't add a recharts import anywhere the Season tab renders.
+    lazy). Don't add a recharts import anywhere the Season tab renders. Line colors are
+    `TEAM_COLORS` in config.js — the Bears run in their orange, not navy (a slate blue beside
+    the Lions' blue was hard to tell apart).
   - `Matchup`, `NextAtLambeau`, `InjuryReport`, `VsNorth`, `PlayoffOdds`, `RoadAhead`,
     `Coverage`, `ThisDay`, `TeamProfile`, `Storylines`, `MilestoneWatch`, `ChunkLeaders`,
     `DriveDNA` —
@@ -202,7 +216,8 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
     `Leaderboard` (week/season standings, top 25 + the reader's own row, the winner once a
     week is final; fail-soft, owns its Section) render only when `CONTEST.api` is set.
   - `FilmRoom` — game picker; hands one cached summary to `GameFlow` (win-probability
-    chart), `ScoringPlays`, `BigPlays`. The turning point reads in plain English — "Ty'Ron
+    chart), `ScoringPlays`, `BigPlays`. The chart's container is `role="img"` with a one-sentence
+    aria-label (where the Packers' chances started, their low and high, where they ended). The turning point reads in plain English — "Ty'Ron
     Hopper's interception of Bryce Young lifted the Packers' chances from 67% to 76%." — with
     ESPN's play-by-play under it. `plainPlay()` in games.js rewrites GSIS text ("J.Love pass deep
     middle to C.Watson…") through the game's box-score names (first initial or two + surname,
@@ -473,7 +488,8 @@ minis, the TV board, sponsors/rules — in the season's real state and in mocked
 page, or a page wider than its screen (351px for tabs). deploy.yml runs it before publishing a
 push (not on the twice-daily image refresh); a failure leaves the previous release live. It
 asserts NOTHING about data, on purpose: an ESPN outage must not block a deploy. Add a line to
-its `visits()` for any new page, tab or rare state. Escape hatch for a false alarm: run the
+its `visits()` for any new page, tab or rare state. One visit clicks through every tab in
+turn, which is what exercises the lazily loaded chunks the way a reader does. Escape hatch for a false alarm: run the
 workflow by hand with `skip_smoke`.
 
 Push to `main` → auto-deploys via `.github/workflows/deploy.yml`. Set Pages source to

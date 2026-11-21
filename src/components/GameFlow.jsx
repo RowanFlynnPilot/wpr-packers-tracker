@@ -8,10 +8,15 @@ import { periodLabel } from '../games.js'
 export default function GameFlow({ flow, oppName }) {
   if (!flow || flow.points.length < 10) return null
   const { points, biggest } = flow
+  // The chart in a sentence, for a screen reader: where the Packers' chances started, how low
+  // and how high they ran, and where they ended. (The chart itself is a picture to it.)
+  const wps = points.map((p) => p.wp)
+  const pct = (v) => `${Math.round(v)}%`
+  const summary = `Packers win probability, play by play. It started at ${pct(wps[0])}, ran as low as ${pct(Math.min(...wps))} and as high as ${pct(Math.max(...wps))}, and finished at ${pct(wps[wps.length - 1])}.`
 
   return (
     <div>
-      <div style={{ width: '100%', height: 240 }}>
+      <div role="img" aria-label={summary} style={{ width: '100%', height: 240 }}>
         <ResponsiveContainer>
           <LineChart data={points} margin={{ top: 8, right: 10, bottom: 0, left: -18 }}>
             <CartesianGrid stroke={theme.rule} strokeDasharray="2 4" vertical={false} />

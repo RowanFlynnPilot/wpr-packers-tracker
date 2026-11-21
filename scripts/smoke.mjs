@@ -63,6 +63,8 @@ async function visits() {
     { name: 'demo', url: '?demo', view: PHONE, expect: '[role=tabpanel]' },
     { name: 'demo pick’em', url: '?demo&tab=pickem', view: PHONE, expect: '[role=tabpanel]' },
     { name: 'shared path', url: '?path=12w13l', view: PHONE, expect: '#panel-race' },
+    // Each tab is its own chunk, fetched on the first click — click through all of them.
+    { name: 'click through the tabs', url: '', view: PHONE, expect: '[role=tabpanel]', tabs: true },
     // The other entries.
     { name: 'mini', url: 'mini.html', view: { width: 320, height: 500 }, expect: '#root > *' },
     { name: 'mini-standings', url: 'mini-standings.html', view: { width: 320, height: 500 }, expect: '#root > *' },
@@ -109,6 +111,15 @@ async function check(browser, v) {
       await page.evaluate(async () => { for (let y = 0; y < document.body.scrollHeight; y += 700) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 50)) } window.scrollTo(0, 0) })
     }
     await page.waitForTimeout(2500)
+    if (v.tabs) {
+      const ids = await page.$$eval('[role=tab]', (els) => els.map((el) => el.id.replace('tab-', '')))
+      for (const id of ids) {
+        await page.click(`#tab-${id}`)
+        const shown = await page.waitForSelector(`#panel-${id}`, { timeout: 15000 }).then(() => true).catch(() => false)
+        if (!shown) problems.push(`the ${id} tab did not open`)
+        await page.waitForTimeout(600)
+      }
+    }
     if (!(await page.locator(v.expect).count())) problems.push(`nothing rendered at ${v.expect}`)
     if (await page.getByText('The tracker hit a snag').count()) problems.push('landed on the error boundary')
     const wide = v.fixed

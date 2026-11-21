@@ -14,7 +14,9 @@ export const DIVISION_ABBR = { 9: 'GB', 3: 'CHI', 8: 'DET', 16: 'MIN' }
 
 // Line colors for the race chart. The home team is emphasized in the component, not here.
 // Calmer, distinct hues for the rivals so the Packers-green line stays the focus.
-export const TEAM_COLORS = { 9: '#203731', 3: '#5a6b8c', 8: '#4e88b8', 16: '#8a6fae' }
+// The Bears run in their orange, not their navy: a slate blue beside the Lions' blue made two
+// of the three rival lines hard to tell apart (Nov 2026 critique).
+export const TEAM_COLORS = { 9: '#203731', 3: '#c2562d', 8: '#4e88b8', 16: '#8a6fae' }
 
 // ESPN team id → abbreviation + short club name, all 32 clubs. Abbreviations key the logo CDN;
 // names label opponents where a feed only carries an id.

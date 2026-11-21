@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Suspense } from 'react'
 import { theme } from './theme.js'
-import { SPONSOR_DISCLAIMER, WPR_NEWS, SPONSORS, SEASON, SPONSOR_INQUIRY, WPR_BADGE, PICKEM_TAB, DIVISION_NAME } from './config.js'
+import { SPONSOR_DISCLAIMER, SEASON, SPONSOR_INQUIRY, WPR_BADGE, PICKEM_TAB, DIVISION_NAME } from './config.js'
 import { fetchStandingsBundle, fetchDivisionSchedules, fetchSeasonGames } from './api.js'
 import { lastFinalGame } from './games.js'
 import { initAnalytics, track } from './analytics.js'
@@ -19,31 +19,22 @@ import Pulse from './components/Pulse.jsx'
 import PreseasonSlate from './components/PreseasonSlate.jsx'
 import Standings from './components/Standings.jsx'
 import VsNorth from './components/VsNorth.jsx'
-import Schedule from './components/Schedule.jsx'
-import NextAtLambeau from './components/NextAtLambeau.jsx'
-import ColdLedger from './components/ColdLedger.jsx'
 import InjuryReport from './components/InjuryReport.jsx'
-import Coverage from './components/Coverage.jsx'
-import SponsorBand from './components/SponsorBand.jsx'
 import WhereToWatch from './components/WhereToWatch.jsx'
-import ThisDay from './components/ThisDay.jsx'
-import Leaders from './components/Leaders.jsx'
-import MilestoneWatch from './components/MilestoneWatch.jsx'
-import TeamProfile from './components/TeamProfile.jsx'
-import PlayoffOdds from './components/PlayoffOdds.jsx'
-import PlayoffPicture from './components/PlayoffPicture.jsx'
-import RootingGuide from './components/RootingGuide.jsx'
-import PickYourPath from './components/PickYourPath.jsx'
 import RaceDoor from './components/RaceDoor.jsx'
-import RoadAhead from './components/RoadAhead.jsx'
-import FilmRoom from './components/FilmRoom.jsx'
-import Pickem from './components/Pickem.jsx'
-import GuessGame, { GuessPromo } from './components/GuessGame.jsx'
-import ChunkLeaders from './components/ChunkLeaders.jsx'
-import DriveDNA from './components/DriveDNA.jsx'
+import GuessPromo from './components/GuessPromo.jsx'
+import { Loading } from './components/Status.jsx'
+import { lazyTab } from './lazyTab.js'
+
+// Every tab but the default loads its code when first opened (lazyTab.js): the Season tab is
+// what almost every reader sees, and it no longer carries the other five tabs' JavaScript.
+const RaceTab = lazyTab(() => import('./tabs/RaceTab.jsx'))
+const ScheduleTab = lazyTab(() => import('./tabs/ScheduleTab.jsx'))
+const LeadersTab = lazyTab(() => import('./tabs/LeadersTab.jsx'))
+const FilmTab = lazyTab(() => import('./tabs/FilmTab.jsx'))
+const GuessGame = lazyTab(() => import('./components/GuessGame.jsx'))
+const Pickem = lazyTab(() => import('./components/Pickem.jsx'))
 import PlayerCardHost from './components/PlayerCard.jsx'
-// Plain SVG, bundled with the page — recharts (film room only) stays out of the default tab.
-import Race from './components/Race.jsx'
 
 // The sections grouped into tabs (the page is too tall as one scroll). The featured-game hero
 // lives on the default "Season" tab. Each tab renders only when active, so its heavier fetches
@@ -85,13 +76,6 @@ const SEASON_ORDER = {
   week: ['hero', 'story', 'watch', 'game', 'standings', 'door', 'matchup'],
   gameday: ['hero', 'story', 'watch', 'matchup', 'injuries', 'standings', 'door', 'game'],
   live: ['hero', 'story', 'watch', 'door', 'standings', 'matchup', 'game'],
-}
-// The Playoff race tab: where they stand, how likely, what moves it this week, the reader's own
-// path, then the division chart and the schedule's difficulty. While a Packers game is on, the
-// scores that matter elsewhere lead.
-const RACE_ORDER = {
-  live: ['guide', 'picture', 'odds', 'path', 'race', 'road'],
-  other: ['picture', 'odds', 'guide', 'path', 'race', 'road'],
 }
 const GAMEDAY_MS = 48 * 3600 * 1000
 
@@ -192,7 +176,7 @@ export default function App() {
   const opener = teamGames ? teamGames.find((g) => g.seasonType === 2 && g.state === 'pre') || null : null
   const phase = seasonPhase(bundle, teamGames)
 
-  // The Season and Playoff race tabs' sections, keyed so a phase change REORDERS them without
+  // The Season tab's sections, keyed so a phase change REORDERS them without
   // remounting (the hero keeps its live state across the flip to "live").
   const seasonBlocks = {
     hero: <GameHero key="hero" />,
@@ -212,16 +196,6 @@ export default function App() {
       </Section>
     ),
     preseason: <PreseasonSlate key="preseason" />,
-    picture: <PlayoffPicture key="picture" bundle={bundle} />,
-    odds: <PlayoffOdds key="odds" />,
-    path: <PickYourPath key="path" />,
-    guide: <RootingGuide key="guide" />,
-    race: (
-      <Section key="race" kicker="The division race" title={`${DIVISION_NAME}, week by week`} sponsor={SPONSORS.race} slot="race">
-        <Race schedules={schedules} season={raceSeason} error={errors.schedules} />
-      </Section>
-    ),
-    road: <RoadAhead key="road" />,
     // The door to the daily game: high on quiet days, out of the way on game day.
     game: <GuessPromo key="game" onPlay={() => changeTab('guess')} />,
     door: <RaceDoor key="door" bundle={bundle} onOpen={() => changeTab('race')} />,
@@ -267,42 +241,19 @@ export default function App() {
           </div>
         )}
 
-        {tab === 'race' && (
-          <div role="tabpanel" id="panel-race" aria-labelledby="tab-race">
-            {RACE_ORDER[phase === 'live' ? 'live' : 'other'].map((k) => seasonBlocks[k])}
-          </div>
-        )}
-
-        {tab === 'schedule' && (
-          <div role="tabpanel" id="panel-schedule" aria-labelledby="tab-schedule">
-            {/* The game-day guide leads the tab — prime placement is the product being sold. */}
-            <WhereToWatch />
-            <Section kicker="The season" title="The schedule"><Schedule /></Section>
-            <NextAtLambeau />
-            <ColdLedger />
-            <InjuryReport />
-            {WPR_NEWS && <Coverage />}
-            <SponsorBand />
-            <ThisDay />
-          </div>
-        )}
-
-        {tab === 'leaders' && (
-          <div role="tabpanel" id="panel-leaders" aria-labelledby="tab-leaders">
-            <MilestoneWatch />
-            <Section kicker="Moving the ball" title="Offensive leaders" sponsor={SPONSORS.leaders} slot="leaders"><Leaders side="offense" /></Section>
-            <Section kicker="Getting stops" title="Defensive leaders"><Leaders side="defense" /></Section>
-            <TeamProfile />
-          </div>
-        )}
-
-        {tab === 'film' && <div role="tabpanel" id="panel-film" aria-labelledby="tab-film"><FilmRoom /><ChunkLeaders /><DriveDNA /></div>}
-
-        {tab === 'guess' && <div role="tabpanel" id="panel-guess" aria-labelledby="tab-guess"><GuessGame /></div>}
-
-        {tab === 'pickem' && (
-          <div role="tabpanel" id="panel-pickem" aria-labelledby="tab-pickem"><Pickem /></div>
-        )}
+        {/* The other tabs arrive as their own chunks; the skeleton holds the place meanwhile. */}
+        <Suspense fallback={<div style={{ padding: '28px 0' }}><Loading lines={4} /></div>}>
+          {tab === 'race' && (
+            <div role="tabpanel" id="panel-race" aria-labelledby="tab-race">
+              <RaceTab bundle={bundle} schedules={schedules} raceSeason={raceSeason} schedulesError={errors.schedules} live={phase === 'live'} />
+            </div>
+          )}
+          {tab === 'schedule' && <div role="tabpanel" id="panel-schedule" aria-labelledby="tab-schedule"><ScheduleTab /></div>}
+          {tab === 'leaders' && <div role="tabpanel" id="panel-leaders" aria-labelledby="tab-leaders"><LeadersTab /></div>}
+          {tab === 'film' && <div role="tabpanel" id="panel-film" aria-labelledby="tab-film"><FilmTab /></div>}
+          {tab === 'guess' && <div role="tabpanel" id="panel-guess" aria-labelledby="tab-guess"><GuessGame /></div>}
+          {tab === 'pickem' && <div role="tabpanel" id="panel-pickem" aria-labelledby="tab-pickem"><Pickem /></div>}
+        </Suspense>
 
         <PlayerCardHost />
         </ErrorBoundary>

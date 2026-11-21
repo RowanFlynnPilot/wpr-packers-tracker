@@ -24,6 +24,9 @@ export default function Schedule() {
   const [openGame, setOpenGame] = useState(null) // { id, label } for the box-score modal
   const [preview, setPreview] = useState(null)   // id of the upcoming game opened into a preview
   const [calSaved, setCalSaved] = useState(false)
+  // Mid-season the list is mostly results a reader has already seen: they fold away behind a
+  // button, the latest one staying in view (the whole list ran to almost three phone screens).
+  const [showPlayed, setShowPlayed] = useState(false)
 
   // Initial fetch + a gentle refresh so a live score on the row stays current (the hero polls
   // faster on its own). Refresh failures keep the prior data rather than blanking the list.
@@ -48,6 +51,14 @@ export default function Schedule() {
   const notes = scheduleNotes(data.games.filter((g) => g.seasonType === 2))
   // Upcoming games with a real kickoff time — what the calendar file can honestly hold.
   const calendarGames = data.games.filter((g) => g.state === 'pre' && g.timeValid && g.seasonType !== 1)
+  // Which regular-season results fold: every final but the latest, and only while games remain
+  // (once the season is over the full list IS the record) and there are at least three to hide.
+  const regular = data.games.filter((g) => g.seasonType === 2)
+  const played = regular.filter((g) => g.state === 'post')
+  const earlier = regular.some((g) => g.state === 'pre') ? played.slice(0, -1) : []
+  const folded = earlier.length >= 3 ? earlier : []
+  const fw = folded.filter((g) => g.won).length, ft = folded.filter((g) => g.tied).length
+  const foldedRecord = `${fw}–${folded.length - fw - ft}${ft ? `–${ft}` : ''}`
   // The next kickoff on the calendar gets a NEXT pill so a reader scanning the list can find
   // their place without reading dates.
   const nextId = data.games.find((g) => g.state === 'pre')?.id ?? null
@@ -192,7 +203,14 @@ export default function Schedule() {
             </div>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {grp.key === 2 && folded.length > 0 && (
+              <button type="button" onClick={() => setShowPlayed((v) => !v)} aria-expanded={showPlayed} className="link-hover"
+                style={{ alignSelf: 'flex-start', cursor: 'pointer', background: 'transparent', border: `1px solid ${theme.rule}`, borderRadius: 18, padding: '8px 14px', fontFamily: theme.sans, fontSize: 12.5, fontWeight: 700, color: theme.green }}>
+                {showPlayed ? 'Hide earlier results' : `Show the ${folded.length} earlier results (${foldedRecord})`}
+              </button>
+            )}
             {grp.games.flatMap((g) => {
+              if (grp.key === 2 && !showPlayed && folded.includes(g)) return []
               const rows = []
               if (grp.key === 2 && data.byeWeek && g.week === data.byeWeek + 1) rows.push(renderBye(data.byeWeek))
               rows.push(renderRow(g))
