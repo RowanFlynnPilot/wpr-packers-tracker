@@ -100,8 +100,15 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
   rooting pick still to be played: the tracker's own numbers via playoffSim.js + `src/rooting.js`,
   labeled as the house model; the card sets `data-race="done"` when it has them and
   render-digest.mjs waits on that, best-effort), and a
-  "Game-day partner" strip for each sold WATCH_VENUES venue sits above the title sponsor's
-  "Presented by", evergreen fields only, never the dated specials). Each card is one link to the full
+  "Game-day partner" strip for each sold WATCH_VENUES venue, evergreen fields only, never the
+  dated specials. The IMAGE is also set 20% larger than the web card (`f()`/`sz()` in
+  MiniDigest — it is shown ~350px wide on a phone, where 10px labels landed near 8px), leads
+  with the TITLE sponsor's "Presented by" strip right under the band (at the foot it was the
+  smallest thing on the card, smaller than the venue strip), tags the last game Win/Loss, draws
+  the next game's stakes as a bar, and ends with a drawn "Open the live tracker" button + an
+  "As of …" stamp — the newsletter wraps the whole image in one link, so the button is a cue,
+  not a dead target. Fonts render wider on the CI runner than on Windows: check the PUBLISHED
+  digest.png after any change to this card, not just a local render). Each card is one link to the full
   tracker; the embed's `?to=` param overrides the destination (http/https only — shared
   `src/embed.js` `destination()`). Clicks fire a `Mini Click` event tagged with `widget`.
   Keep them tiny — no service worker, no recharts.

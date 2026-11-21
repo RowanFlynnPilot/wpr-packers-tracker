@@ -258,9 +258,15 @@ page:
 </p>
 ```
 
-The image itself is also linked (tapping it opens the tracker), but the text link below
-makes the call-to-action obvious — the image drops its "Full tracker" button, since a
-region inside an image can't carry its own link.
+Keep the `<a>` around the image: the image ends with a drawn "Open the live tracker" button,
+which works only because the whole image is one link. The text link below it is the fallback
+for readers whose mail app blocks images.
+
+**How the image differs from the web card.** It is the same card set 20% larger (the image is
+shown about 350px wide on a phone, where the web card's small labels would land near 8px), with
+the title sponsor's "Presented by" strip at the TOP, a Win/Loss tag on the last game, the next
+game's stakes drawn as a bar, games back in the standings, and a foot with the button and an
+"As of …" time (the image is a twice-daily snapshot). It runs about 990px tall at 420px wide.
 
 **The playoff race in the image.** From Week 1 on, the image (only — not the web digest above)
 carries a "The playoff race" block under "Next up": the Packers' playoff odds and seed, what the
@@ -279,8 +285,8 @@ taller at 600px wide. Two optional text links to put under it, since the image c
 
 **Game-day partner in the image.** The image (only — not the web digest above) carries a
 "Game-day partner" strip for each sold game-day guide venue (`WATCH_VENUES` in config.js:
-logo, name, hours line, address, phone — never the dated specials), above the title sponsor's
-"Presented by". Since the image can link only to the tracker, give the partner its own text
+logo, name, hours line, address, phone — never the dated specials), below the standings; the
+title sponsor's "Presented by" leads the card at the top. Since the image can link only to the tracker, give the partner its own text
 link under the image, tagged as newsletter traffic so it shows up in the venue's analytics:
 
 ```html
