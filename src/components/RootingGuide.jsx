@@ -41,7 +41,8 @@ function inTable(g, byId, homeWon) {
   return post ? true : pre ? false : undefined
 }
 
-async function buildWeek() {
+// Exported for the bar TV board (TvBoard.jsx), which shows the same rows on its rail.
+export async function buildWeek() {
   if (await fetchStatsSeason() !== SEASON) return null
   const week = await fetchPickemWeek()
   if (!week) return null

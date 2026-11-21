@@ -254,6 +254,30 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
     streaming broadcasters (Netflix, Prime Video…): the pregame hero prints "Streaming on Netflix
     — no national TV channel", which is all the feed supports — local over-the-air simulcasts
     vary by market, so nothing claims "only".
+  - `ColdLedger` (Schedule tab, "Lambeau by the thermometer") — where the next home game's
+    forecast would rank among every Lambeau kickoff since 2000, the home record by temperature
+    band, the ten coldest kickoffs; the hero's forecast line adds "would be the Nth-coldest
+    Lambeau kickoff since 2000" for a top-25 forecast. Data in `src/coldLedger.js`: FINISHED
+    seasons come from `src/lambeauHistory.js`, GENERATED once a year by
+    `scripts/lambeau-history.mjs <last completed season>` (ESPN schedules + Open-Meteo's archive).
+    This is deliberate and is NOT the forbidden committed-data pattern: finished seasons never
+    change (nothing to keep in sync), and building the same list in the browser would cost every
+    reader 27 schedule reads of ~300 KB each plus 27 weather reads. The season in progress is
+    still live (the schedule already loaded + ONE archive read, `fetchKickoffTemps`). Don't
+    extend the baked file to anything that can change. Guard: if the file is more than one
+    season behind, `loadLedger()` throws and the section hides. Starts at 2000 because ESPN's
+    1999 kickoff times are midnight placeholders. Temperatures are reanalysis ESTIMATES
+    interpolated to the kickoff minute (2008 title game −2°F vs the official −1°F; 2014 wild
+    card 5°F, matching) and every surface says so; air temperature, never wind chill.
+  - `TvBoard` (`tv.html`, own Vite entry) — the bar TV board for a sold game-day venue's own
+    screens: the Packers' game at TV size, a rail rotating every 15 s through the rooting rows
+    (`buildWeek`, exported from RootingGuide.jsx), the NFC picture and the division, the venue's
+    specials pinned under the rail, and a footer with the venue, the title sponsor and
+    `public/qr-tracker.svg` (static QR to the WPR page, made with Python `segno`). No
+    interaction: polls (20 s live / 60 s idle), takes the gold touchdown sweep on a new Packers
+    score, holds a screen wake lock, reloads itself between 4 and 5 a.m. Sized in `--u`
+    (1% of screen height, capped to 16:9). `?venue=N` picks the Nth `WATCH_VENUES` entry.
+    No service worker on this page, on purpose.
   - `PlayoffPicture` — "If the season ended today": seeds 1–7 as wild-card weekend pairs them
     (2v7, 3v6, 4v5, 1 rests), the hunt behind them, one sentence on the Packers vs the cut line.
     Seeds are ESPN's `playoffSeed` (tiebreakers applied — don't re-derive them). Reads App's

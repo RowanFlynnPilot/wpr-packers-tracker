@@ -21,6 +21,7 @@ import Standings from './components/Standings.jsx'
 import VsNorth from './components/VsNorth.jsx'
 import Schedule from './components/Schedule.jsx'
 import NextAtLambeau from './components/NextAtLambeau.jsx'
+import ColdLedger from './components/ColdLedger.jsx'
 import InjuryReport from './components/InjuryReport.jsx'
 import Coverage from './components/Coverage.jsx'
 import SponsorBand from './components/SponsorBand.jsx'
@@ -253,6 +254,7 @@ export default function App() {
             <WhereToWatch />
             <Section kicker="The season" title="The schedule"><Schedule /></Section>
             <NextAtLambeau />
+            <ColdLedger />
             <InjuryReport />
             {WPR_NEWS && <Coverage />}
             <SponsorBand />

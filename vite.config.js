@@ -19,6 +19,8 @@ export default defineConfig({
         sponsors: resolve(__dirname, 'sponsors.html'),
         // The pick'em contest's official rules (config-driven).
         rules: resolve(__dirname, 'rules.html'),
+        // The bar TV board — a full-screen scoreboard for a game-day venue's own screens.
+        tv: resolve(__dirname, 'tv.html'),
       },
     },
   },

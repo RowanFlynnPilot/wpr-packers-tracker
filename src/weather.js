@@ -48,3 +48,30 @@ export async function fetchKickoffForecast(gameDateISO) {
     label: label(code),
   }
 }
+
+// Estimated temperatures at the kickoff of games ALREADY PLAYED at Lambeau this season, for the
+// cold ledger — one read of Open-Meteo's historical archive (same provider, same rules: keyless,
+// CORS-open, fail fast) spanning the given kickoffs. Returns °F per ISO date, interpolated
+// between the two hourly readings around the kickoff minute (the rule scripts/lambeau-history.mjs
+// used for the baked seasons); a game the archive hasn't caught up with yet comes back null.
+export async function fetchKickoffTemps(isoDates) {
+  if (!isoDates.length) return {}
+  const days = isoDates.map((d) => new Date(d)).sort((a, b) => a - b)
+  const day = (d) => d.toISOString().slice(0, 10)
+  const end = new Date(days[days.length - 1].getTime() + 86400000) // the hour after a late kickoff
+  const res = await fetch(
+    `https://archive-api.open-meteo.com/v1/archive?latitude=${LAT}&longitude=${LON}` +
+    `&start_date=${day(days[0])}&end_date=${day(end)}&hourly=temperature_2m&temperature_unit=fahrenheit&timezone=GMT`
+  )
+  if (!res.ok) throw new Error(`Open-Meteo archive ${res.status}`)
+  const { hourly } = await res.json()
+  const out = {}
+  isoDates.forEach((iso) => {
+    const d = new Date(iso)
+    const i = hourly.time.indexOf(d.toISOString().slice(0, 13) + ':00')
+    const a = hourly.temperature_2m[i], b = hourly.temperature_2m[i + 1]
+    const f = d.getUTCMinutes() / 60
+    out[iso] = i === -1 || a == null ? null : Math.round(f && b != null ? a + (b - a) * f : a)
+  })
+  return out
+}
