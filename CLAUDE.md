@@ -254,6 +254,20 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
     streaming broadcasters (Netflix, Prime Video…): the pregame hero prints "Streaming on Netflix
     — no national TV channel", which is all the feed supports — local over-the-air simulcasts
     vary by market, so nothing claims "only".
+  - `GuessGame` (tab `guess`, "Guess the Packer"; rules in `src/guess.js`) — the daily game: one
+    mystery player from the current roster, eight guesses, six clues a guess (position, number,
+    age, seasons, height, college: green right, gold close, an arrow toward the answer), a
+    silhouette hint after four misses, a streak, and a no-names emoji grid to share. NO backend:
+    the day's player is derived from the Green Bay date and the roster (`answerFor` — lowest
+    hash of day + player, walked forward from Sept 1 so nobody repeats inside 21 days; practice
+    squad excluded from answers, guessable). A roster move can reshuffle the sequence; a game
+    under way stays pinned to its player in localStorage (`packersGuess:SEASON`, which also
+    holds the streak — per device, by design). The suggestion list shows names ONLY (position or
+    number there would give the clues away). `GuessPromo` is the Season tab's door to it (4th
+    on quiet days, last on game day). Slot `SPONSORS.guess`: the lockup shows once sold or in
+    ?demo — unsold there is NO "available" card above the game (230px before the first guess).
+    The silhouette is the transparent headshot under `filter: brightness(0)`; any background on
+    the <img> itself gets blackened too, so the tint sits on a wrapper.
   - `ColdLedger` (Schedule tab, "Lambeau by the thermometer") — where the next home game's
     forecast would rank among every Lambeau kickoff since 2000, the home record by temperature
     band, the ten coldest kickoffs; the hero's forecast line adds "would be the Nth-coldest

@@ -38,6 +38,11 @@ const INVENTORY = [
     sold: () => !!SPONSORS.pickem, demo: './?demo&tab=pickem',
   },
   {
+    key: 'guess', name: 'Daily game — Guess the Packer',
+    desc: 'Your lockup over the daily guessing game: one mystery player a day, a streak to protect, and a result readers post. The one surface built to be opened every day of the week, bye week included.',
+    sold: () => !!SPONSORS.guess, demo: './?demo&tab=guess',
+  },
+  {
     key: 'where-to-watch', name: 'Game-day guide listings',
     desc: 'Your bar or restaurant in the “Where to watch” guide: photos, amenity chips, game-day specials, and a tracked link. Shown on the Season and Schedule tabs. Sold per listing — multiple venues share the guide.',
     sold: () => false, multi: true, demo: './?demo&tab=schedule',

@@ -136,6 +136,8 @@ export const SPONSORS = {
   // The weekly pick'em tab (WPR-approved Aug 2026) — a habit-forming surface, sold like the
   // section slots.
   pickem: null,
+  // The daily "Guess the Packer" game — a reason to come back every day, bye week included.
+  guess: null,
 }
 
 // Where to send sponsorship inquiries (shown on empty slots — the upsell).
@@ -256,6 +258,7 @@ if (typeof window !== 'undefined' && new URLSearchParams(window.location.search)
   SPONSORS.leaders = SPONSORS.leaders || demo
   SPONSORS.forecast = SPONSORS.forecast || { name: 'Your Brand Here' }
   SPONSORS.pickem = SPONSORS.pickem || demo
+  SPONSORS.guess = SPONSORS.guess || demo
   if (!WATCH_VENUES.length) {
     WATCH_VENUES = [
       {

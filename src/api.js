@@ -527,6 +527,8 @@ export function fetchRoster() {
           college: a.college?.name || '',
           height: a.displayHeight || '',
           weight: a.displayWeight || '',
+          heightIn: a.height || null, // inches — the guessing game compares it
+          status: a.status?.name || '', // 'Active' | 'Day-To-Day' | 'Practice Squad' …
           injuries: a.injuries || [],
         })
       })

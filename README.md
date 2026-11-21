@@ -145,6 +145,14 @@ iframe. Embedded views are tracked automatically (they appear in Plausible with
 wausaupilotandreview.com as the source); tab switches fire a `Tab` event, and the
 "Bookmark" button fires a `Bookmark` event.
 
+### Daily game link (newsletter / social)
+
+"Guess the Packer" has its own tab, so a newsletter or social post can link straight to it:
+`https://wausaupilotandreview.com/green-bay-packers/?tab=guess` (needs the `?tab=` forwarding
+lines above on the WPR page; the standalone link
+`https://rowanflynnpilot.github.io/wpr-packers-tracker/?tab=guess` works without them). A new
+player appears every day at midnight Central.
+
 ### Bar TV board (a game-day venue's own screens)
 
 `tv.html` is a full-screen scoreboard built to be read across a room — open it in a browser on

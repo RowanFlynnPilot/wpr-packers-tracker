@@ -37,6 +37,7 @@ import PickYourPath from './components/PickYourPath.jsx'
 import RoadAhead from './components/RoadAhead.jsx'
 import FilmRoom from './components/FilmRoom.jsx'
 import Pickem from './components/Pickem.jsx'
+import GuessGame, { GuessPromo } from './components/GuessGame.jsx'
 import ChunkLeaders from './components/ChunkLeaders.jsx'
 import DriveDNA from './components/DriveDNA.jsx'
 import PlayerCardHost from './components/PlayerCard.jsx'
@@ -54,6 +55,8 @@ const TABS = [
   // legible on phones (TabBar swaps them in below the narrow breakpoint).
   { id: 'leaders', label: 'Season stats', short: 'Stats' },
   { id: 'film', label: 'Film room', short: 'Film' },
+  // The daily game — its own tab so `?tab=guess` can be a newsletter link.
+  { id: 'guess', label: 'Guess the Packer', short: 'Guess' },
   { id: 'pickem', label: "Pick'em" },
 ]
 
@@ -74,10 +77,10 @@ const visibleTabs = () => {
 // The hero, the lede and the sold game-day venues hold the top three spots in every phase, so
 // a sponsor's placement never slides around under it.
 const SEASON_ORDER = {
-  offseason: ['hero', 'story', 'watch', 'matchup', 'standings', 'preseason', 'race', 'picture', 'odds', 'path', 'guide', 'road'],
-  week: ['hero', 'story', 'watch', 'standings', 'picture', 'odds', 'path', 'guide', 'race', 'road', 'matchup'],
-  gameday: ['hero', 'story', 'watch', 'matchup', 'injuries', 'standings', 'picture', 'odds', 'path', 'guide', 'race', 'road'],
-  live: ['hero', 'story', 'watch', 'guide', 'standings', 'picture', 'odds', 'path', 'race', 'road', 'matchup'],
+  offseason: ['hero', 'story', 'watch', 'game', 'matchup', 'standings', 'preseason', 'race', 'picture', 'odds', 'path', 'guide', 'road'],
+  week: ['hero', 'story', 'watch', 'game', 'standings', 'picture', 'odds', 'path', 'guide', 'race', 'road', 'matchup'],
+  gameday: ['hero', 'story', 'watch', 'matchup', 'injuries', 'standings', 'picture', 'odds', 'path', 'guide', 'race', 'road', 'game'],
+  live: ['hero', 'story', 'watch', 'guide', 'standings', 'picture', 'odds', 'path', 'race', 'road', 'matchup', 'game'],
 }
 const GAMEDAY_MS = 48 * 3600 * 1000
 
@@ -206,6 +209,8 @@ export default function App() {
       </Section>
     ),
     road: <RoadAhead key="road" />,
+    // The door to the daily game: high on quiet days, out of the way on game day.
+    game: <GuessPromo key="game" onPlay={() => changeTab('guess')} />,
   }
 
   // ?demo pages look identical to the live page — a forwarded demo link explains itself.
@@ -272,6 +277,8 @@ export default function App() {
         )}
 
         {tab === 'film' && <div role="tabpanel" id="panel-film" aria-labelledby="tab-film"><FilmRoom /><ChunkLeaders /><DriveDNA /></div>}
+
+        {tab === 'guess' && <div role="tabpanel" id="panel-guess" aria-labelledby="tab-guess"><GuessGame /></div>}
 
         {tab === 'pickem' && (
           <div role="tabpanel" id="panel-pickem" aria-labelledby="tab-pickem"><Pickem /></div>
