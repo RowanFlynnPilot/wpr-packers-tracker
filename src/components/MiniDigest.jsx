@@ -320,8 +320,10 @@ export default function MiniDigest() {
         </div>
         {division && race.clinch && <div style={{ fontSize: 11.5, color: theme.ink, marginTop: 5 }}>{race.clinch}.</div>}
         {race.stakes && (
-          <div style={{ fontSize: 11.5, color: theme.ink, marginTop: 6, lineHeight: 1.4 }}>
-            {day}’s game is worth <strong>{race.stakes.win - race.stakes.loss} points</strong>: <strong style={{ color: theme.green }}>{oddsText(race.stakes.win)}</strong> with a win, <strong style={{ color: theme.red }}>{oddsText(race.stakes.loss)}</strong> with a loss.
+          // Short enough for one line at the CI renderer's font metrics (the longer "…’s game is
+          // worth" left "loss." alone on a second line there); balanced if it ever wraps anyway.
+          <div style={{ fontSize: 11.5, color: theme.ink, marginTop: 6, lineHeight: 1.4, textWrap: 'balance' }}>
+            {day} is worth <strong>{race.stakes.win - race.stakes.loss} points</strong>: <strong style={{ color: theme.green }}>{oddsText(race.stakes.win)}</strong> with a win, <strong style={{ color: theme.red }}>{oddsText(race.stakes.loss)}</strong> with a loss.
           </div>
         )}
         {race.root && (
