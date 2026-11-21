@@ -123,22 +123,41 @@ function VenueCard({ venue, slot, wide = false }) {
 // No "listing available" card beside a sold venue: a paying bar shouldn't share its placement
 // with an ad for its competitors (Oct 2026, the guide's first sale). The open inventory sells
 // from the media kit (sponsors.html) instead.
+// The heading names the game it means: "Catch Wednesday's game" inside a week of kickoff,
+// "today's" on the day, "the next game" further out. It used to say "Catch the game this week"
+// always — including the bye week, with no game to catch (Nov 2026).
+const WEEK_MS = 7 * 24 * 3600 * 1000
+function heading(games) {
+  if (games.some((g) => g.state === 'in')) return 'Catch today’s game'
+  const next = games.find((g) => g.state === 'pre')
+  if (!next || new Date(next.date) - Date.now() >= WEEK_MS) return 'Catch the next game'
+  const d = new Date(next.date)
+  return d.toDateString() === new Date().toDateString()
+    ? 'Catch today’s game'
+    : `Catch ${d.toLocaleDateString('en-US', { weekday: 'long' })}’s game`
+}
+
 export default function WhereToWatch({ compact = false }) {
   const [next, setNext] = useState(null)
+  const [title, setTitle] = useState('Catch the next game') // until the schedule answers
 
   useEffect(() => {
-    if (!WATCH_VENUES.length || compact) return
+    if (!WATCH_VENUES.length) return
     let alive = true
     fetchSeasonGames()
-      .then(({ games }) => { if (alive) setNext(games.find((g) => g.state === 'pre') || null) })
+      .then(({ games }) => {
+        if (!alive) return
+        setNext(games.find((g) => g.state === 'pre') || null)
+        setTitle(heading(games))
+      })
       .catch(() => {})
     return () => { alive = false }
-  }, [compact])
+  }, [])
 
   if (!WATCH_VENUES.length) return null
 
   return (
-    <Section kicker="Where to watch" title="Catch the game this week">
+    <Section kicker="Where to watch" title={title}>
       {!compact && next && (
         <p style={{ fontFamily: theme.serif, fontSize: 16, color: theme.muted, margin: '0 0 16px', maxWidth: 620, lineHeight: 1.5 }}>
           Packers {next.home ? 'vs' : 'at'} {TEAM_NAMES[next.oppId] || next.oppName}, {fmtWhen(next)} — here's where Wausau will be watching.

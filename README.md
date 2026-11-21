@@ -130,13 +130,16 @@ loads).
 
 Optional — deep links THROUGH the news-site page: the iframe `src` is fixed, so
 `wausaupilotandreview.com/green-bay-packers/?tab=pickem` wouldn't reach the widget on its
-own. Add this line at the top of the same `<script>` and the host page's `?tab=` is
-forwarded into the iframe (so a newsletter can link "make your picks" straight to the
-pick'em on the WPR page):
+own. Add these lines at the top of the same `<script>` and the host page's `?tab=` and
+`?path=` are forwarded into the iframe — so a newsletter can link "make your picks" straight
+to the pick'em on the WPR page, and a reader's shared "Pick your path" scenario
+(`?path=12w13l…`) opens with their picks in place. Without it a shared path link still opens
+the tracker, just without the picks:
 
 ```js
-var t = new URLSearchParams(location.search).get('tab')
-if (t) { var f0 = document.getElementById('wpr-packers'); f0.src = f0.src.split('?')[0] + '?tab=' + encodeURIComponent(t) }
+var q0 = new URLSearchParams(location.search), fwd = new URLSearchParams()
+;['tab', 'path'].forEach(function (k) { var v = q0.get(k); if (v) fwd.set(k, v) })
+if (fwd.toString()) { var f0 = document.getElementById('wpr-packers'); f0.src = f0.src.split('?')[0] + '?' + fwd.toString() }
 ``` `allow` lets the share button use the native share sheet / clipboard inside the
 iframe. Embedded views are tracked automatically (they appear in Plausible with
 wausaupilotandreview.com as the source); tab switches fire a `Tab` event, and the

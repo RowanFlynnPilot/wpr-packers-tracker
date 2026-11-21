@@ -233,6 +233,27 @@ ESPN NFL API (site.api / sports.core.api / site.web.api .espn.com)
     simulated 97% once ESPN has settled it. The hero wears a gold "✓ Clinched…" chip and, once
     per device per clinch level (localStorage `packersClinch:SEASON`), the touchdown-style gold
     takeover. No storage → no takeover (it would replay on every visit).
+  - `PickYourPath` ("Call the rest of the season") — W/L buttons on each remaining Packers game;
+    `simulatePath()` re-runs the house sim with those results in the table, on the seed of the
+    table AS IT STANDS, so an empty path is exactly the dials' number and a lone pick on the next
+    game equals the hero's stakes figure. Under it "What record gets them in": `simulate()`'s
+    `byWins` tally (how often each final record made the field; records seen in < 1% of sims are
+    left out). Follows `openRace` like the stakes (division odds once the spot is clinched, hidden
+    once both are settled). A path travels as `?path=12w13l14w` (week + result), read once on
+    load; embedded, the share link points at the WPR page, which only delivers the picks if the
+    host page forwards `?path=` (README snippet — same lines that forward `?tab=`). No
+    persistence by design: a stale scenario greeting a returning reader would read as the odds.
+  - The rooting guide sorts by the swing it PRINTS (unrounded gap only as the tiebreak) — sorted
+    on the unrounded gap alone, "3 pts" sat above "4 pts". `WhereToWatch`'s heading names the
+    game ("Catch Wednesday's game" inside a week, "today's" on the day, "the next game" beyond):
+    it said "this week" through the bye.
+  - `src/calendar.js` — "Add to calendar": an .ics built in the browser (hero: the next game;
+    Schedule tab: every upcoming game with a real kickoff time). Each event carries how to watch,
+    the sold game-day venues by name + address (no claim about their TVs) and the title sponsor.
+    A one-time file, and the Schedule button says so. `STREAMING_ONLY` in config.js marks
+    streaming broadcasters (Netflix, Prime Video…): the pregame hero prints "Streaming on Netflix
+    — no national TV channel", which is all the feed supports — local over-the-air simulcasts
+    vary by market, so nothing claims "only".
   - `PlayoffPicture` — "If the season ended today": seeds 1–7 as wild-card weekend pairs them
     (2v7, 3v6, 4v5, 1 rests), the hunt behind them, one sentence on the Packers vs the cut line.
     Seeds are ESPN's `playoffSeed` (tiebreakers applied — don't re-derive them). Reads App's

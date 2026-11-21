@@ -175,6 +175,13 @@ export const CONTEST = {
 // either way, so the click-through volume is provable before any deal is signed.
 export const TICKETS_OVERRIDE_URL = null
 
+// Broadcasters that are streaming services, as ESPN's schedule names them. A game on one of
+// these has no national TV channel (2026: Thanksgiving Eve at the Rams and Christmas Day at
+// Chicago on Netflix, two Thursday nights on Prime Video) — the hero and the calendar entry say
+// "Streaming only on Netflix" instead of leaving a reader hunting the cable guide. Whether a
+// local over-the-air station also carries it varies by market, so nothing here claims either way.
+export const STREAMING_ONLY = ['Netflix', 'Prime Video', 'Peacock', 'ESPN+', 'YouTube']
+
 // "Where to watch" — the game-day guide: bar/restaurant listings sold PER LISTING (each card
 // is its own sponsorship). Hidden until at least one venue is sold: an empty list renders no
 // section. Every field is venue-provided; each entry looks like:

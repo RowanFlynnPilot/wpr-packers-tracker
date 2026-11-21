@@ -45,6 +45,7 @@ export function conferenceTeams(rows) {
 // `seed` defaults to the standings' own; the stakes line passes one seed to several scenarios.
 export function simulate(teams, seed = seedFrom(teams)) {
   let post = 0, division = 0
+  const byWins = new Map()
   const myFinals = new Array(SIMS) // per-sim win totals → a real median, not a mean in disguise
   const n = teams.length
   const random = seededRandom(seed)
@@ -78,14 +79,23 @@ export function simulate(teams, seed = seedFrom(teams)) {
       if (best >= 0) winners.add(best)
     })
     const wc = teams.map((_, i) => i).filter((i) => !winners.has(i)).sort((a, b) => finals[b] - finals[a]).slice(0, 3)
-    if (winners.has(meIdx)) { post++; division++ }
-    else if (wc.includes(meIdx)) post++
+    const won = winners.has(meIdx), made = won || wc.includes(meIdx)
+    if (made) post++
+    if (won) division++
+    // Tallied by the Packers' final win total, for "what record gets them in".
+    const tally = byWins.get(myFinals[s]) || { n: 0, post: 0 }
+    tally.n++
+    if (made) tally.post++
+    byWins.set(myFinals[s], tally)
   }
   myFinals.sort((a, b) => a - b)
   return {
     postseason: Math.round((post / SIMS) * 100),
     division: Math.round((division / SIMS) * 100),
     medianWins: Math.round(myFinals[SIMS >> 1]),
+    // Each final win total the sims produced, best first: how often it happened and how often
+    // it was enough. (Ties count half a win, as in the standings.)
+    byWins: [...byWins].map(([wins, t]) => ({ wins, share: t.n / SIMS, n: t.n, post: t.post / t.n })).sort((a, b) => b.wins - a.wins),
     // Unrounded, for ranking games against each other (two 3-point swings aren't always equal).
     exact: { postseason: (post / SIMS) * 100, division: (division / SIMS) * 100 },
   }
@@ -123,6 +133,15 @@ export function gameOutcomes(teams, homeId, awayId, seed, counted = null) {
     home: simulate(withResult(base, homeId, awayId), seed),
     away: simulate(withResult(base, awayId, homeId), seed),
   }
+}
+
+// "Pick your path": the season with some of the Packers' remaining games already decided by the
+// reader — `picks` is [{ oppId, won }] — and everything else left to the dice. Runs on the seed
+// of the table as it stands, so an empty path is exactly the dials' number and each pick moves
+// the odds by the result alone, not by a fresh roll (common random numbers again).
+export function simulatePath(teams, picks) {
+  const table = picks.reduce((t, p) => (p.won ? withResult(t, TEAM_ID, p.oppId) : withResult(t, p.oppId, TEAM_ID)), teams)
+  return simulate(table, seedFrom(teams))
 }
 
 // What a Packers final DID to the odds, for the final hero: the table without the game

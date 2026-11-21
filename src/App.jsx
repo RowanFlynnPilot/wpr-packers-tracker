@@ -32,6 +32,7 @@ import TeamProfile from './components/TeamProfile.jsx'
 import PlayoffOdds from './components/PlayoffOdds.jsx'
 import PlayoffPicture from './components/PlayoffPicture.jsx'
 import RootingGuide from './components/RootingGuide.jsx'
+import PickYourPath from './components/PickYourPath.jsx'
 import RoadAhead from './components/RoadAhead.jsx'
 import FilmRoom from './components/FilmRoom.jsx'
 import Pickem from './components/Pickem.jsx'
@@ -72,10 +73,10 @@ const visibleTabs = () => {
 // The hero, the lede and the sold game-day venues hold the top three spots in every phase, so
 // a sponsor's placement never slides around under it.
 const SEASON_ORDER = {
-  offseason: ['hero', 'story', 'watch', 'matchup', 'standings', 'preseason', 'race', 'picture', 'odds', 'guide', 'road'],
-  week: ['hero', 'story', 'watch', 'standings', 'picture', 'odds', 'guide', 'race', 'road', 'matchup'],
-  gameday: ['hero', 'story', 'watch', 'matchup', 'injuries', 'standings', 'picture', 'odds', 'guide', 'race', 'road'],
-  live: ['hero', 'story', 'watch', 'guide', 'standings', 'picture', 'odds', 'race', 'road', 'matchup'],
+  offseason: ['hero', 'story', 'watch', 'matchup', 'standings', 'preseason', 'race', 'picture', 'odds', 'path', 'guide', 'road'],
+  week: ['hero', 'story', 'watch', 'standings', 'picture', 'odds', 'path', 'guide', 'race', 'road', 'matchup'],
+  gameday: ['hero', 'story', 'watch', 'matchup', 'injuries', 'standings', 'picture', 'odds', 'path', 'guide', 'race', 'road'],
+  live: ['hero', 'story', 'watch', 'guide', 'standings', 'picture', 'odds', 'path', 'race', 'road', 'matchup'],
 }
 const GAMEDAY_MS = 48 * 3600 * 1000
 
@@ -196,6 +197,7 @@ export default function App() {
     preseason: <PreseasonSlate key="preseason" />,
     picture: <PlayoffPicture key="picture" bundle={bundle} />,
     odds: <PlayoffOdds key="odds" />,
+    path: <PickYourPath key="path" />,
     guide: <RootingGuide key="guide" />,
     race: (
       <Section key="race" kicker="The division race" title={`${DIVISION_NAME}, week by week`} sponsor={SPONSORS.race} slot="race">

@@ -5,6 +5,7 @@ import { fetchFeaturedGame, fetchGameSummary, fetchLiveSummary, liveExtras, fetc
 import { finals, teamGameLeaders, periodLabel, scoringText, gameFlow } from '../games.js'
 import { CLINCH, conferenceTeams, openRace, resultMove, oddsText } from '../playoffSim.js'
 import { shareFinalCard } from '../share-card.js'
+import { downloadCalendar, howToWatch, isStreaming } from '../calendar.js'
 import { fetchKickoffForecast } from '../weather.js'
 import { track } from '../analytics.js'
 import { useIsNarrow } from '../useIsNarrow.js'
@@ -71,6 +72,7 @@ export default function GameHero() {
   const [fpi, setFpi] = useState(null)            // ESPN's pregame win projection (their model, labeled)
   const [copied, setCopied] = useState(false)
   const [cardShared, setCardShared] = useState(false)
+  const [calSaved, setCalSaved] = useState(false)
   const [pop, setPop] = useState(false)
   const prevScore = useRef(null)
   const [celebrate, setCelebrate] = useState(null) // the Packers score that just happened
@@ -522,6 +524,13 @@ export default function GameHero() {
       {venueLine && (
         <div style={{ fontFamily: theme.sans, fontSize: 12, color: theme.muted, marginTop: 4 }}>{venueLine}</div>
       )}
+      {/* A streaming game says so in words — "Netflix" in a gray run-on line left readers hunting
+          the cable guide on Thanksgiving Eve. */}
+      {!live && !final && isStreaming(game.tv) && (
+        <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.ink, fontWeight: 700, marginTop: 5 }}>
+          {howToWatch(game.tv)}
+        </div>
+      )}
       {!live && !final && forecast && (
         <div style={{ fontFamily: theme.sans, fontSize: 12.5, color: theme.muted, marginTop: 5 }}>
           Kickoff forecast at Lambeau: {forecast.tempF}°F, {forecast.label} · {forecast.precipPct}% precip · {forecast.windMph} mph wind
@@ -763,6 +772,14 @@ export default function GameHero() {
         <button onClick={share} className="link-hover" style={{ cursor: 'pointer', background: 'transparent', border: 'none', padding: '8px 4px', fontFamily: theme.sans, fontSize: 12, letterSpacing: '0.04em', color: copied ? theme.green : theme.muted, fontWeight: copied ? 700 : 400 }}>
           {copied ? 'Link copied' : 'Share this game'}
         </button>
+        {/* The game into the reader's own calendar (calendar.js) — kickoff, how to watch, the
+            sponsors. Only once the kickoff time is real. */}
+        {state === 'pre' && game.timeValid && (
+          <button onClick={() => { if (downloadCalendar([game], 'hero')) { setCalSaved(true); setTimeout(() => setCalSaved(false), 2500) } }} className="link-hover"
+            style={{ cursor: 'pointer', background: 'transparent', border: 'none', padding: '8px 4px', fontFamily: theme.sans, fontSize: 12, letterSpacing: '0.04em', color: calSaved ? theme.green : theme.muted, fontWeight: calSaved ? 700 : 400 }}>
+            {calSaved ? 'Calendar file saved' : 'Add to calendar'}
+          </button>
+        )}
         {canAlert && (
           <button onClick={toggleAlerts} className="link-hover" style={{ cursor: 'pointer', background: 'transparent', border: 'none', padding: '8px 4px', fontFamily: theme.sans, fontSize: 12, letterSpacing: '0.04em', color: alertsOn ? theme.green : theme.muted, fontWeight: alertsOn ? 700 : 400 }}>
             {alertsOn ? 'Game alerts on (while this tab is open)' : final || live ? 'Alert me at the next kickoff' : 'Alert me at kickoff'}

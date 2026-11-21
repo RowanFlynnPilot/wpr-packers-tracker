@@ -111,7 +111,9 @@ export default function RootingGuide() {
   if (!data) return null
   const swing = (g) => Math.abs(g.ifHome - g.ifAway)
   const mine = data.games.find((g) => g.mine)
-  const others = data.games.filter((g) => !g.mine && swing(g) >= MIN_SWING).sort((a, b) => b.exact - a.exact)
+  // Ordered by the number the row PRINTS, the unrounded gap only breaking ties: sorted on the
+  // unrounded gap alone, a row reading "3 pts" sat above one reading "4 pts" (bye week, Nov 2026).
+  const others = data.games.filter((g) => !g.mine && swing(g) >= MIN_SWING).sort((a, b) => swing(b) - swing(a) || b.exact - a.exact)
   if (!others.length && !(mine && swing(mine) >= MIN_SWING)) return null
 
   const scale = Math.max(1, ...data.games.map(swing))

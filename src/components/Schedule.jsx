@@ -4,6 +4,7 @@ import { DIVISION, TEAM_ID, TICKETS_OVERRIDE_URL } from '../config.js'
 import { fetchSeasonGames } from '../api.js'
 import { scheduleNotes } from '../games.js'
 import { track } from '../analytics.js'
+import { downloadCalendar } from '../calendar.js'
 import { Loading, ErrorState } from './Status.jsx'
 import TeamLogo from './TeamLogo.jsx'
 import BoxScore from './BoxScore.jsx'
@@ -22,6 +23,7 @@ export default function Schedule() {
   const [error, setError] = useState(false)
   const [openGame, setOpenGame] = useState(null) // { id, label } for the box-score modal
   const [preview, setPreview] = useState(null)   // id of the upcoming game opened into a preview
+  const [calSaved, setCalSaved] = useState(false)
 
   // Initial fetch + a gentle refresh so a live score on the row stays current (the hero polls
   // faster on its own). Refresh failures keep the prior data rather than blanking the list.
@@ -44,6 +46,8 @@ export default function Schedule() {
   ].filter((grp) => grp.games.length)
 
   const notes = scheduleNotes(data.games.filter((g) => g.seasonType === 2))
+  // Upcoming games with a real kickoff time — what the calendar file can honestly hold.
+  const calendarGames = data.games.filter((g) => g.state === 'pre' && g.timeValid && g.seasonType !== 1)
   // The next kickoff on the calendar gets a NEXT pill so a reader scanning the list can find
   // their place without reading dates.
   const nextId = data.games.find((g) => g.state === 'pre')?.id ?? null
@@ -159,6 +163,20 @@ export default function Schedule() {
       {notes.length > 0 && (
         <div style={{ fontFamily: theme.serif, fontStyle: 'italic', fontSize: 14.5, color: theme.muted, marginBottom: 12 }}>
           {notes.join(' · ')}
+        </div>
+      )}
+      {/* The rest of the schedule into the reader's own calendar (calendar.js). A one-time file,
+          and it says so: a flexed kickoff won't move an entry that's already on a phone. */}
+      {calendarGames.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px 12px', marginBottom: 14 }}>
+          <button type="button" className="link-hover"
+            onClick={() => { if (downloadCalendar(calendarGames, 'schedule')) { setCalSaved(true); setTimeout(() => setCalSaved(false), 2500) } }}
+            style={{ cursor: 'pointer', background: theme.green, color: '#fff', border: 'none', borderRadius: 18, padding: '8px 15px', fontFamily: theme.sans, fontSize: 12.5, fontWeight: 700 }}>
+            {calSaved ? 'Calendar file saved' : `Add ${calendarGames.length === 1 ? 'the next game' : `the next ${calendarGames.length} games`} to your calendar`}
+          </button>
+          <span style={{ fontFamily: theme.sans, fontSize: 11, color: theme.muted }}>
+            Kickoff, channel and stadium for each. A one-time file — a later time change won’t update it.
+          </span>
         </div>
       )}
       {/* The green left edge is the one data-encoding border on the page — say what it means. */}
